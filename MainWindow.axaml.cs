@@ -2002,7 +2002,7 @@ namespace Kirin_Tool
 
         private void GithubButton_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(new ProcessStartInfo { FileName = "https://github.com/kethily-daniel/kirin-tool", UseShellExecute = true });
+            Process.Start(new ProcessStartInfo { FileName = "https://github.com/Redminote11tech/kirin-tool-linux", UseShellExecute = true });
         }
         private async Task<bool> ShowGlobalInteractionPromptAsync(string message)
         {
