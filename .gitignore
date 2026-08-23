@@ -27,6 +27,8 @@ mono_crash.*
 [Dd]ebugPublic/x64/
 [Rr]elease/x64/
 [Rr]eleases/x64/
+[Bb]in/
+obj/
 bin/x64/
 obj/x64/
 
