@@ -34,16 +34,55 @@ namespace Kirin_Tool.Services
     {
         private readonly string _fastbootPath;
 
-        public FastbootClient(string executablePath = "fastboot/fastboot.exe")
+        public FastbootClient(string executablePath = null)
         {
-            _fastbootPath = Path.Combine(Directory.GetCurrentDirectory(), executablePath);
+            _fastbootPath = !string.IsNullOrWhiteSpace(executablePath)
+                ? ResolveExecutablePath(executablePath)
+                : ResolveDefaultFastbootPath();
         }
 
         public async Task<bool> IsDeviceConnected()
         {
-            if (!File.Exists(_fastbootPath)) return false;
-            var result = await ProcessRunner.RunAsync(_fastbootPath, "devices");
-            return result.IsSuccess && result.Output.Contains("fastboot");
+            try
+            {
+                var result = await ProcessRunner.RunAsync(_fastbootPath, "devices");
+                return result.IsSuccess && result.Output
+                    .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(line => line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                    .Any(columns => columns.Length >= 2 &&
+                        string.Equals(columns[1], "fastboot", StringComparison.OrdinalIgnoreCase));
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static string ResolveDefaultFastbootPath()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                return Path.Combine(AppContext.BaseDirectory, "fastboot", "fastboot.exe");
+            }
+
+            // Linux releases use the distro-provided android-tools package. Prefer a
+            // bundled binary when one is intentionally shipped, but do not point at a
+            // nonexistent app-local path in packages that do not include one.
+            string bundledPath = Path.Combine(AppContext.BaseDirectory, "fastboot", "fastboot");
+            if (File.Exists(bundledPath))
+            {
+                return bundledPath;
+            }
+
+            const string systemPath = "/usr/bin/fastboot";
+            return File.Exists(systemPath) ? systemPath : "fastboot";
+        }
+
+        private static string ResolveExecutablePath(string executablePath)
+        {
+            return Path.IsPathRooted(executablePath)
+                ? executablePath
+                : Path.Combine(AppContext.BaseDirectory, executablePath);
         }
 
         public async Task<string> ReadNveVariable(string variable)

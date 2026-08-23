@@ -64,7 +64,7 @@ namespace Kirin_Tool.Services
         {
             try
             {
-                var loaderDir = Path.Combine(Directory.GetCurrentDirectory(), "loaders", cpu);
+                var loaderDir = Path.Combine(AppContext.BaseDirectory, "loaders", cpu);
                 if (!Directory.Exists(loaderDir))
                 {
                     return new UnlockResult { IsSuccess = false, Message = $"Loader directory for {cpu} not found at '{loaderDir}'" };

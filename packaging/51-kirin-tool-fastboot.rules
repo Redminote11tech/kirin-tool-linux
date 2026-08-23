@@ -1,0 +1,8 @@
+# Fastboot uses the USB device node. uaccess grants the active local desktop
+# user access; adbusers supports sessions without logind uaccess.
+ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="12d1", MODE="0660", GROUP="adbusers", TAG+="uaccess"
+
+# VCOM and USB Update use tty nodes. DBAdapter product IDs vary by firmware, so
+# match Huawei's vendor ID on USB-backed tty devices and grant the same session
+# access. uucp is the fallback group for non-desktop sessions.
+ACTION=="add", SUBSYSTEM=="tty", SUBSYSTEMS=="usb", ATTRS{idVendor}=="12d1", MODE="0660", GROUP="uucp", TAG+="uaccess"

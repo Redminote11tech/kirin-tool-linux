@@ -176,7 +176,7 @@ namespace Kirin_Tool.Services
                         IsSelected = true
                     };
 
-                    fileName = fileName.Replace('/', '\\');
+                    // Path.Combine handles forward slashes correctly on both Windows and Linux in modern .NET
 
                     var xmlDirectory = Path.GetDirectoryName(xmlPath);
                     var parentDirectory = Path.GetDirectoryName(xmlDirectory);

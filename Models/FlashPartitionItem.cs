@@ -22,9 +22,8 @@ using Kirin_Tool.Models;
 using System;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Windows.Media;
-using System.Windows.Threading;
-using Color = System.Windows.Media.Color;
+using Avalonia.Media;
+using Avalonia.Threading;
 
 namespace Kirin_Tool.UI
 {
@@ -147,7 +146,7 @@ namespace Kirin_Tool.UI
             DisplayName = partition.Name;
             UniqueId = $"{partition.Name}_{partition.EntryOffset}";
             _stopwatch = new Stopwatch();
-            InitializeTickTimer();
+            StartTimer();
         }
 
         public FlashPartitionItem(PartitionInfo partition, string source)
@@ -158,12 +157,12 @@ namespace Kirin_Tool.UI
             DisplayName = $"{partition.Name} ({source})";
             UniqueId = $"{partition.Name}_{partition.EntryOffset}";
             _stopwatch = new Stopwatch();
-            InitializeTickTimer();
+            StartTimer();
         }
 
-        private void InitializeTickTimer()
+        private void StartTimer()
         {
-            _tickTimer = new DispatcherTimer(DispatcherPriority.Render)
+            _tickTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromSeconds(1)
             };
@@ -171,17 +170,10 @@ namespace Kirin_Tool.UI
             {
                 if (_stopwatch != null && _stopwatch.IsRunning)
                 {
-                    TimeElapsed = _stopwatch.Elapsed.ToString(@"mm\:ss");
+                    var elapsed = _stopwatch.Elapsed;
+                    TimeElapsed = $"{(int)elapsed.TotalMinutes:D2}:{elapsed.Seconds:D2}";
                 }
             };
-        }
-
-        private void StartTimer()
-        {
-            if (!_stopwatch.IsRunning)
-            {
-                _stopwatch.Start();
-            }
             if (!_tickTimer.IsEnabled)
             {
                 _tickTimer.Start();

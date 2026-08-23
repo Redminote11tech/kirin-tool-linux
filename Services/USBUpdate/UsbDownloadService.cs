@@ -27,6 +27,7 @@ using System.Linq;
 using System.Management;
 using System.Threading;
 using Kirin_Tool.Models;
+using Kirin_Tool.Utils;
 
 namespace Kirin_Tool.Services.USBUpdate
 {
@@ -97,35 +98,57 @@ namespace Kirin_Tool.Services.USBUpdate
         {
             try
             {
-                using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity WHERE Caption LIKE '%(COM%'"))
+                string portName = FindHiSiliconUsbUpdatePort();
+                if (portName == null) return null;
+
+                SerialPort port = new SerialPort(portName, 9600)
                 {
-                    foreach (ManagementObject obj in searcher.Get())
+                    ReadTimeout = 5000,
+                    WriteTimeout = 5000,
+                    WriteBufferSize = 8 * 1024 * 1024,
+                    ReadBufferSize = 1024 * 1024
+                };
+
+                port.Open();
+                return port;
+            }
+            catch { return null; }
+        }
+
+        private static string FindHiSiliconUsbUpdatePort()
+        {
+            if (OperatingSystem.IsLinux())
+            {
+                return LinuxSerialPortFinder.FindPort(
+                    vendorId: 0x12D1,
+                    descriptorMatches: descriptor =>
+                        descriptor.Contains("DBAdapter", StringComparison.OrdinalIgnoreCase) ||
+                        descriptor.Contains("Reserved Interface", StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (OperatingSystem.IsWindows())
+            {
+                using var searcher = new ManagementObjectSearcher(
+                    "SELECT Caption, DeviceID FROM Win32_PnPEntity WHERE Caption LIKE '%(COM%'");
+
+                foreach (ManagementObject device in searcher.Get())
+                {
+                    string caption = device["Caption"]?.ToString() ?? string.Empty;
+                    string deviceId = device["DeviceID"]?.ToString() ?? string.Empty;
+                    if (!deviceId.Contains("VID_12D1", StringComparison.OrdinalIgnoreCase) ||
+                        !caption.Contains("DBAdapter Reserved Interface", StringComparison.OrdinalIgnoreCase))
                     {
-                        string caption = obj["Caption"]?.ToString() ?? "";
-                        string deviceID = obj["DeviceID"]?.ToString() ?? "";
+                        continue;
+                    }
 
-                        if (deviceID.Contains("VID_12D1") && caption.Contains("DBAdapter Reserved Interface"))
-                        {
-                            int startIndex = caption.IndexOf("(COM") + 1;
-                            int endIndex = caption.IndexOf(")", startIndex);
-                            string portName = caption.Substring(startIndex, endIndex - startIndex);
-
-
-                            SerialPort port = new SerialPort(portName, 9600)
-                            {
-                                ReadTimeout = 5000,
-                                WriteTimeout = 5000,
-                                WriteBufferSize = 8 * 1024 * 1024,
-                                ReadBufferSize = 1024 * 1024
-                            };
-
-                            port.Open();
-                            return port;
-                        }
+                    int start = caption.IndexOf("(COM", StringComparison.Ordinal);
+                    int end = caption.IndexOf(')', start);
+                    if (start >= 0 && end > start)
+                    {
+                        return caption.Substring(start + 1, end - start - 1);
                     }
                 }
             }
-            catch (Exception ex) {}
 
             return null;
         }

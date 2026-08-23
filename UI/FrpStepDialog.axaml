@@ -1,0 +1,104 @@
+<!-- Licensed to Kethily Daniel & NDXCode under one or more agreements. -->
+<!-- Kethily Daniel & NDXCode licenses this file to you under the Business Source License 1.1. -->
+<!-- See the LICENSE file in the project root for more information. -->
+
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Kirin_Tool.UI.FrpStepDialog"
+        Title="FRP Lock removal in Progress"
+        Width="450"
+        Height="300"
+        WindowStartupLocation="CenterScreen"
+        CanResize="False">
+
+  <Border Background="White" CornerRadius="8" BorderBrush="LightGray" BorderThickness="1">
+    <StackPanel Margin="32,24,32,24">
+      <Grid Margin="0,12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="80"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="40"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Column="0"
+                   Text="Step 1:"
+                   FontWeight="SemiBold"
+                   VerticalAlignment="Center"
+                   Margin="0,0,12,0"/>
+
+        <TextBlock Grid.Column="2"
+                    x:Name="Step1Icon"
+                    Text="&#x23F3;"
+                    Foreground="Gray"
+                    FontSize="20"
+                    HorizontalAlignment="Center"/>
+      </Grid>
+
+      <Grid Margin="0,12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="80"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="40"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Column="0"
+                   Text="Step 2:"
+                   FontWeight="SemiBold"
+                   VerticalAlignment="Center"
+                   Margin="0,0,12,0"/>
+
+        <TextBlock Grid.Column="2"
+                    x:Name="Step2Icon"
+                    Text="&#x23F3;"
+                    Foreground="Gray"
+                    FontSize="20"
+                    HorizontalAlignment="Center"/>
+      </Grid>
+
+      <Grid Margin="0,12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="80"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="40"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Column="0"
+                   Text="Step 3:"
+                   FontWeight="SemiBold"
+                   VerticalAlignment="Center"
+                   Margin="0,0,12,0"/>
+
+        <TextBlock Grid.Column="2"
+                    x:Name="Step3Icon"
+                    Text="&#x23F3;"
+                    Foreground="Gray"
+                    FontSize="20"
+                    HorizontalAlignment="Center"/>
+      </Grid>
+
+      <Grid Margin="0,32,0,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="250"/>
+          <ColumnDefinition Width="100"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Name="OverallStatusTextBlock"
+                   Grid.Column="0"
+                   Text="Initializing FRP Lock removal..."
+                   Foreground="DimGray"
+                   TextWrapping="Wrap"
+                   FontSize="14"
+                   VerticalAlignment="Center"/>
+
+        <Button Name="CloseButton"
+                Grid.Column="1"
+                Content="OK"
+                Width="80"
+                Height="32"
+                Margin="16,0,0,0"
+                IsVisible="False"
+                Click="CloseButton_Click"/>
+      </Grid>
+    </StackPanel>
+  </Border>
+</Window>

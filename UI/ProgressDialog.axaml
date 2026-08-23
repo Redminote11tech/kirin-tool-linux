@@ -1,0 +1,72 @@
+<!-- Licensed to Kethily Daniel & NDXCode under one or more agreements. -->
+<!-- Kethily Daniel & NDXCode licenses this file to you under the Business Source License 1.1. -->
+<!-- See the LICENSE file in the project root for more information. -->
+
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:models="clr-namespace:Kirin_Tool.Models"
+        x:Class="Kirin_Tool.UI.ProgressDialog"
+        Title="Unlock in Progress"
+        Width="700"
+        WindowStartupLocation="CenterScreen"
+        CanResize="False">
+
+  <Border Background="White" CornerRadius="8" BorderBrush="LightGray" BorderThickness="1">
+    <StackPanel Margin="32,24,32,24">
+      <ItemsControl ItemsSource="{Binding ProgressItems}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <Grid Margin="0,12">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="100"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0"
+                         Text="{Binding FileName}"
+                         VerticalAlignment="Center"
+                         FontWeight="SemiBold"
+                         Margin="0,0,16,0"/>
+              <ProgressBar Grid.Column="1"
+                           Value="{Binding ProgressValue}"
+                           Margin="16,0,16,0"
+                           VerticalAlignment="Center"
+                           Height="12"
+                           MinWidth="200"/>
+              <TextBlock Grid.Column="2"
+                         Text="{Binding StatusText}"
+                         VerticalAlignment="Center"
+                         HorizontalAlignment="Center"
+                         Foreground="Gray"
+                         Margin="16,0,0,0"/>
+            </Grid>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <Grid Margin="0,32,0,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Name="OverallStatusTextBlock"
+                   Grid.Column="0"
+                   Text="Initializing..."
+                   Foreground="DimGray"
+                   TextWrapping="Wrap"
+                   FontSize="14"
+                   VerticalAlignment="Center"/>
+
+        <Button Name="CloseButton"
+                Grid.Column="1"
+                Content="OK"
+                Width="80"
+                Height="32"
+                Margin="16,0,0,0"
+                IsVisible="False"
+                Click="CloseButton_Click"/>
+      </Grid>
+    </StackPanel>
+  </Border>
+</Window>

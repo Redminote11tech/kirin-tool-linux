@@ -193,15 +193,30 @@ namespace Kirin_Tool.Services
 
         private string FindIdtDevicePort()
         {
-            string pattern = $"VID_{IDT_VID:X4}&PID_{IDT_PID:X4}";
-            try
+            if (OperatingSystem.IsLinux())
             {
-                using (var searcher = new ManagementObjectSearcher($"SELECT Name FROM Win32_PnPEntity WHERE DeviceID LIKE '%{pattern}%'"))
-                {
-                    return searcher.Get().Cast<ManagementBaseObject>().Select(d => d["Name"]?.ToString()).FirstOrDefault(n => n?.Contains("COM") ?? false)?.Split('(', ')')[1];
-                }
+                return LinuxSerialPortFinder.FindPort(IDT_VID, IDT_PID);
             }
-            catch { return SerialPort.GetPortNames().FirstOrDefault(); }
+
+            if (OperatingSystem.IsWindows())
+            {
+                return FindWindowsPortByVidPid(IDT_VID, IDT_PID);
+            }
+
+            return null;
+        }
+
+        private static string FindWindowsPortByVidPid(int vid, int pid)
+        {
+            string pattern = $"VID_{vid:X4}&PID_{pid:X4}";
+            using var searcher = new ManagementObjectSearcher(
+                $"SELECT Name FROM Win32_PnPEntity WHERE DeviceID LIKE '%{pattern}%'");
+
+            return searcher.Get()
+                .Cast<ManagementBaseObject>()
+                .Select(device => device["Name"]?.ToString())
+                .FirstOrDefault(name => name?.Contains("COM", StringComparison.OrdinalIgnoreCase) == true)
+                ?.Split('(', ')')[1];
         }
 
         public void Dispose()
