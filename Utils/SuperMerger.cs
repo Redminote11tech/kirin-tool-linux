@@ -56,6 +56,8 @@ namespace Kirin_Tool.Utils
             try
             {
                 long lastChunkOffset = 0;
+                uint lastLargeChunkSize = 0;
+                uint smallBlocksFromSecondChunkOnward = 0;
                 SparseHeader hLarge, hSmall;
 
                 using (var fs = new FileStream(largePath, FileMode.Open, FileAccess.Read))
@@ -69,6 +71,7 @@ namespace Kirin_Tool.Utils
                     {
                         lastChunkOffset = fs.Position;
                         var chunk = ReadStruct<ChunkHeader>(reader);
+                        lastLargeChunkSize = chunk.ChunkSize;
                         fs.Seek(chunk.TotalSize - SparseConstants.CHUNK_HEADER_SIZE, SeekOrigin.Current);
                     }
                 }
@@ -98,6 +101,14 @@ namespace Kirin_Tool.Utils
 
                     var firstChunk = ReadStruct<ChunkHeader>(reader);
                     newDataOffset = fs.Position + (firstChunk.TotalSize - SparseConstants.CHUNK_HEADER_SIZE);
+
+                    fs.Seek(newDataOffset, SeekOrigin.Begin);
+                    for (int i = 1; i < hSmall.TotalChunks; i++)
+                    {
+                        var chunk = ReadStruct<ChunkHeader>(reader);
+                        smallBlocksFromSecondChunkOnward = checked(smallBlocksFromSecondChunkOnward + chunk.ChunkSize);
+                        fs.Seek(chunk.TotalSize - SparseConstants.CHUNK_HEADER_SIZE, SeekOrigin.Current);
+                    }
                 }
 
                 using (var src = new FileStream(smallPath, FileMode.Open, FileAccess.Read))
@@ -113,12 +124,16 @@ namespace Kirin_Tool.Utils
                 }
 
                 uint newTotalChunks = (hLarge.TotalChunks - 1) + (hSmall.TotalChunks - 1);
+                uint newTotalBlocks = hLarge.TotalBlocks - lastLargeChunkSize + smallBlocksFromSecondChunkOnward;
                 using (var fs = new FileStream(outputPath, FileMode.Open, FileAccess.Write))
                 using (var writer = new BinaryWriter(fs))
                 {
                     fs.Seek(0x0C, SeekOrigin.Begin);
-                    writer.Write(4096); 
-                    
+                    writer.Write(4096);
+
+                    fs.Seek(0x10, SeekOrigin.Begin);
+                    writer.Write(newTotalBlocks);
+
                     fs.Seek(0x14, SeekOrigin.Begin);
                     writer.Write(newTotalChunks);
                 }

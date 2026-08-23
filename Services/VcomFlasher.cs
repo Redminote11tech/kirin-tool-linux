@@ -126,11 +126,10 @@ namespace Kirin_Tool.Services
             if (_serialPort.BytesToRead > 0)
             {
                 byte[] rsp = new byte[_serialPort.BytesToRead];
-                var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
+                using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
                 try
                 {
-                    int read = await _serialPort.BaseStream.ReadAsync(rsp, 0, rsp.Length, cts.Token);
-                    if ((cpu == "hisi970" || cpu == "hisi980") && (read == 0 || rsp[0] != 0x07)) {}
+                    await _serialPort.BaseStream.ReadAsync(rsp, 0, rsp.Length, cts.Token);
                 }
                 catch (OperationCanceledException) { }
             }
@@ -151,7 +150,7 @@ namespace Kirin_Tool.Services
 
             if (expectAck)
             {
-                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
                 var ackBuffer = new byte[1];
                 int bytesRead = await _serialPort.BaseStream.ReadAsync(ackBuffer, 0, 1, cts.Token);
                 //if (bytesRead == 0 || ackBuffer[0] != 0xAA || ackBuffer[0] != 0x55)

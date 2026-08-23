@@ -21,7 +21,7 @@
 <Window x:Class="Kirin_Tool.MainWindow"
                  xmlns="https://github.com/avaloniaui"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                 Title="Kirin-Tool v2.4.2" Height="700" Width="1000"
+                 Title="Kirin Tool for Linux v2.4.2" Height="700" Width="1000"
                  WindowStartupLocation="CenterScreen">
 
     <Grid x:Name="RootGrid">
@@ -30,7 +30,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Kirin-Tool v2.4.2" Margin="16,8" FontSize="18" FontWeight="Bold"/>
+        <TextBlock Grid.Row="0" Text="Kirin Tool for Linux v2.4.2" Margin="16,8" FontSize="18" FontWeight="Bold"/>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -102,7 +102,7 @@
                     <Grid x:Name="ContentContainer">
 
                         <StackPanel x:Name="WelcomePage" Margin="40,32,40,32">
-                            <TextBlock Text="Welcome to Kirin-Tool" 
+                            <TextBlock Text="Welcome to Kirin Tool for Linux"
                                   FontSize="32" 
                                   FontWeight="Light"
                                   Margin="0,0,0,16"/>
@@ -148,7 +148,7 @@
 
                             <Border Background="#FFF3CD" BorderBrush="#FFE69C" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,16"><StackPanel><TextBlock Text="Important Notice" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="We are not responsible for any kind of damage you do with this tool. Use it at your own risk." TextWrapping="Wrap" Foreground="Black"/></StackPanel></Border>
 
-                            <Border Background="#FFF3CD" BorderBrush="#FFE69C" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,16"><StackPanel><TextBlock Text="Beware!" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="Kirin-Tool is free software. If you have paid for this tool, you have been scammed - please ask for a refund immediately!" TextWrapping="Wrap" Foreground="Black"/></StackPanel></Border>
+                            <Border Background="#FFF3CD" BorderBrush="#FFE69C" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,16"><StackPanel><TextBlock Text="Beware!" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="Kirin Tool for Linux is free software. If you have paid for this tool, you have been scammed - please ask for a refund immediately!" TextWrapping="Wrap" Foreground="Black"/></StackPanel></Border>
 
                         </StackPanel>
 
@@ -1088,7 +1088,7 @@
                         </StackPanel>
 
                         <StackPanel x:Name="AboutPage" Margin="40,32,40,32" IsVisible="False">
-                            <TextBlock Text="About Kirin-Tool" 
+                            <TextBlock Text="About Kirin Tool for Linux"
                                   FontSize="28" 
                                   FontWeight="SemiBold"
                                   Margin="0,0,0,8"/>
@@ -1103,14 +1103,15 @@
                                         Margin="0,0,0,4"
                                         IsExpanded="True">
                                 <StackPanel>
-                                    <TextBlock Text="Kirin-Tool v2.4.2" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="Kirin Tool for Linux v2.4.2" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8"/>
                                     <TextBlock Text="© Kethily Daniel and NDXCode" 
                                           FontSize="14" 
                                           Opacity="0.7"
                                           Margin="0,0,0,16"/>
                                     <TextBlock Text="Credits:" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
                                     <TextBlock Text="• TASZK Security Labs SL - Bootrom exploit" FontSize="12" Margin="0,0,0,4"/>
-                                    <TextBlock Text="• kasnria001 - Decrypted XLOADERs and lots of help in general" FontSize="12" Margin="0,0,0,16"/>
+                                    <TextBlock Text="• kasnria001 - Decrypted XLOADERs and lots of help in general" FontSize="12" Margin="0,0,0,4"/>
+                                    <TextBlock Text="• Redminote11tech" FontSize="12" Margin="0,0,0,16"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                         <Button Content="Kirin-Tool Guide"  Click="HelpButton_Click" Margin="0,0,8,0"/>
                                         <Button Content="Telegram Support"  Click="TelegramButton_Click" Margin="0,0,8,0"/>

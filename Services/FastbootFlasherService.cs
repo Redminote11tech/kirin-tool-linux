@@ -178,7 +178,7 @@ namespace Kirin_Tool.Services
 
                     // Path.Combine handles forward slashes correctly on both Windows and Linux in modern .NET
 
-                    var xmlDirectory = Path.GetDirectoryName(xmlPath);
+                    var xmlDirectory = Path.GetDirectoryName(xmlPath) ?? ".";
                     var parentDirectory = Path.GetDirectoryName(xmlDirectory);
 
                     if (Path.IsPathRooted(fileName))

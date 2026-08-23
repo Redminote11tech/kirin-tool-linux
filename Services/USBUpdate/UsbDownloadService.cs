@@ -57,10 +57,16 @@ namespace Kirin_Tool.Services.USBUpdate
                 port = BuildConnection();
                 if (port == null)
                 {
-                    var result = OnRetryRequired?.Invoke("Device Not Found", 
+                    if (OnRetryRequired == null)
+                    {
+                        throw new OperationCanceledException("USB Update aborted: no HiSilicon device found and no retry handler registered.");
+                    }
+
+                    var result = OnRetryRequired.Invoke("Device Not Found",
                         "No HiSilicon device found in USB Update Mode.\n\nConnect the device and click Done! to retry, or Cancel to abort.");
 
-                    if(result == false) {
+                    if (result == false)
+                    {
                         throw new OperationCanceledException("USB Update cancelled by user.");
                     }
                 }
@@ -206,7 +212,6 @@ namespace Kirin_Tool.Services.USBUpdate
 
         private bool FlashPartitions(SerialPort port)
         {
-            bool allSuccess = true;
             string listPath = Path.Combine(_dloadDirectory, "list.txt");
             if (!File.Exists(listPath))
             {
@@ -329,7 +334,7 @@ namespace Kirin_Tool.Services.USBUpdate
                 
                 lineIndex++;
             }
-            return allSuccess;
+            return true;
         }
 
         private string? SendImage(SerialPort port, int lineIndex, string name, int blockSize)
@@ -557,10 +562,11 @@ namespace Kirin_Tool.Services.USBUpdate
         private byte[] CreateHandshakeCommand()
         {
             byte[] cmd = new byte[] { 0x26, 0x00, 0x00, 0x25, 0xA7, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00 };
-            byte[] crc = Crc16X25.CalculateBytes(cmd);
 
-            List<byte> result = new List<byte>(cmd);
-            result.AddRange(crc);
+            List<byte> payload = new List<byte>(cmd);
+            payload.AddRange(Crc16X25.CalculateBytes(cmd));
+
+            List<byte> result = new List<byte>(ConvertData(payload.ToArray()));
             result.Add(0x7E);
 
             return result.ToArray();
@@ -634,30 +640,26 @@ namespace Kirin_Tool.Services.USBUpdate
             return result.ToArray();
         }
 
-        private byte[] CreateRebootCommand()
+        private byte[] CreateSingleByteCommand(byte opcode)
         {
-            byte[] cmd = new byte[] { 0x0A };
-            byte[] crc = Crc16X25.CalculateBytes(cmd);
+            List<byte> payload = new List<byte> { opcode };
+            payload.AddRange(Crc16X25.CalculateBytes(new[] { opcode }));
 
             List<byte> result = new List<byte> { 0x7E };
-            result.AddRange(cmd);
-            result.AddRange(crc);
+            result.AddRange(ConvertData(payload.ToArray()));
             result.Add(0x7E);
 
             return result.ToArray();
         }
 
+        private byte[] CreateRebootCommand()
+        {
+            return CreateSingleByteCommand(0x0A);
+        }
+
         private byte[] CreateForceRebootCommand()
         {
-            byte[] cmd = new byte[] { 0x32 };
-            byte[] crc = Crc16X25.CalculateBytes(cmd);
-
-            List<byte> result = new List<byte> { 0x7E };
-            result.AddRange(cmd);
-            result.AddRange(crc);
-            result.Add(0x7E);
-
-            return result.ToArray();
+            return CreateSingleByteCommand(0x32);
         }
 
         public void SendRebootCommands()
@@ -670,9 +672,15 @@ namespace Kirin_Tool.Services.USBUpdate
                 port = BuildConnection();
                 if (port == null)
                 {
-                    var result = OnRetryRequired?.Invoke("Device Not Found", 
+                    if (OnRetryRequired == null)
+                    {
+                        _log("SendRebootCommands: device not found and no retry handler registered; aborting.");
+                        return;
+                    }
+
+                    var result = OnRetryRequired.Invoke("Device Not Found",
                         "No HiSilicon device found in USB Update Mode.\n\nConnect the device and click Done! to retry, or Cancel to abort.");
-                    
+
                     if (result == false)
                     {
                         return;

@@ -101,6 +101,7 @@ namespace Kirin_Tool.Services.USBUpdate
             }
             finally
             {
+                patcher.RestoreListTxt();
                 if (File.Exists(xloaderBackupPath))
                 {
                     File.Copy(xloaderBackupPath, xloaderPath, true);

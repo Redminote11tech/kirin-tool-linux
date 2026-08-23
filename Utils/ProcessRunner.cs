@@ -74,7 +74,7 @@ namespace Kirin_Tool.Utils
             {
                 process.Kill();
                 WriteLog(executablePath, arguments, $"[Process Timed Out after {timeout.TotalSeconds} seconds]");
-                throw new TimeoutException($"Process timed out after {timeoutMinutes} minutes");
+                throw new TimeoutException($"Process timed out after {(int)timeout.TotalSeconds} seconds");
             }
         }
 

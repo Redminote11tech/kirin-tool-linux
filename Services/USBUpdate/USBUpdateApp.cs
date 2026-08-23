@@ -22,7 +22,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using System.Windows;
 using Kirin_Tool.Models;
 
 namespace Kirin_Tool.Services.USBUpdate

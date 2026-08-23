@@ -845,8 +845,16 @@ namespace Kirin_Tool
         private async void StartFullOtaButton_Click(object sender, RoutedEventArgs e)
         {
             string cpu = GetSelectedCpu();
-            var selectedFiles = new[] { BasePtableFile, BaseUpdateFile, CustUpdateFile, PreloadUpdateFile }
-                               .Count(f => f.HasFile);
+            if (!FirmwareUnlocker.CpuAddresses.ContainsKey(cpu))
+            {
+                await ShowMessageBox("No CPU Selected", "Please select a supported CPU model first.");
+                return;
+            }
+
+            var otaFileSet = IsUsbUpdateSelected
+                ? new[] { BasePtableFile, CustPtableFile, PreloadPtableFile, BaseUpdateFile, CustUpdateFile, PreloadUpdateFile }
+                : new[] { BasePtableFile, BaseUpdateFile, CustUpdateFile, PreloadUpdateFile };
+            var selectedFiles = otaFileSet.Count(f => f.HasFile);
 
             if (selectedFiles == 0)
             {
@@ -854,19 +862,20 @@ namespace Kirin_Tool
                 return;
             }
 
-            if (selectedFiles < 4)
+            if (selectedFiles < otaFileSet.Length)
             {
                 var missingFiles = new List<string>();
-                if (!BasePtableFile.HasFile) missingFiles.Add("Base PTABLE");
-                if (!BaseUpdateFile.HasFile) missingFiles.Add("Base UPDATE");
-                if (!CustUpdateFile.HasFile) missingFiles.Add("Cust UPDATE");
-                if (!PreloadUpdateFile.HasFile) missingFiles.Add("Preload UPDATE");
+                foreach (var f in otaFileSet.Where(f => !f.HasFile))
+                {
+                    missingFiles.Add(f.DisplayName);
+                }
 
-                var warningMessage = $"Warning: You have only selected {selectedFiles}/4 files for the Full OTA flash.\n\n" +
+                var warningMessage = $"Warning: You have only selected {selectedFiles}/{otaFileSet.Length} files.\n\n" +
                                    $"Missing file(s): {string.Join(", ", missingFiles)}\n\n" +
-                                   "Do you want to continue anyway?";
+                                   "By loading unlocked fastboot on this device, you will permanently increment ARB, \nmeaning you cannot install any operating system older than HarmonyOS 2. \n\n" +
+                                   "Are you absolutely sure you want to continue?";
 
-                var warningResult = await _dialogService.ShowConfirmDialog("Incomplete Full OTA Flash Warning", "By loading unlocked fastboot on this device, you will permanently increment ARB, \nmeaning you cannot install any operating system older than HarmonyOS 2. \n\nAre you absolutely sure you want to continue?", "Continue Anyway", "Cancel");
+                var warningResult = await _dialogService.ShowConfirmDialog("Incomplete Flash Warning", warningMessage, "Continue Anyway", "Cancel");
 
                 if (warningResult != true)
                 {
@@ -890,7 +899,7 @@ namespace Kirin_Tool
             var dialogShowTask = _dialogService.ShowDialog(dialog);
             var unlockResult = await _firmwareUnlocker.UnlockFastboot(cpu, progressItems, overallProgress, interactionHandler, useFastFlashLoader);
 
-            dialog.ShowCloseButton(unlockResult.IsSuccess);
+            dialog.ShowCloseButton(unlockResult.IsSuccess, unlockResult.IsSuccess ? "Unlock Complete" : "Unlock Failed");
             await dialogShowTask;
         }
 
@@ -1004,7 +1013,7 @@ namespace Kirin_Tool
             var dialogShowTask = _dialogService.ShowDialog(dialog);
             var unlockResult = await _firmwareUnlocker.UnlockFastboot(cpu, progressItems, overallProgress, interactionHandler, useFastFlashLoader);
 
-            dialog.ShowCloseButton(unlockResult.IsSuccess);
+            dialog.ShowCloseButton(unlockResult.IsSuccess, unlockResult.IsSuccess ? "Unlock Complete" : "Unlock Failed");
             await dialogShowTask;
         }
 
@@ -1057,7 +1066,7 @@ namespace Kirin_Tool
             try
             {
                 var updateAppPath = partitionsToFlash.First().UpdateAppFilePath;
-                var updateAppDirectory = Path.GetDirectoryName(updateAppPath);
+                var updateAppDirectory = Path.GetDirectoryName(updateAppPath) ?? Directory.GetCurrentDirectory();
                 tempDirectory = Path.Combine(updateAppDirectory, $"temp_flash_{DateTime.Now:yyyyMMdd_HHmmss}");
 
                 if (!Directory.Exists(tempDirectory))
@@ -1314,7 +1323,7 @@ namespace Kirin_Tool
             }
             else
             {
-                finalStatus = "FRP Lock removal completed successfully!";
+                finalStatus = $"FRP Lock removal partially completed ({frpResult.SuccessfulStepsCount}/3 steps succeeded).";
             }
 
             frpDialog.UpdateOverallStatus(finalStatus);
@@ -1696,10 +1705,9 @@ namespace Kirin_Tool
                     progressDialog.ProgressItems[0].ProgressValue = 50;
 
                     var modelResult = await _fastbootClient.OemCommandAsync($"oeminfowrite-KTModel@{model}");
-                    bool modelSuccess = !string.IsNullOrEmpty(modelResult) && 
-                                       (modelResult.ToUpper().Contains("OKAY") || 
-                                        modelResult.ToUpper().Contains("OK") ||
-                                        !modelResult.ToUpper().Contains("FAIL"));
+                    bool modelSuccess = !string.IsNullOrEmpty(modelResult) &&
+                                        !modelResult.ToUpper().Contains("FAIL") &&
+                                        !modelResult.ToUpper().Contains("ERROR");
 
                     progressDialog.ProgressItems[0].StatusText = modelSuccess ? "Done" : "Failed";
                     progressDialog.ProgressItems[0].ProgressValue = modelSuccess ? 100 : 0;
@@ -1707,7 +1715,7 @@ namespace Kirin_Tool
                     if (!modelSuccess)
                     {
                         progressDialog.UpdateOverallStatus($"Failed to write model: {modelResult}");
-                        progressDialog.ShowCloseButton(false);
+                        progressDialog.ShowCloseButton(false, "Write Failed");
                         await dialogTask;
                         return;
                     }
@@ -1717,10 +1725,9 @@ namespace Kirin_Tool
                     progressDialog.ProgressItems[1].ProgressValue = 50;
 
                     var vendorResult = await _fastbootClient.OemCommandAsync($"oeminfowrite-KTVendor@{vendor}");
-                    bool vendorSuccess = !string.IsNullOrEmpty(vendorResult) && 
-                                        (vendorResult.ToUpper().Contains("OKAY") || 
-                                         vendorResult.ToUpper().Contains("OK") ||
-                                         !vendorResult.ToUpper().Contains("FAIL"));
+                    bool vendorSuccess = !string.IsNullOrEmpty(vendorResult) &&
+                                         !vendorResult.ToUpper().Contains("FAIL") &&
+                                         !vendorResult.ToUpper().Contains("ERROR");
 
                     progressDialog.ProgressItems[1].StatusText = vendorSuccess ? "Done" : "Failed";
                     progressDialog.ProgressItems[1].ProgressValue = vendorSuccess ? 100 : 0;
@@ -1728,12 +1735,12 @@ namespace Kirin_Tool
                     if (modelSuccess && vendorSuccess)
                     {
                         progressDialog.UpdateOverallStatus("Successfully wrote model and vendor to device!");
-                        progressDialog.ShowCloseButton(true);
+                        progressDialog.ShowCloseButton(true, "Write Complete");
                     }
                     else
                     {
                         progressDialog.UpdateOverallStatus($"Failed to write vendor: {vendorResult}");
-                        progressDialog.ShowCloseButton(false);
+                        progressDialog.ShowCloseButton(false, "Write Failed");
                     }
 
                     await dialogTask;
@@ -1782,7 +1789,7 @@ namespace Kirin_Tool
                     progressDialog.UpdateOverallStatus($"Conversion failed: {result.ErrorMessage}");
                     progressDialog.ProgressItems[0].StatusText = "Failed";
                     progressDialog.ProgressItems[0].ProgressValue = 0;
-                    progressDialog.ShowCloseButton(false);
+                    progressDialog.ShowCloseButton(false, "Conversion Failed");
                     await dialogTask;
                     return;
                 }
@@ -1790,7 +1797,7 @@ namespace Kirin_Tool
                 progressDialog.UpdateOverallStatus("Conversion successful! Press OK to select a save location.");
                 progressDialog.ProgressItems[0].StatusText = "Done";
                 progressDialog.ProgressItems[0].ProgressValue = 100;
-                progressDialog.ShowCloseButton(true);
+                progressDialog.ShowCloseButton(true, "Conversion Complete");
                 await dialogTask;
 
                 var savePath = await _dialogService.ShowSaveFileDialog("Save Converted OEMInfo File", $"converted-oeminfo-{model}.img");
@@ -1849,14 +1856,14 @@ namespace Kirin_Tool
                     progressDialog.UpdateOverallStatus("OEMInfo flashed successfully!");
                     progressDialog.ProgressItems[0].StatusText = "Done";
                     progressDialog.ProgressItems[0].ProgressValue = 100;
-                    progressDialog.ShowCloseButton(true);
+                    progressDialog.ShowCloseButton(true, "Flash Complete");
                 }
                 else
                 {
                     progressDialog.UpdateOverallStatus("Failed to flash OEMInfo to device.");
                     progressDialog.ProgressItems[0].StatusText = "Failed";
                     progressDialog.ProgressItems[0].ProgressValue = 0;
-                    progressDialog.ShowCloseButton(false);
+                    progressDialog.ShowCloseButton(false, "Flash Failed");
                 }
 
                 await dialogTask;
@@ -1926,12 +1933,15 @@ namespace Kirin_Tool
 
         private string GetSelectedCpu()
         {
-            if (CpuComboBox.SelectedItem is ComboBoxItem selectedItem && selectedItem.Content.ToString().Contains('('))
+            string content = (CpuComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+            if (!string.IsNullOrEmpty(content) && content.Contains('('))
             {
-                string content = selectedItem.Content.ToString();
                 int start = content.IndexOf('(') + 1;
                 int end = content.IndexOf(')');
-                return content.Substring(start, end - start);
+                if (end > start)
+                {
+                    return content.Substring(start, end - start);
+                }
             }
             return "none";
         }

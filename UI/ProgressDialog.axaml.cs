@@ -31,12 +31,12 @@ namespace Kirin_Tool.UI
             Dispatcher.UIThread.InvokeAsync(() => OverallStatusTextBlock.Text = status);
         }
 
-        public void ShowCloseButton(bool isSuccess = true)
+        public void ShowCloseButton(bool isSuccess = true, string title = null)
         {
             Dispatcher.UIThread.InvokeAsync(() =>
             {
                 CloseButton.IsVisible = true;
-                Title = isSuccess ? "Unlock Complete" : "Unlock Failed";
+                Title = title ?? (isSuccess ? "Operation Complete" : "Operation Failed");
             });
         }
 

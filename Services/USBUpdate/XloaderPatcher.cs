@@ -157,29 +157,26 @@ namespace Kirin_Tool.Services.USBUpdate
                 }
             }
 
+            string backupPath = listPath + ".orig";
+            if (!File.Exists(backupPath))
+            {
+                File.Copy(listPath, backupPath, true);
+            }
+
             File.WriteAllLines(listPath, lines);
         }
 
         public void RestoreListTxt()
         {
             string listPath = Path.Combine(_dloadDirectory, "list.txt");
-            if (!File.Exists(listPath))
+            string backupPath = listPath + ".orig";
+            if (!File.Exists(backupPath))
                 return;
 
-            var lines = File.ReadAllLines(listPath).ToList();
-
-            for (int i = 0; i < lines.Count; i++)
-            {
-                string[] parts = lines[i].Split(' ');
-                if (parts.Length >= 2)
-                {
-                    string name = parts[0];
-                    lines[i] = $"{name} 1";
-                }
-            }
-
-            File.WriteAllLines(listPath, lines);
+            File.Copy(backupPath, listPath, true);
+            File.Delete(backupPath);
         }
+
 
         public async Task FlashXloaderViaFastbootAsync(string xloaderPath)
         {

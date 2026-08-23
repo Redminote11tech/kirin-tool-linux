@@ -25,7 +25,6 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 using Kirin_Tool.Utils;
 
 namespace Kirin_Tool.Services.USBUpdate

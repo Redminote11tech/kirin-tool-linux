@@ -62,42 +62,49 @@ namespace Kirin_Tool.Utils
 
         private void ParseFile()
         {
-            const uint MAGIC = 0xA55AAA55;
-            const int ALIGNMENT = 4;
 
             long fileLength = _fileStream.Length;
 
             long currentPosition = 0;
 
+            const byte magicByte0 = 0x55;
+            const byte magicByte1 = 0xAA;
+            const byte magicByte2 = 0x5A;
+            const byte magicByte3 = 0xA5;
+            const int scanBufferSize = 1024 * 1024;
+            var scanBuffer = new byte[scanBufferSize + 4];
+
             while (currentPosition < fileLength)
             {
-                _fileStream.Seek(currentPosition, SeekOrigin.Begin);
-
                 if (fileLength - currentPosition < 4) break;
 
-                var buffer = new byte[4];
-                if (_binaryReader.Read(buffer, 0, 4) != 4) break;
+                _fileStream.Seek(currentPosition, SeekOrigin.Begin);
+                int bytesRead = _fileStream.Read(scanBuffer, 0, scanBuffer.Length);
+                if (bytesRead < 4) break;
 
-                if (BitConverter.ToUInt32(buffer, 0) == MAGIC)
+                bool advanced = false;
+
+                for (int i = 0; i <= bytesRead - 4; i++)
                 {
+                    if (scanBuffer[i] != magicByte0 || scanBuffer[i + 1] != magicByte1 ||
+                        scanBuffer[i + 2] != magicByte2 || scanBuffer[i + 3] != magicByte3)
+                    {
+                        continue;
+                    }
 
-                    long headerStartPosition = currentPosition;
-                    var partition = ReadPartition(headerStartPosition);
-
+                    var partition = ReadPartition(currentPosition + i);
                     if (partition != null)
                     {
                         Partitions.Add(partition);
-
                         currentPosition = _fileStream.Position;
-                    }
-                    else
-                    {
-                        currentPosition += 4;
+                        advanced = true;
+                        break;
                     }
                 }
-                else
+
+                if (!advanced)
                 {
-                    currentPosition++;
+                    currentPosition += Math.Max(1, bytesRead - 3);
                 }
             }
 

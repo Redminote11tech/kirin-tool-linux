@@ -34,6 +34,8 @@ namespace Kirin_Tool.Services
     {
         private readonly string _fastbootPath;
 
+        private const int UnlockTimeoutMinutes = 300;
+
         public FastbootClient(string executablePath = null)
         {
             _fastbootPath = !string.IsNullOrWhiteSpace(executablePath)
@@ -209,21 +211,19 @@ namespace Kirin_Tool.Services
                 try
                 {
                     using var reader = process.StandardOutput;
-                    char[] buffer = new char[1];
+                    char[] chunk = new char[256];
                     while (true)
                     {
-                        int read = await reader.ReadAsync(buffer, 0, 1);
+                        int read = await reader.ReadAsync(chunk, 0, chunk.Length);
                         if (read == 0)
                         {
                             break;
                         }
-                        
-                        char c = buffer[0];
-                        
+
                         lock (outputLock)
                         {
-                            outputBuilder.Append(c);
-                            combinedBuilder.Append(c);
+                            outputBuilder.Append(chunk, 0, read);
+                            combinedBuilder.Append(chunk, 0, read);
                             progress?.Report(combinedBuilder.ToString());
                         }
                     }
@@ -238,21 +238,19 @@ namespace Kirin_Tool.Services
                 try
                 {
                     using var reader = process.StandardError;
-                    char[] buffer = new char[1];
+                    char[] chunk = new char[256];
                     while (true)
                     {
-                        int read = await reader.ReadAsync(buffer, 0, 1);
+                        int read = await reader.ReadAsync(chunk, 0, chunk.Length);
                         if (read == 0)
                         {
                             break;
                         }
-                        
-                        char c = buffer[0];
-                        
+
                         lock (outputLock)
                         {
-                            errorBuilder.Append(c);
-                            combinedBuilder.Append(c);
+                            errorBuilder.Append(chunk, 0, read);
+                            combinedBuilder.Append(chunk, 0, read);
                             progress?.Report(combinedBuilder.ToString());
                         }
                     }
@@ -262,7 +260,7 @@ namespace Kirin_Tool.Services
                 }
             });
 
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(300));
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(UnlockTimeoutMinutes));
             try
             {
                 await process.WaitForExitAsync(cts.Token);
@@ -270,7 +268,8 @@ namespace Kirin_Tool.Services
             catch (OperationCanceledException)
             {
                 process.Kill();
-                return (false, "Process timed out after 5 minutes");
+                try { process.WaitForExit(2000); } catch (InvalidOperationException) { }
+                return (false, $"Process timed out after {UnlockTimeoutMinutes} minutes");
             }
 
             await Task.Delay(500);

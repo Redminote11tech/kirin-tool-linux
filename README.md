@@ -1,4 +1,4 @@
-# Kirin-Tool
+# Kirin Tool for Linux
 > [!WARNING]
 > **THIS PROJECT IS NOT OPEN SOURCE, BUT RATHER SOURCE AVAILABLE UNDER THE Business Source License 1.1**<br>
 > **READ THE LICENSE BEFORE COPYING OR MODIFYING THE SOURCE!**
@@ -13,6 +13,11 @@ This is the ONLY free public Huawei tool with Kirin 990 support!
 You can rebrand, flash and unlock(even Kirin 990's bootloader!) Huawei devices!
 
 We support Kirin 620-990 5g SoCs (As of 2.4.2, excluding 990 4g)!
+
+# About this fork
+
+Linux-focused fork of [Kirin-Tool](https://github.com/kethily-daniel/Kirin-Tool) by Kethily Daniel & NDXCode.
+Published under the Business Source License 1.1 (see LICENSE); all original copyright notices are retained.
 
 # Links
 
@@ -42,6 +47,8 @@ USDT Tether (TRC20): `TD2sJbEmYa93sJhDBmTrvqmScqQSVTCfCK`
 [TASZK Security Labs SL](https://taszk.io) for the head resend bootrom exploit
 
 [kasnria001](https://github.com/kasnria001) for decrypted xloaders and LOTS of help in general
+
+**Redminote11tech** - contributor
 
 ---
 
