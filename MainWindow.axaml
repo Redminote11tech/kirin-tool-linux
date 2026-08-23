@@ -1111,7 +1111,7 @@
                                     <TextBlock Text="Credits:" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
                                     <TextBlock Text="• TASZK Security Labs SL - Bootrom exploit" FontSize="12" Margin="0,0,0,4"/>
                                     <TextBlock Text="• kasnria001 - Decrypted XLOADERs and lots of help in general" FontSize="12" Margin="0,0,0,4"/>
-                                    <TextBlock Text="• Redminote11tech" FontSize="12" Margin="0,0,0,16"/>
+                                    <TextBlock Text="• Redminote11tech - Single-handed Linux port" FontSize="12" Margin="0,0,0,16"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                         <Button Content="Kirin-Tool Guide"  Click="HelpButton_Click" Margin="0,0,8,0"/>
                                         <Button Content="Telegram Support"  Click="TelegramButton_Click" Margin="0,0,8,0"/>

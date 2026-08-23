@@ -48,7 +48,7 @@ USDT Tether (TRC20): `TD2sJbEmYa93sJhDBmTrvqmScqQSVTCfCK`
 
 [kasnria001](https://github.com/kasnria001) for decrypted xloaders and LOTS of help in general
 
-**Redminote11tech** - contributor
+**Redminote11tech** - single-handedly ported Kirin Tool to Linux
 
 ---
 
