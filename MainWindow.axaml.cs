@@ -1,0 +1,2189 @@
+// Licensed to Kethily Daniel & NDXCode under one or more agreements.
+// Kethily Daniel & NDXCode licenses this file to you under the Business Source License 1.1.
+// See the LICENSE file in the project root for more information.
+
+/*
+ * Copyright (c) 2026 Kethily Daniel & NDXCode. All rights reserved.
+ * 
+ * Use of this software is governed by the Business Source License included 
+ * in the LICENSE file and at www.mariadb.com/bsl11.
+ * 
+ * Change Date: Four years from the date each version of the Licensed Work 
+ * is first publicly distributed.
+ * 
+ * On the Change Date, in accordance with the Business Source License, 
+ * use of this software will be governed by the GNU General Public License v3.0 
+ * or later (GPL-3.0-or-later).
+ * 
+ * Contact Information: https://kirintool.cfd
+ */
+
+using Kirin_Tool.Models;
+using Kirin_Tool.Services;
+using Kirin_Tool.Services.USBUpdate;
+using Kirin_Tool.UI;
+using Kirin_Tool.Utils;
+
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using Avalonia.Controls;
+using Avalonia.Threading;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Security.Policy;
+using System.Threading;
+using System.Threading.Tasks;
+using Avalonia.Interactivity;
+
+namespace Kirin_Tool
+{
+    public partial class MainWindow : Window, INotifyPropertyChanged
+    {
+        private readonly FastbootClient _fastbootClient;
+        private readonly FastbootClient _xmlFastbootClient;
+        private readonly FirmwareUnlocker _firmwareUnlocker;
+        private readonly OemInfoService _oemInfoService;
+        private readonly Services.DialogService _dialogService;
+        private readonly FastbootFlasherService _fastbootFlasherService;
+        private readonly USBUpdateFlasherService _usbUpdateFlasherService;
+        private readonly SoftwareTestpointService _swTpService;
+        private TaskCompletionSource<bool>? _globalInteractionTcs;
+
+        public FullOtaFile BasePtableFile { get; set; } = new FullOtaFile { FileType = "BasePtable", DisplayName = "Base PTABLE" };
+        public FullOtaFile BaseUpdateFile { get; set; } = new FullOtaFile { FileType = "BaseUpdate", DisplayName = "Base UPDATE" };
+        public FullOtaFile CustPtableFile { get; set; } = new FullOtaFile { FileType = "CustPtable", DisplayName = "Cust PTABLE" };
+        public FullOtaFile CustUpdateFile { get; set; } = new FullOtaFile { FileType = "CustUpdate", DisplayName = "Cust UPDATE" };
+        public FullOtaFile PreloadPtableFile { get; set; } = new FullOtaFile { FileType = "PreloadPtable", DisplayName = "Preload PTABLE" };
+        public FullOtaFile PreloadUpdateFile { get; set; } = new FullOtaFile { FileType = "PreloadUpdate", DisplayName = "Preload UPDATE" };
+        public FullOtaFile SwTpUpdateFile { get; set; } = new FullOtaFile { FileType = "SwTpUpdate", DisplayName = "SW TP Base UPDATE" };
+        public FullOtaFile UsbUpdateFile { get; set; } = new FullOtaFile { FileType = "UsbUpdate", DisplayName = "USB Update APP" };
+
+        private bool _isUsbUpdateSelected;
+        public bool IsUsbUpdateSelected
+        {
+            get => _isUsbUpdateSelected;
+            set
+            {
+                if (_isUsbUpdateSelected == value) return;
+                _isUsbUpdateSelected = value;
+                OnPropertyChanged(nameof(IsUsbUpdateSelected));
+                OnPropertyChanged(nameof(IsFastbootUpdateSelected));
+                UpdateEditButtonsState();
+                OnPropertyChanged(nameof(FullOtaStatusMessage));
+                OnPropertyChanged(nameof(ShowFullOtaWarning));
+                OnPropertyChanged(nameof(FullOtaWarningMessage));
+                RefreshAllPartitionSelections();
+            }
+        }
+
+        private void UpdateEditButtonsState()
+        {
+            bool isFastboot = IsFastbootUpdateSelected;
+            BasePtableFile.IsEditEnabled = isFastboot && BasePtableFile.HasFile;
+            BaseUpdateFile.IsEditEnabled = isFastboot && BaseUpdateFile.HasFile;
+            CustPtableFile.IsEditEnabled = false;
+            CustUpdateFile.IsEditEnabled = isFastboot && CustUpdateFile.HasFile;
+            PreloadPtableFile.IsEditEnabled = false;
+            PreloadUpdateFile.IsEditEnabled = isFastboot && PreloadUpdateFile.HasFile;
+            SwTpUpdateFile.IsEditEnabled = isFastboot && SwTpUpdateFile.HasFile;
+            UsbUpdateFile.IsEditEnabled = isFastboot && UsbUpdateFile.HasFile;
+        }
+
+        public bool IsFastbootUpdateSelected
+        {
+            get => !IsUsbUpdateSelected;
+            set => IsUsbUpdateSelected = !value;
+        }
+
+        public bool CanStartFullOta => BasePtableFile.HasFile || BaseUpdateFile.HasFile ||
+                               CustUpdateFile.HasFile || PreloadUpdateFile.HasFile ||
+                               CustPtableFile.HasFile || PreloadPtableFile.HasFile;
+
+        public string FullOtaStatusMessage
+        {
+            get
+            {
+                if (IsUsbUpdateSelected)
+                {
+                    var selectedFiles = new[] { BasePtableFile, CustPtableFile, PreloadPtableFile, BaseUpdateFile, CustUpdateFile, PreloadUpdateFile }
+                                       .Count(f => f.HasFile);
+
+                    if (selectedFiles == 0)
+                        return "0/6 files selected. Please select at least one file to continue.";
+                    else if (selectedFiles == 6)
+                        return "6/6 files selected. Ready for complete USB update flash.";
+                    else
+                        return $"{selectedFiles}/6 files selected. Warning: Incomplete USB update flash";
+                }
+                else
+                {
+                    var selectedFiles = new[] { BasePtableFile, BaseUpdateFile, CustUpdateFile, PreloadUpdateFile }
+                                       .Count(f => f.HasFile);
+
+                    if (selectedFiles == 0)
+                        return "0/4 files selected. Please select at least one file to continue.";
+                    else if (selectedFiles == 4)
+                        return "4/4 files selected. Ready for complete OTA flash.";
+                    else
+                        return $"{selectedFiles}/4 files selected. Warning: Incomplete Full OTA flash";
+                }
+            }
+        }
+
+        public MainWindow()
+        {
+            InitializeComponent();
+
+            _dialogService = new Services.DialogService(this);
+
+            _fastbootClient = new FastbootClient();
+            _xmlFastbootClient = new FastbootClient();
+            _firmwareUnlocker = new FirmwareUnlocker();
+            _oemInfoService = new OemInfoService(_fastbootClient);
+            _fastbootFlasherService = new FastbootFlasherService(_xmlFastbootClient);
+
+            _usbUpdateFlasherService = new USBUpdateFlasherService(
+                msg => { }, 
+                "dload", 
+                async (title, message) => await ShowGlobalInteractionPromptAsync($"{title}: {message}")
+            );
+
+            _swTpService = new SoftwareTestpointService(
+                msg => { },
+                "dload",
+                _fastbootClient,
+                async (title, message) => await ShowGlobalInteractionPromptAsync($"{title}: {message}")
+            );
+
+            SetupNavigationItemHandlers();
+            SetupEventHandlers();
+            InitializeFullOta();
+
+            ShowWelcomePage();
+        }
+
+        private void InitializeFullOta()
+        {
+            this.DataContext = this;
+
+            BasePtableFile.PropertyChanged += (s, e) =>
+            {
+                OnPropertyChanged(nameof(CanStartFullOta));
+                OnPropertyChanged(nameof(ShowFullOtaWarning));
+            };
+            BaseUpdateFile.PropertyChanged += (s, e) =>
+            {
+                OnPropertyChanged(nameof(CanStartFullOta));
+                OnPropertyChanged(nameof(ShowFullOtaWarning));
+            };
+            CustUpdateFile.PropertyChanged += (s, e) =>
+            {
+                OnPropertyChanged(nameof(CanStartFullOta));
+                OnPropertyChanged(nameof(ShowFullOtaWarning));
+            };
+            PreloadUpdateFile.PropertyChanged += (s, e) =>
+            {
+                OnPropertyChanged(nameof(CanStartFullOta));
+                OnPropertyChanged(nameof(ShowFullOtaWarning));
+            };
+            UsbUpdateFile.PropertyChanged += (s, e) =>
+            {
+            };
+
+            BasePtableFile.PropertyChanged += (s, e) => OnPropertyChanged(nameof(FullOtaStatusMessage));
+            BaseUpdateFile.PropertyChanged += (s, e) => OnPropertyChanged(nameof(FullOtaStatusMessage));
+            CustPtableFile.PropertyChanged += (s, e) => OnPropertyChanged(nameof(FullOtaStatusMessage));
+            CustUpdateFile.PropertyChanged += (s, e) => OnPropertyChanged(nameof(FullOtaStatusMessage));
+            PreloadPtableFile.PropertyChanged += (s, e) => OnPropertyChanged(nameof(FullOtaStatusMessage));
+            PreloadUpdateFile.PropertyChanged += (s, e) => OnPropertyChanged(nameof(FullOtaStatusMessage));
+
+            BasePtableFile.PropertyChanged += FullOtaFile_PropertyChanged;
+            BaseUpdateFile.PropertyChanged += FullOtaFile_PropertyChanged;
+            CustPtableFile.PropertyChanged += FullOtaFile_PropertyChanged;
+            CustUpdateFile.PropertyChanged += FullOtaFile_PropertyChanged;
+            PreloadPtableFile.PropertyChanged += FullOtaFile_PropertyChanged;
+            PreloadUpdateFile.PropertyChanged += FullOtaFile_PropertyChanged;
+            SwTpUpdateFile.PropertyChanged += FullOtaFile_PropertyChanged;
+            UsbUpdateFile.PropertyChanged += FullOtaFile_PropertyChanged;
+        }
+
+        private void RefreshAllPartitionSelections()
+        {
+            var files = new[] { BasePtableFile, BaseUpdateFile, CustPtableFile, CustUpdateFile, PreloadPtableFile, PreloadUpdateFile, SwTpUpdateFile, UsbUpdateFile };
+            foreach (var file in files)
+            {
+                if (file.HasFile && File.Exists(file.FilePath))
+                {
+                    using (var updateApp = new UpdateApp(file.FilePath, IsUsbUpdateSelected))
+                    {
+                        file.AvailablePartitions = new List<PartitionInfo>(updateApp.Partitions);
+                    }
+                }
+
+                if (file.AvailablePartitions != null)
+                {
+                    file.SelectedPartitions = file.AvailablePartitions
+                        .Where(p => !IsSkipPartition(p.Name, IsUsbUpdateSelected))
+                        .ToList();
+                }
+            }
+        }
+
+        private async void DumpPartitions_Click(object sender, RoutedEventArgs e)
+        {
+            if (!await _xmlFastbootClient.IsDeviceConnected())
+            {
+                await ShowMessageBox("Device Not Found", "No device detected in fastboot mode. Please connect your device and try again.");
+                return;
+            }
+
+            try
+            {
+
+                var partitions = await _fastbootFlasherService.GetPartitionTableAsync();
+
+                if (partitions.Count == 0)
+                {
+                    await ShowMessageBox("No Partitions Found", "No partitions found on the device.");
+                    return;
+                }
+
+                var partitionSelector = new FastbootPartitionSelector(partitions);
+                partitionSelector.SkipSecureCheckBox.IsVisible = false;
+                var dialogResult = await _dialogService.ShowDialog(partitionSelector);
+
+                if (dialogResult != true && !partitionSelector.DialogResult)
+                {
+                    return;
+                }
+
+                if (partitionSelector.SelectedPartitions == null)
+                {
+                    partitionSelector.SetSelectedPartitions();
+                }
+
+                var selectedPartitions = partitionSelector.SelectedPartitions;
+
+                if (selectedPartitions == null || selectedPartitions.Count == 0)
+                {
+                    await ShowMessageBox("No Partitions Selected", "Please select at least one partition to dump.");
+                    return;
+                }
+
+                var folderDialog = new OpenFolderDialog
+                {
+                    Title = "Select Directory to Save Partitions"
+                };
+
+                var folderResult = await folderDialog.ShowAsync(this);
+                if (string.IsNullOrWhiteSpace(folderResult))
+                    return;
+
+                var saveDirectory = folderResult;
+                Directory.CreateDirectory(saveDirectory);
+
+                await DumpPartitionsProcess(selectedPartitions, saveDirectory);
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageBox("Dump Error", $"Failed to dump partitions: {ex.Message}");
+            }
+        }
+
+        private List<PartitionInfo> ConvertToPartitionInfo(List<FastbootPartition> fastbootPartitions)
+        {
+            return fastbootPartitions.Select(fp => new PartitionInfo
+            {
+                Name = fp.Name,
+                Size = 0,
+                FormattedSize = "Unknown",
+                DataOffset = 0,
+                EntryOffset = 0,
+                UpdateAppFilePath = fp.DumpPath ?? string.Empty
+            }).ToList();
+        }
+
+        private async void FlashFromXml_Click(object sender, RoutedEventArgs e)
+        {
+            if (!await _xmlFastbootClient.IsDeviceConnected())
+            {
+                await ShowMessageBox("Device Not Found", "No device detected in fastboot mode. Please connect your device and try again.");
+                return;
+            }
+
+            try
+            {
+                var openFileDialog = new OpenFileDialog
+                {
+                    Title = "Select Fastboot Configuration XML",
+                    Filters = new List<FileDialogFilter>
+                    {
+                        new FileDialogFilter { Name = "XML files", Extensions = new List<string> { "xml" } },
+                        new FileDialogFilter { Name = "All files", Extensions = new List<string> { "*" } }
+                    }
+                };
+
+                var fileResult = await openFileDialog.ShowAsync(this);
+                if (fileResult == null || fileResult.Length == 0)
+                    return;
+
+                var selectedFile = fileResult[0];
+                var partitions = _fastbootFlasherService.ParseFlashingXml(selectedFile);
+
+                if (partitions.Count == 0)
+                {
+                    await ShowMessageBox("Invalid XML", "No valid partition configurations found in the XML file.");
+                    return;
+                }
+
+                var missingFiles = partitions.Where(p => !File.Exists(p.DumpPath)).ToList();
+                if (missingFiles.Count > 0)
+                {
+                    var missingList = string.Join("\n", missingFiles.Select(p => $"- {p.DumpPath}"));
+                    await ShowMessageBox("Missing Files", $"The following image files were not found:\n\n{missingList}\n\nPlease ensure all image files are accessible from the XML's directory.");
+                    return;
+                }
+
+                var partitionSelector = new FastbootPartitionSelector(partitions);
+                var dialogResult = await _dialogService.ShowDialog(partitionSelector);
+
+                if (dialogResult != true && !partitionSelector.DialogResult)
+                {
+
+                    return;
+                }
+
+                if (partitionSelector.SelectedPartitions == null)
+                {
+                    partitionSelector.SetSelectedPartitions();
+                }
+
+                var selectedPartitions = partitionSelector.SelectedPartitions;
+
+                if (selectedPartitions == null || selectedPartitions.Count == 0)
+                {
+                    await ShowMessageBox("No Partitions Selected", "Please select at least one partition to flash.");
+                    return;
+                }
+
+                var skipSecure = partitionSelector.SkipSecurePartitions;
+                await FlashPartitionsProcess(selectedPartitions, skipSecure);
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageBox("Flash Error", $"Failed to flash partitions: {ex.Message}");
+            }
+        }
+
+        private async Task DumpPartitionsProcess(List<FastbootPartition> selectedPartitions, string dumpDirectory)
+        {
+            using var cancellationTokenSource = new CancellationTokenSource();
+
+            var partitionInfos = ConvertToPartitionInfo(selectedPartitions);
+
+            var progressDialog = new ProcessDialogUapp(partitionInfos, cancellationTokenSource);
+
+            bool dialogClosed = false;
+            progressDialog.RequestClose += (s, e) =>
+            {
+                dialogClosed = true;
+                cancellationTokenSource.Cancel();
+            };
+
+            try
+            {
+                var dialogTask = _dialogService.ShowDialog(progressDialog);
+
+                var dumpResult = await Task.Run(async () =>
+                {
+                    return await DumpPartitionsWithProgress(selectedPartitions, dumpDirectory, progressDialog, cancellationTokenSource.Token);
+                }, cancellationTokenSource.Token);
+
+                progressDialog.SetOverallComplete(dumpResult.IsSuccess, dumpResult.Message);
+
+                if (dumpResult.IsSuccess)
+                {
+                    Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        progressDialog.OverallStatusText = $"Successfully dumped all {dumpResult.SuccessCount} partitions!";
+                        progressDialog.CurrentOperationText = $"Dumping completed successfully.";
+                    });
+                }
+                else
+                {
+                    Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        progressDialog.OverallStatusText = $"Completed with {dumpResult.SuccessCount}/{dumpResult.TotalCount} successful";
+                        progressDialog.CurrentOperationText = $"Dumping completed with errors.";
+                    });
+                }
+
+                while (!dialogClosed)
+                {
+                    await Task.Delay(100);
+                    if (dialogTask.IsCompleted) break;
+                }
+
+                if (dialogClosed)
+                {
+                    cancellationTokenSource.Cancel();
+                }
+
+                try
+                {
+                    await Task.WhenAny(dialogTask, Task.Delay(1000));
+                }
+                catch (OperationCanceledException) { }
+            }
+            catch (OperationCanceledException)
+            {
+                progressDialog.SetOverallComplete(false, "Dump operation was cancelled by user");
+            }
+            catch (Exception ex)
+            {
+                progressDialog.SetOverallComplete(false, $"Dump failed: {ex.Message}");
+            }
+        }
+
+        private async Task<(bool IsSuccess, string Message, int SuccessCount, int TotalCount)> DumpPartitionsWithProgress(
+        List<FastbootPartition> selectedPartitions,
+        string dumpDirectory,
+        ProcessDialogUapp progressDialog,
+        CancellationToken cancellationToken)
+        {
+            int successCount = 0;
+            int totalCount = selectedPartitions.Count;
+            string lastError = string.Empty;
+            var dumpedPartitions = new List<FastbootPartition>();
+
+            try
+            {
+                var fastbootImageDir = Path.Combine(dumpDirectory, "fastbootimage");
+                if (!Directory.Exists(fastbootImageDir))
+                {
+                    Directory.CreateDirectory(fastbootImageDir);
+                }
+
+                for (int i = 0; i < selectedPartitions.Count; i++)
+                {
+                    var partition = selectedPartitions[i];
+
+                    try
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        progressDialog.UpdateCurrentPartition(partition.Name, "Dumping...", 50);
+
+                        Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            progressDialog.CurrentOperationText = $"Dumping {partition.Name}...";
+                        });
+
+                        var dumpPath = Path.Combine(fastbootImageDir, partition.ImageFileName);
+                        var result = await _fastbootFlasherService.DumpPartitionAsync(partition.Identifier, dumpPath);
+
+                        if (result.IsSuccess && File.Exists(dumpPath))
+                        {
+                            progressDialog.CompletePartition(partition.Name, true);
+                            partition.DumpPath = dumpPath;
+                            dumpedPartitions.Add(partition);
+                            successCount++;
+                        }
+                        else
+                        {
+                            progressDialog.CompletePartition(partition.Name, false, "Dump failed");
+                            lastError = result.Message;
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        progressDialog.CompletePartition(partition.Name, false, "Cancelled");
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        progressDialog.CompletePartition(partition.Name, false, ex.Message);
+                        lastError = ex.Message;
+                    }
+                }
+
+                if (dumpedPartitions.Count > 0)
+                {
+                    var xmlPath = Path.Combine(dumpDirectory, "flash.xml");
+                    _fastbootFlasherService.GenerateFlashingXml(dumpedPartitions, xmlPath);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return (false, "Dump operation was cancelled by user", successCount, totalCount);
+            }
+
+            bool allSuccessful = successCount == totalCount;
+            string message = allSuccessful
+                ? $"Successfully dumped all {totalCount} partitions to fastbootimage directory!"
+                : $"Dump completed with {successCount}/{totalCount} successful.";
+
+            return (allSuccessful, message, successCount, totalCount);
+        }
+
+        private async Task FlashPartitionsProcess(List<FastbootPartition> selectedPartitions, bool skipSecure = false)
+        {
+
+            var partitionInfos = ConvertToPartitionInfo(selectedPartitions);
+
+            using var cancellationTokenSource = new CancellationTokenSource();
+            var progressDialog = new ProcessDialogUapp(partitionInfos, cancellationTokenSource);
+
+            bool dialogClosed = false;
+            progressDialog.RequestClose += (s, e) =>
+            {
+                dialogClosed = true;
+                cancellationTokenSource.Cancel();
+            };
+
+            try
+            {
+                var dialogTask = _dialogService.ShowDialog(progressDialog);
+
+                var flashResult = await Task.Run(async () =>
+                {
+                    return await FlashPartitionsWithProgress(selectedPartitions, progressDialog, cancellationTokenSource.Token, skipSecure);
+                }, cancellationTokenSource.Token);
+
+                progressDialog.SetOverallComplete(flashResult.IsSuccess, flashResult.Message);
+
+                while (!dialogClosed)
+                {
+                    await Task.Delay(100);
+                    if (dialogTask.IsCompleted) break;
+                }
+
+                if (dialogClosed)
+                {
+                    cancellationTokenSource.Cancel();
+                }
+
+                try
+                {
+                    await Task.WhenAny(dialogTask, Task.Delay(1000));
+                }
+                catch (OperationCanceledException) { }
+            }
+            catch (OperationCanceledException)
+            {
+                progressDialog.SetOverallComplete(false, "Flash operation was cancelled by user");
+            }
+            catch (Exception ex)
+            {
+                progressDialog.SetOverallComplete(false, $"Flash failed: {ex.Message}");
+            }
+        }
+
+        private async Task<(bool IsSuccess, string Message)> FlashPartitionsWithProgress(
+        List<FastbootPartition> selectedPartitions,
+        ProcessDialogUapp progressDialog,
+        CancellationToken cancellationToken,
+        bool skipSecure = false)
+        {
+            int successCount = 0;
+            int totalCount = selectedPartitions.Count;
+            string lastError = string.Empty;
+
+            try
+            {
+
+                for (int i = 0; i < selectedPartitions.Count; i++)
+                {
+                    var partition = selectedPartitions[i];
+
+                    if (skipSecure && IsSecurePartition(partition.Name, partition.Identifier))
+                    {
+                        progressDialog.CompletePartition(partition.Name, true, "Skipped");
+                        successCount++;
+                        continue;
+                    }
+
+                    try
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        progressDialog.UpdateCurrentPartition(partition.Name, "Flashing...", 50);
+
+                        Dispatcher.UIThread.InvokeAsync(() =>
+                        {
+                            progressDialog.CurrentOperationText = $"Flashing {partition.Name}...";
+                        });
+
+                        var result = await _fastbootFlasherService.FlashPartitionAsync(partition.Identifier, partition.DumpPath);
+
+                        if (result.IsSuccess)
+                        {
+                            progressDialog.CompletePartition(partition.Name, true);
+                            successCount++;
+                        }
+                        else
+                        {
+                            progressDialog.CompletePartition(partition.Name, false, "Flash failed");
+                            lastError = result.Message;
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        progressDialog.CompletePartition(partition.Name, false, "Cancelled");
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        progressDialog.CompletePartition(partition.Name, false, ex.Message);
+                        lastError = ex.Message;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return (false, "Flash operation was cancelled by user");
+            }
+
+            bool allSuccessful = successCount == totalCount;
+            string message = allSuccessful
+                ? $"Successfully flashed all {totalCount} partitions!"
+                : $"Flash completed with {successCount}/{totalCount} successful.";
+
+            return (allSuccessful, message);
+        }
+
+        public bool ShowFullOtaWarning
+        {
+            get
+            {
+                var selectedFiles = IsUsbUpdateSelected
+                    ? new[] { BasePtableFile, CustPtableFile, PreloadPtableFile, BaseUpdateFile, CustUpdateFile, PreloadUpdateFile }.Count(f => f.HasFile)
+                    : new[] { BasePtableFile, BaseUpdateFile, CustUpdateFile, PreloadUpdateFile }.Count(f => f.HasFile);
+
+                int maxFiles = IsUsbUpdateSelected ? 6 : 4;
+                return selectedFiles > 0 && selectedFiles < maxFiles;
+            }
+        }
+
+        public string FullOtaWarningMessage
+        {
+            get
+            {
+                int maxFiles = IsUsbUpdateSelected ? 6 : 4;
+                return $"Not all {maxFiles} files are selected. This may result in incomplete firmware flashing.";
+            }
+        }
+
+        private async void FullOtaFile_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(FullOtaFile.FilePath) && sender is FullOtaFile otaFile && !string.IsNullOrEmpty(otaFile.FilePath))
+            {
+                try
+                {
+                    await Task.Run(() =>
+                    {
+                        using var updateApp = new UpdateApp(otaFile.FilePath, IsUsbUpdateSelected);
+                        otaFile.AvailablePartitions = new List<PartitionInfo>(updateApp.Partitions);
+
+                        otaFile.SelectedPartitions = updateApp.Partitions
+                            .Where(p => !IsSkipPartition(p.Name, IsUsbUpdateSelected))
+                            .ToList();
+                    });
+                }
+                catch (Exception ex)
+                {
+                    await ShowMessageBox("Parse Error", $"Failed to parse {otaFile.DisplayName}: {ex.Message}");
+                    otaFile.FilePath = null;
+                }
+            }
+        }
+
+        private void SetupNavigationItemHandlers()
+        {
+            NavigationListBox.SelectionChanged += (s, e) =>
+            {
+                if (NavigationListBox.SelectedItem is ListBoxItem item)
+                {
+                    HandleNavigation(item.Content?.ToString() switch
+                    {
+                        "Welcome" => "Welcome",
+                        "Device Information" => "DeviceInfo",
+                        "VCOM Operations" => "Vcom",
+                        "Flash Operations" => "Flash",
+                        "Security Tools" => "Security",
+                        "OEMInfo Tools" => "OEMInfo",
+                        "NVMe Tools" => "NVMe",
+                        "About" => "About",
+                        _ => "Welcome"
+                    });
+                }
+            };
+        }
+
+        private void SetupEventHandlers()
+        {
+            TogLivePull.Checked += TogLivePull_Toggled;
+            TogLivePull.Unchecked += TogLivePull_Toggled;
+            CpuComboBox.SelectionChanged += CpuComboBox_SelectionChanged;
+
+            
+        }
+
+        private void HandleNavigation(string pageName)
+        {
+            HideAllPages();
+            switch (pageName)
+            {
+                case "Welcome": ShowWelcomePage(); break;
+                case "DeviceInfo": ShowDeviceInfoPage(); break;
+                case "Vcom": ShowVcomPage(); break;
+                case "Flash": ShowFlashPage(); break;
+                case "Security": ShowSecurityPage(); break;
+                case "OEMInfo": ShowOEMInfoPage(); break;
+                case "NVMe": ShowNVMePage(); break;
+                case "About": ShowAboutPage(); break;
+            }
+        }
+        private void ShowWelcomePage() => WelcomePage.IsVisible = true;
+        private void ShowDeviceInfoPage() => DeviceInfoPage.IsVisible = true;
+        private void ShowVcomPage() => VcomPage.IsVisible = true;
+        private void ShowFlashPage() => FlashPage.IsVisible = true;
+        private void ShowSecurityPage()
+        {
+            SecurityPage.IsVisible = true;
+            UpdateSecurityUI();
+        }
+        private void ShowOEMInfoPage()
+        {
+            OEMInfoPage.IsVisible = true;
+            UpdateOemInfoUI();
+        }
+        private void ShowNVMePage() => NVMePage.IsVisible = true;
+        private void ShowAboutPage() => AboutPage.IsVisible = true;
+        private void HideAllPages()
+        {
+            WelcomePage.IsVisible = false;
+            DeviceInfoPage.IsVisible = false;
+            VcomPage.IsVisible = false;
+            FlashPage.IsVisible = false;
+            SecurityPage.IsVisible = false;
+            OEMInfoPage.IsVisible = false;
+            NVMePage.IsVisible = false;
+            AboutPage.IsVisible = false;
+        }
+
+        private async void BrowseOtaFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.Tag is not string fileType)
+                return;
+
+            var openFileDialog = new OpenFileDialog
+            {
+                Title = $"Select {GetFileDisplayName(fileType)} File",
+                Filters = new List<FileDialogFilter>
+                {
+                    new FileDialogFilter { Name = "APP files", Extensions = new List<string> { "APP" } },
+                    new FileDialogFilter { Name = "All files", Extensions = new List<string> { "*" } }
+                }
+            };
+
+            var fileResult = await openFileDialog.ShowAsync(this);
+            if (fileResult != null && fileResult.Length > 0)
+            {
+                GetOtaFileByType(fileType).FilePath = fileResult[0];
+                UpdateEditButtonsState();
+            }
+        }
+
+        private async void EditOtaFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.Tag is not string fileType)
+                return;
+
+            var otaFile = GetOtaFileByType(fileType);
+            if (!otaFile.HasFile) return;
+
+            try
+            {
+                var partitionDialog = new PartitionSelectorDialog(otaFile.AvailablePartitions);
+
+                foreach (var partition in partitionDialog.Partitions)
+                {
+                    partition.IsSelected = otaFile.SelectedPartitions.Any(sp => sp.Name == partition.Name);
+                }
+
+                await _dialogService.ShowDialog(partitionDialog);
+
+                if (partitionDialog.DialogResult)
+                {
+                    partitionDialog.SetSelectedPartitions();
+                    otaFile.SelectedPartitions = partitionDialog.SelectedPartitions;
+                }
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageBox("Edit Error", $"Failed to edit partitions for {otaFile.DisplayName}: {ex.Message}");
+            }
+        }
+
+        private void ClearOtaFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.Tag is not string fileType)
+                return;
+
+            var otaFile = GetOtaFileByType(fileType);
+            otaFile.FilePath = null;
+            otaFile.AvailablePartitions = new List<PartitionInfo>();
+            otaFile.SelectedPartitions = new List<PartitionInfo>();
+            UpdateEditButtonsState();
+        }
+
+        private async void StartFullOtaButton_Click(object sender, RoutedEventArgs e)
+        {
+            string cpu = GetSelectedCpu();
+            if (!FirmwareUnlocker.CpuAddresses.ContainsKey(cpu))
+            {
+                await ShowMessageBox("No CPU Selected", "Please select a supported CPU model first.");
+                return;
+            }
+
+            var otaFileSet = IsUsbUpdateSelected
+                ? new[] { BasePtableFile, CustPtableFile, PreloadPtableFile, BaseUpdateFile, CustUpdateFile, PreloadUpdateFile }
+                : new[] { BasePtableFile, BaseUpdateFile, CustUpdateFile, PreloadUpdateFile };
+            var selectedFiles = otaFileSet.Count(f => f.HasFile);
+
+            if (selectedFiles == 0)
+            {
+                await ShowMessageBox("No Files Selected", "Please select at least one UPDATE.APP file before starting the flash.");
+                return;
+            }
+
+            if (selectedFiles < otaFileSet.Length)
+            {
+                var missingFiles = new List<string>();
+                foreach (var f in otaFileSet.Where(f => !f.HasFile))
+                {
+                    missingFiles.Add(f.DisplayName);
+                }
+
+                var warningMessage = $"Warning: You have only selected {selectedFiles}/{otaFileSet.Length} files.\n\n" +
+                                   $"Missing file(s): {string.Join(", ", missingFiles)}\n\n" +
+                                   "By loading unlocked fastboot on this device, you will permanently increment ARB, \nmeaning you cannot install any operating system older than HarmonyOS 2. \n\n" +
+                                   "Are you absolutely sure you want to continue?";
+
+                var warningResult = await _dialogService.ShowConfirmDialog("Incomplete Flash Warning", warningMessage, "Continue Anyway", "Cancel");
+
+                if (warningResult != true)
+                {
+                    return;
+                }
+            }
+
+            var progressItems = new ObservableCollection<ProgressItemViewModel>(
+                FirmwareUnlocker.CpuAddresses[cpu].Select(p => new ProgressItemViewModel { FileName = p.Name, StatusText = "Pending" })
+            );
+            var dialog = new ProgressDialog(progressItems);
+            var overallProgress = new Progress<string>(status => dialog.UpdateOverallStatus(status));
+
+            var interactionHandler = new Func<string, Task<bool>>(async message =>
+            {
+                return await ShowGlobalInteractionPromptAsync(message);
+            });
+
+            bool useFastFlashLoader = cpu == "hisi980" && UseFastFlashLoaderSwitch.IsChecked == true;
+
+            var dialogShowTask = _dialogService.ShowDialog(dialog);
+            var unlockResult = await _firmwareUnlocker.UnlockFastboot(cpu, progressItems, overallProgress, interactionHandler, useFastFlashLoader);
+
+            dialog.ShowCloseButton(unlockResult.IsSuccess, unlockResult.IsSuccess ? "Unlock Complete" : "Unlock Failed");
+            await dialogShowTask;
+        }
+
+        private async void OperationButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not Button button || button.Tag is not string operation)
+                return;
+
+            switch (operation)
+            {
+                case "unlock-fastboot":
+                    await HandleUnlockFastboot();
+                    break;
+
+                case "sw-testpoint-enter":
+                    await HandleSwTestpointEnter();
+                    break;
+
+                case "sw-testpoint-exit":
+                    await HandleSwTestpointExit();
+                    break;
+
+                case "enable-downgrade":
+                    await HandleEnableDowngrade();
+                    break;
+
+                case "reboot-usb-update":
+                    await HandleRebootToUsbUpdate();
+                    break;
+
+                case "frp-remove":
+                    await HandleFrpRemove();
+                    break;
+
+                case "unlock-bootloader":
+                    await HandleUnlockBootloader();
+                    break;
+
+                case "read-sn":
+                    await HandleReadSn();
+                    break;
+
+                case "write-sn":
+                    await HandleWriteSn();
+                    break;
+
+                default:
+                    await ShowMessageBox("Unknown Operation", $"Unknown operation: {operation}");
+                    break;
+            }
+        }
+
+        private async Task HandleReadSn()
+        {
+            if (!await _fastbootClient.IsDeviceConnected())
+            {
+                await ShowMessageBox("Device Not Found", "No device detected in fastboot mode.");
+                return;
+            }
+
+            var result = await _fastbootClient.ReadNveVariable("SN");
+            if (!string.IsNullOrWhiteSpace(result))
+            {
+                await ShowMessageBox("Serial Number", $"Device Serial Number: {result}");
+            }
+            else
+            {
+                await ShowMessageBox("Failed", "Failed to read serial number.");
+            }
+        }
+
+        private async Task HandleWriteSn()
+        {
+            if (!await _fastbootClient.IsDeviceConnected())
+            {
+                await ShowMessageBox("Device Not Found", "No device detected in fastboot mode.");
+                return;
+            }
+
+            await ShowMessageBox("Not Implemented",
+                "Writing serial number requires text input. This feature needs an input dialog.");
+        }
+
+        private async Task HandleUnlockFastboot()
+        {
+            string cpu = GetSelectedCpu();
+            if (cpu == null)
+            {
+                await ShowMessageBox("No CPU Selected", "Please select a CPU model first.");
+                return;
+            }
+            if (!FirmwareUnlocker.CpuAddresses.ContainsKey(cpu))
+            {
+                await ShowMessageBox("Unsupported CPU", $"CPU '{cpu}' does not support fastboot unlock.");
+                return;
+            }
+
+            var progressItems = new ObservableCollection<ProgressItemViewModel>(
+                FirmwareUnlocker.CpuAddresses[cpu].Select(p => new ProgressItemViewModel { FileName = p.Name, StatusText = "Pending" })
+            );
+            var dialog = new ProgressDialog(progressItems);
+            var overallProgress = new Progress<string>(status => dialog.UpdateOverallStatus(status));
+
+            var interactionHandler = new Func<string, Task<bool>>(async message =>
+            {
+                return await ShowGlobalInteractionPromptAsync(message);
+            });
+
+            bool useFastFlashLoader = cpu == "hisi980" && UseFastFlashLoaderSwitch.IsChecked == true;
+
+            var dialogShowTask = _dialogService.ShowDialog(dialog);
+            var unlockResult = await _firmwareUnlocker.UnlockFastboot(cpu, progressItems, overallProgress, interactionHandler, useFastFlashLoader);
+
+            dialog.ShowCloseButton(unlockResult.IsSuccess, unlockResult.IsSuccess ? "Unlock Complete" : "Unlock Failed");
+            await dialogShowTask;
+        }
+
+        private async Task HandleSwTestpointEnter()
+        {
+            string filePath = SwTpUpdateFile.FilePath;
+            if (string.IsNullOrEmpty(filePath))
+            {
+                await ShowMessageBox("File Required", "Please select a Base UPDATE.APP file first.");
+                return;
+            }
+
+            await _swTpService.EnterSoftwareTestpoint(filePath);
+        }
+
+        private async Task HandleSwTestpointExit()
+        {
+            string filePath = SwTpUpdateFile.FilePath;
+            if (string.IsNullOrEmpty(filePath))
+            {
+                await ShowMessageBox("File Required", "Please select a Base UPDATE.APP file first.");
+                return;
+            }
+
+            await _swTpService.ExitSoftwareTestpoint(filePath);
+        }
+
+
+        private async Task<(bool IsSuccess, string Message)> FlashPartitionsWithProgress(List<PartitionInfo> selectedPartitions, ProcessDialogUapp progressDialog, CancellationToken cancellationToken)
+        {
+            var partitionsToFlash = selectedPartitions
+                .Where(p => !IsSkipPartition(p.Name))
+                .ToList();
+
+            var skippedPartitions = selectedPartitions.Where(p => IsSkipPartition(p.Name)).ToList();
+            foreach (var skipped in skippedPartitions)
+            {
+            }
+
+            if (partitionsToFlash.Count == 0)
+            {
+                return (false, "All selected partitions were marked as 'skip' - nothing to flash.");
+            }
+
+            int successCount = 0;
+            int totalCount = partitionsToFlash.Count;
+            string lastError = string.Empty;
+            string tempDirectory = null;
+
+            try
+            {
+                var updateAppPath = partitionsToFlash.First().UpdateAppFilePath;
+                var updateAppDirectory = Path.GetDirectoryName(updateAppPath) ?? Directory.GetCurrentDirectory();
+                tempDirectory = Path.Combine(updateAppDirectory, $"temp_flash_{DateTime.Now:yyyyMMdd_HHmmss}");
+
+                if (!Directory.Exists(tempDirectory))
+                {
+                    Directory.CreateDirectory(tempDirectory);
+                }
+
+                for (int i = 0; i < partitionsToFlash.Count; i++)
+                {
+                    var partition = partitionsToFlash[i];
+                    string tempFilePath = null;
+
+                    try
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        progressDialog.UpdateCurrentPartition(partition.Name, "Extracting...", 25);
+
+                        tempFilePath = Path.Combine(tempDirectory, $"{partition.Name}.img");
+                        await ExtractPartitionToTempDirectoryWithCancellation(partition, tempFilePath, cancellationToken);
+
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        progressDialog.UpdateCurrentPartition(partition.Name, "Flashing...", 75);
+
+                        string flashPartitionName = partition.Name.Equals("efi", StringComparison.OrdinalIgnoreCase) ? "ptable" : partition.Name;
+                        var flashResult = await _fastbootClient.FlashPartition(flashPartitionName, tempFilePath);
+
+                        if (flashResult.IsSuccess)
+                        {
+                            progressDialog.CompletePartition(partition.Name, true);
+                            successCount++;
+                        }
+                        else
+                        {
+                            progressDialog.CompletePartition(partition.Name, false, "Flash failed");
+                            lastError = flashResult.Output;
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        progressDialog.CompletePartition(partition.Name, false, "Cancelled");
+
+                        if (tempFilePath != null && File.Exists(tempFilePath))
+                        {
+                            try
+                            {
+                                File.Delete(tempFilePath);
+                            }
+                            catch (Exception ex)
+                            {
+                            }
+                        }
+
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        progressDialog.CompletePartition(partition.Name, false, ex.Message);
+                        lastError = ex.Message;
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                return (false, "Operation was cancelled by user");
+            }
+            finally
+            {
+                if (tempDirectory != null && Directory.Exists(tempDirectory))
+                {
+                    try
+                    {
+                        Directory.Delete(tempDirectory, true);
+                    }
+                    catch (Exception ex)
+                    {
+                        try
+                        {
+                            var files = Directory.GetFiles(tempDirectory);
+                            foreach (var file in files)
+                            {
+                                File.Delete(file);
+                            }
+
+                            Directory.Delete(tempDirectory);
+                        }
+                        catch (Exception ex2)
+                        {
+                        }
+                    }
+                }
+            }
+
+            bool allSuccessful = successCount == totalCount;
+            string message = allSuccessful
+                ? $"Successfully flashed all {totalCount} partitions!"
+                : $"Completed {successCount}/{totalCount} partitions.";
+
+            return (allSuccessful, message);
+        }
+
+        private async Task ExtractPartitionToTempDirectoryWithCancellation(PartitionInfo partition, string outputPath, CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var inputStream = new FileStream(partition.UpdateAppFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var outputStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
+
+                inputStream.Seek(partition.DataOffset, SeekOrigin.Begin);
+
+                const int bufferSize = 65536;
+                var buffer = new byte[bufferSize];
+                long totalRead = 0;
+
+                while (totalRead < partition.Size)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    int toRead = (int)Math.Min(bufferSize, partition.Size - totalRead);
+                    int bytesRead = await inputStream.ReadAsync(buffer, 0, toRead, cancellationToken);
+
+                    if (bytesRead == 0)
+                        throw new EndOfStreamException($"Unexpected end of file while extracting {partition.Name}");
+
+                    await outputStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+                    totalRead += bytesRead;
+
+                    if (totalRead % (bufferSize * 10) == 0)
+                    {
+                        double extractionProgress = (double)totalRead / partition.Size * 50;
+                    }
+                }
+
+                await outputStream.FlushAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                if (File.Exists(outputPath))
+                {
+                    try
+                    {
+                        File.Delete(outputPath);
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                }
+
+                throw;
+            }
+            catch (Exception ex)
+            {
+                if (File.Exists(outputPath))
+                {
+                    try
+                    {
+                        File.Delete(outputPath);
+                    }
+                    catch { }
+                }
+
+                throw new InvalidOperationException($"Failed to extract partition data for {partition.Name}: {ex.Message}", ex);
+            }
+        }
+
+        private async Task ExtractPartitionToTempDirectory(PartitionInfo partition, string outputPath)
+        {
+            try
+            {
+                using var inputStream = new FileStream(partition.UpdateAppFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                using var outputStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
+
+                inputStream.Seek(partition.DataOffset, SeekOrigin.Begin);
+
+                const int bufferSize = 65536;
+                var buffer = new byte[bufferSize];
+                long totalRead = 0;
+
+                while (totalRead < partition.Size)
+                {
+                    int toRead = (int)Math.Min(bufferSize, partition.Size - totalRead);
+                    int bytesRead = await inputStream.ReadAsync(buffer, 0, toRead);
+
+                    if (bytesRead == 0)
+                        throw new EndOfStreamException($"Unexpected end of file while extracting {partition.Name}");
+
+                    await outputStream.WriteAsync(buffer, 0, bytesRead);
+                    totalRead += bytesRead;
+                }
+
+                await outputStream.FlushAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to extract partition data for {partition.Name}: {ex.Message}", ex);
+            }
+        }
+
+        private bool IsSkipPartition(string partitionName, bool isUsbMode = false)
+        {
+            if (isUsbMode) return false;
+
+            if (string.IsNullOrWhiteSpace(partitionName))
+                return true;
+
+            var skipPartitions = new List<string>
+            {
+                "sha256rsa", "crc", "curver", "verlist", "package_type",
+                "base_verlist", "base_ver", "ptable_cust", "cust_verlist",
+                "cust_ver", "preload_verlist", "preload_ver", "ptable_preload"
+            };
+
+            string lowerName = partitionName.ToLowerInvariant();
+            return skipPartitions.Any(skip => lowerName.Contains(skip));
+        }
+
+        private bool IsSecurePartition(string name, string identifier)
+        {
+            var securePartitions = new[] { "modem_secure", "oeminfo", "nvme", "nvm", "modemst1", "modemst2", "fsg", "persist" };
+            return securePartitions.Any(p => 
+                (name != null && name.Equals(p, StringComparison.OrdinalIgnoreCase)) ||
+                (identifier != null && identifier.Equals(p, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        private async Task HandleFrpRemove()
+        {
+            var frpDialog = new FrpStepDialog();
+            var dialogTask = _dialogService.ShowDialog(frpDialog);
+
+            frpDialog.UpdateOverallStatus("Starting FRP Lock removal...");
+
+            var frpResult = await _fastbootClient.EraseFrpWithSteps();
+
+            await Task.Delay(500);
+            frpDialog.UpdateStepStatus(1, frpResult.Step1Success);
+            frpDialog.UpdateOverallStatus("Step 1 completed!");
+
+            await Task.Delay(500);
+            frpDialog.UpdateStepStatus(2, frpResult.Step2Success);
+            frpDialog.UpdateOverallStatus("Step 2 completed!");
+
+            await Task.Delay(500);
+            frpDialog.UpdateStepStatus(3, frpResult.Step3Success);
+
+            string finalStatus;
+            if (frpResult.AllStepsFailed)
+            {
+                finalStatus = "FRP Lock removal failed!";
+            }
+            else if (frpResult.SuccessfulStepsCount == 3)
+            {
+                finalStatus = "FRP Lock removal completed successfully!";
+            }
+            else
+            {
+                finalStatus = $"FRP Lock removal partially completed ({frpResult.SuccessfulStepsCount}/3 steps succeeded).";
+            }
+
+            frpDialog.UpdateOverallStatus(finalStatus);
+            frpDialog.ShowCloseButton(frpResult.OverallSuccess);
+
+            await dialogTask;
+        }
+
+        private async Task HandleEnableDowngrade()
+        {
+            var downgradeDialog = new EnableDowngradeStepDialog();
+            var dialogTask = _dialogService.ShowDialog(downgradeDialog);
+
+            downgradeDialog.UpdateOverallStatus("Starting Enable Downgrade...");
+
+            var result = await _fastbootClient.EnableDowngradeWithSteps();
+
+            await Task.Delay(500);
+            downgradeDialog.UpdateStepStatus(1, result.Step1Success);
+            downgradeDialog.UpdateOverallStatus("Step 1 " + (result.Step1Success ? "Completed" : "Failed"));
+
+            await Task.Delay(500);
+            downgradeDialog.UpdateStepStatus(2, result.Step2Success);
+            downgradeDialog.UpdateOverallStatus("Step 2 " + (result.Step2Success ? "Completed" : "Failed"));
+
+            await Task.Delay(500);
+            downgradeDialog.UpdateStepStatus(3, result.Step3Success);
+            downgradeDialog.UpdateOverallStatus("Step 3 " + (result.Step3Success ? "Completed" : "Failed"));
+
+            await Task.Delay(500);
+            downgradeDialog.UpdateStepStatus(4, result.Step4Success);
+            downgradeDialog.UpdateOverallStatus("Step 4 " + (result.Step4Success ? "Completed" : "Failed"));
+
+            string finalStatus;
+            if (result.AllStepsFailed)
+            {
+                finalStatus = "Failed to enable downgrade!";
+            }
+            else if (result.SuccessfulStepsCount == 4)
+            {
+                finalStatus = "Downgrade enabled successfully!";
+            }
+            else
+            {
+                finalStatus = "Failed to enable downgrade!";
+            }
+
+            downgradeDialog.UpdateOverallStatus(finalStatus);
+            downgradeDialog.ShowCloseButton(result.OverallSuccess);
+
+            await dialogTask;
+        }
+
+        private async Task HandleRebootToUsbUpdate()
+        {
+            using var cancellationTokenSource = new CancellationTokenSource();
+            if (!UsbUpdateFile.HasFile)
+            {
+                await ShowMessageBox("File Required", "Please select a Base UPDATE.APP file first.");
+                return;
+            }
+
+            if (!await _fastbootClient.IsDeviceConnected())
+            {
+                await ShowMessageBox("Device Not Found", "No device detected in fastboot mode. Please connect your device and try again.");
+                return;
+            }
+
+            string lockOutput = await _fastbootClient.OemCommandAsync("lock-state info");
+            string fbLockState = ParseOemLine(lockOutput, "FB LockState:", "Unknown");
+
+            var rescuePartitions = new List<string> { "ERECOVERY_KERNEL", "ERECOVERY_RAMDISK", "ERECOVERY_VENDOR" };
+            var partitionInfos = rescuePartitions.Select(p => new PartitionInfo { Name = p, Size = 0, FormattedSize = "" }).ToList();
+            var progressDialog = new ProcessDialogUapp(partitionInfos, cancellationTokenSource);
+            progressDialog.Title = "Reboot to USB Update Progress";
+
+            bool dialogClosed = false;
+            progressDialog.RequestClose += (s, e) =>
+            {
+                dialogClosed = true;
+                cancellationTokenSource.Cancel();
+            };
+
+            bool isFbUnlocked = fbLockState.ToUpper().Contains("UNLOCKED");
+            Task dialogTask = null;
+
+            if (isFbUnlocked)
+            {
+                dialogTask = _dialogService.ShowNonModalDialog(progressDialog);
+                progressDialog.UpdateCurrentOperation("Rebooting to bootloader...");
+                await _fastbootClient.RebootBootloaderAsync();
+
+                bool deviceReappeared = false;
+                for (int i = 0; i < 30; i++)
+                {
+                    await Task.Delay(1000);
+                    if (await _fastbootClient.IsDeviceConnected())
+                    {
+                        deviceReappeared = true;
+                        break;
+                    }
+                }
+
+                if (!deviceReappeared)
+                {
+                    await ShowMessageBox("Timeout", "Device did not reappear in fastboot mode after reboot.");
+                    return;
+                }
+            }
+
+            string tempDir = Path.Combine(Path.GetTempPath(), $"kirintool_usb_update_{Guid.NewGuid()}");
+            Directory.CreateDirectory(tempDir);
+
+            try
+            {
+                dialogTask ??= _dialogService.ShowNonModalDialog(progressDialog);
+
+                bool allSuccess = true;
+                string baseUpdatePath = UsbUpdateFile.FilePath;
+
+                using (var updateApp = new UpdateApp(baseUpdatePath))
+                {
+                    for (int i = 0; i < rescuePartitions.Count; i++)
+                    {
+                        string pName = rescuePartitions[i];
+                        var pInfo = updateApp.Partitions.FirstOrDefault(p => p.Name.Equals(pName, StringComparison.OrdinalIgnoreCase));
+
+                        if (pInfo == null)
+                        {
+                            progressDialog.CompletePartitionByIndex(i, false, "Not found in UPDATE.APP");
+                            allSuccess = false;
+                            continue;
+                        }
+
+                        progressDialog.UpdateCurrentPartitionByIndex(i, "Extracting...", 30);
+                        string imgPath = Path.Combine(tempDir, $"{pName}.img");
+                        await updateApp.ExtractPartition(pInfo, imgPath);
+
+                        progressDialog.UpdateCurrentPartitionByIndex(i, "Flashing...", 70);
+                        string flashCmd = (pName.ToLower()) switch
+                        {
+                            "erecovery_kernel" => "rescue_recovery_kernel",
+                            "erecovery_ramdisk" => "rescue_recovery_ramdisk",
+                            "erecovery_vendor" => "rescue_recovery_vendor",
+                            _ => pName.ToLower()
+                        };
+
+                        var flashResult = await _fastbootClient.FlashPartition(flashCmd, imgPath);
+                        if (flashResult.IsSuccess)
+                        {
+                            progressDialog.CompletePartitionByIndex(i, true);
+                        }
+                        else
+                        {
+                            progressDialog.CompletePartitionByIndex(i, false, "Flash failed");
+                            allSuccess = false;
+                        }
+                    }
+                }
+
+                if (allSuccess)
+                {
+                    progressDialog.UpdateCurrentOperation("Rebooting to USB Update mode...");
+                    await _fastbootClient.GetVarAsync("rescue_ugs_port");
+                    var finalResult = await _fastbootClient.GetVarAsync("rescue_enter_recovery");
+
+                    if (!string.IsNullOrEmpty(finalResult) && 
+                        (finalResult.ToUpper().Contains("OKAY") || 
+                         finalResult.ToUpper().Contains("SUCCESS") || 
+                         finalResult.Contains("This is sec phone!!") || 
+                         finalResult.Contains("start to hisuite")))
+                    {
+                        progressDialog.SetOverallComplete(true, "Rebooted to USB Update mode successfully!");
+                    }
+                    else
+                    {
+                        progressDialog.SetOverallComplete(false, $"Flash successful, but failed to enter USB Update mode.");
+                    }
+                }
+                else
+                {
+                    progressDialog.SetOverallComplete(false, "Failed to prepare or flash rescue partitions.");
+                }
+
+                while (!dialogClosed)
+                {
+                    await Task.Delay(100);
+                    if (dialogTask.IsCompleted) break;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                progressDialog.SetOverallComplete(false, "Operation cancelled by user.");
+            }
+            catch (Exception ex)
+            {
+                progressDialog.SetOverallComplete(false, $"Error: {ex.Message}");
+            }
+            finally
+            {
+                try { if (Directory.Exists(tempDir)) Directory.Delete(tempDir, true); } catch { }
+            }
+        }
+
+        private async Task HandleReadSerialNumber()
+        {
+            var sn = await _fastbootClient.ReadNveVariable("SN");
+            CurrentSerialDisplay.Text = string.IsNullOrEmpty(sn) ? "Could not read Serial Number." : sn;
+        }
+
+        private async Task HandleWriteSerialNumber()
+        {
+            var newSn = NewSerialInput.Text.Trim();
+            if (string.IsNullOrWhiteSpace(newSn))
+            {
+                await ShowMessageBox("Input Error", "New Serial Number cannot be empty.");
+                return;
+            }
+
+            var writeResult = await _fastbootClient.WriteNveVariable("SN", newSn);
+            await ShowMessageBox(
+                writeResult.IsSuccess ? "Success" : "Error",
+                writeResult.IsSuccess ? "Successfully rewrote the device's serial number!" : "Failed to rewrite the device's serial number!"
+            );
+        }
+
+        private async Task HandleUnlockBootloader()
+        {
+            if (!await _fastbootClient.IsDeviceConnected())
+            {
+                await ShowMessageBox("Device Not Found", "No device detected in fastboot mode. Please connect your device and try again.");
+                return;
+            }
+
+            try
+            {
+                string fullOutput = string.Empty;
+                bool alreadyUnlocked = false;
+                var outputLock = new object();
+                TaskCompletionSource<bool> alreadyUnlockedDetected = new TaskCompletionSource<bool>();
+
+                var progress = new Progress<string>(output =>
+                {
+                    lock (outputLock)
+                    {
+                        fullOutput = output;
+                        
+                        string lowerOutput = output.ToLower();
+                        
+                        if (!alreadyUnlocked && (lowerOutput.Contains("already fastboot unlocked") ||
+                                                 (lowerOutput.Contains("failed") && lowerOutput.Contains("already") && lowerOutput.Contains("unlocked")) ||
+                                                 (lowerOutput.Contains("already") && lowerOutput.Contains("unlocked") && lowerOutput.Contains("remote"))))
+                        {
+                            alreadyUnlocked = true;
+                            alreadyUnlockedDetected.TrySetResult(true);
+                        }
+                    }
+                });
+
+                var unlockTask = _fastbootClient.UnlockBootloaderAsync(progress);
+
+                var alreadyUnlockedTask = alreadyUnlockedDetected.Task;
+                var checkTask = await Task.WhenAny(unlockTask, Task.Delay(2000));
+
+                if (alreadyUnlockedTask.IsCompleted && alreadyUnlocked)
+                {
+                    await ShowMessageBox("Already Unlocked", "The device's bootloader is already unlocked.");
+                    return;
+                }
+
+                if (checkTask == unlockTask)
+                {
+                    string currentOutput;
+                    lock (outputLock)
+                    {
+                        currentOutput = fullOutput;
+                    }
+                    
+                    string lowerOutput = currentOutput.ToLower();
+                    if (lowerOutput.Contains("already fastboot unlocked") ||
+                        (lowerOutput.Contains("failed") && lowerOutput.Contains("already") && lowerOutput.Contains("unlocked")) ||
+                        (lowerOutput.Contains("already") && lowerOutput.Contains("unlocked") && lowerOutput.Contains("remote")))
+                    {
+                        await ShowMessageBox("Already Unlocked", "The device's bootloader is already unlocked.");
+                        return;
+                    }
+                }
+
+                var confirmResult = await _dialogService.ShowConfirmDialog("Action Needed", "Please press the POWER button on your device, then click 'I Pressed It'.", "I Pressed It", "Cancel");
+
+                if (confirmResult != true)
+                {
+                    return;
+                }
+
+                var unlockResult = await unlockTask;
+
+                string finalOutput = unlockResult.Output;
+                string lowerFinalOutput = finalOutput.ToLower();
+                
+                if (lowerFinalOutput.Contains("already fastboot unlocked") ||
+                    (lowerFinalOutput.Contains("failed") && lowerFinalOutput.Contains("already") && lowerFinalOutput.Contains("unlocked")) ||
+                    (lowerFinalOutput.Contains("already") && lowerFinalOutput.Contains("unlocked") && lowerFinalOutput.Contains("remote")))
+                {
+                    await ShowMessageBox("Already Unlocked", "The device's bootloader is already unlocked.");
+                    return;
+                }
+                
+                bool isSuccess = finalOutput.Contains("The device will reboot and do factory reset") ||
+                                finalOutput.ToUpper().Contains("OKAY");
+                
+                bool isFailure = finalOutput.ToUpper().Contains("ERROR") ||
+                               finalOutput.ToUpper().Contains("FAILED");
+
+                if (isSuccess)
+                {
+                    await ShowMessageBox("Success", "Your devices bootloader has been unlocked successfully!");
+                }
+                else if (isFailure)
+                {
+                    await ShowMessageBox("Failed", "Failed to unlock the bootloader of your device!");
+                }
+                else
+                {
+                    await ShowMessageBox("Completed", "Unlock process completed.");
+                }
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageBox("Unlock Error", $"An error occurred during bootloader unlock: {ex.Message}");
+            }
+        }
+
+        private async void BtnConvertOem_Click(object sender, RoutedEventArgs e)
+        {
+            string model = TxtDeviceModel.Text.Trim();
+            string vendor = TxtVendor.Text.Trim();
+            string selectedCpu = GetSelectedCpu();
+            bool useDirectCommand = selectedCpu == "hisi710" || selectedCpu == "hisi710a" || selectedCpu == "hisi980" || selectedCpu == "hisi970" ||
+                                    selectedCpu == "hisi810" || selectedCpu == "hisi820" || selectedCpu == "hisi985" || selectedCpu == "hisi990";
+
+            if (string.IsNullOrWhiteSpace(model) || string.IsNullOrWhiteSpace(vendor))
+            {
+                await ShowMessageBox("Input Error", "Device Model and Vendor/Country cannot be empty.");
+                return;
+            }
+
+            if (useDirectCommand)
+            {
+                if (!await _fastbootClient.IsDeviceConnected())
+                {
+                    await ShowMessageBox("Device Not Connected", "No device detected in fastboot mode. Please connect your device and try again.");
+                    return;
+                }
+
+                try
+                {
+                    var progressDialog = new ProgressDialog(new ObservableCollection<ProgressItemViewModel>(new[]
+                    {
+                        new ProgressItemViewModel { FileName = "Writing Model", StatusText = "Pending...", ProgressValue = 0 },
+                        new ProgressItemViewModel { FileName = "Writing Vendor", StatusText = "Pending...", ProgressValue = 0 }
+                    }));
+
+                    var dialogTask = _dialogService.ShowDialog(progressDialog);
+
+                    bool shouldDisableWp = (selectedCpu == "hisi980" && UseFastFlashLoaderSwitch.IsChecked == true) ||
+                                           selectedCpu == "hisi810" ||
+                                           selectedCpu == "hisi820" ||
+                                           selectedCpu == "hisi985" ||
+                                           selectedCpu == "hisi990";
+                    if (shouldDisableWp)
+                    {
+                        progressDialog.UpdateOverallStatus("Disabling write protection...");
+                        await _fastbootClient.OemCommandAsync("oeminfoerase-disablewp");
+                    }
+
+                    progressDialog.UpdateOverallStatus($"Writing model: {model}...");
+                    progressDialog.ProgressItems[0].StatusText = "Writing...";
+                    progressDialog.ProgressItems[0].ProgressValue = 50;
+
+                    var modelResult = await _fastbootClient.OemCommandAsync($"oeminfowrite-KTModel@{model}");
+                    bool modelSuccess = !string.IsNullOrEmpty(modelResult) &&
+                                        !modelResult.ToUpper().Contains("FAIL") &&
+                                        !modelResult.ToUpper().Contains("ERROR");
+
+                    progressDialog.ProgressItems[0].StatusText = modelSuccess ? "Done" : "Failed";
+                    progressDialog.ProgressItems[0].ProgressValue = modelSuccess ? 100 : 0;
+
+                    if (!modelSuccess)
+                    {
+                        progressDialog.UpdateOverallStatus($"Failed to write model: {modelResult}");
+                        progressDialog.ShowCloseButton(false, "Write Failed");
+                        await dialogTask;
+                        return;
+                    }
+
+                    progressDialog.UpdateOverallStatus($"Writing vendor: {vendor}...");
+                    progressDialog.ProgressItems[1].StatusText = "Writing...";
+                    progressDialog.ProgressItems[1].ProgressValue = 50;
+
+                    var vendorResult = await _fastbootClient.OemCommandAsync($"oeminfowrite-KTVendor@{vendor}");
+                    bool vendorSuccess = !string.IsNullOrEmpty(vendorResult) &&
+                                         !vendorResult.ToUpper().Contains("FAIL") &&
+                                         !vendorResult.ToUpper().Contains("ERROR");
+
+                    progressDialog.ProgressItems[1].StatusText = vendorSuccess ? "Done" : "Failed";
+                    progressDialog.ProgressItems[1].ProgressValue = vendorSuccess ? 100 : 0;
+
+                    if (modelSuccess && vendorSuccess)
+                    {
+                        progressDialog.UpdateOverallStatus("Successfully wrote model and vendor to device!");
+                        progressDialog.ShowCloseButton(true, "Write Complete");
+                    }
+                    else
+                    {
+                        progressDialog.UpdateOverallStatus($"Failed to write vendor: {vendorResult}");
+                        progressDialog.ShowCloseButton(false, "Write Failed");
+                    }
+
+                    await dialogTask;
+                }
+                catch (Exception ex)
+                {
+                    await ShowMessageBox("Error", $"An error occurred: {ex.Message}");
+                }
+                return;
+            }
+
+            string filePath = TxtOemInfoFile.Text.Trim();
+            bool pullFromDevice = TogLivePull.IsChecked == true;
+
+            if (!pullFromDevice && (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)))
+            {
+                await ShowMessageBox("Input Error", "Please select a valid OEMInfo file.");
+                return;
+            }
+
+            if (pullFromDevice && !await _fastbootClient.IsDeviceConnected())
+            {
+                await ShowMessageBox("Device Not Connected", "No device detected in fastboot mode. Please connect your device and try again.");
+                return;
+            }
+
+            try
+            {
+                var progressDialog = new ProgressDialog(new ObservableCollection<ProgressItemViewModel>
+                {
+                    new ProgressItemViewModel { FileName = "OEMInfo Conversion", StatusText = "Starting...", ProgressValue = 0 }
+                });
+
+                var dialogTask = _dialogService.ShowDialog(progressDialog);
+                var progress = new Progress<string>(status =>
+                {
+                    progressDialog.UpdateOverallStatus(status);
+                    progressDialog.ProgressItems[0].StatusText = "Processing";
+                    progressDialog.ProgressItems[0].ProgressValue = 50;
+                });
+
+                var result = await _oemInfoService.ConvertOemInfo(pullFromDevice, filePath, model, vendor, progress);
+
+                if (!result.IsSuccess)
+                {
+                    progressDialog.UpdateOverallStatus($"Conversion failed: {result.ErrorMessage}");
+                    progressDialog.ProgressItems[0].StatusText = "Failed";
+                    progressDialog.ProgressItems[0].ProgressValue = 0;
+                    progressDialog.ShowCloseButton(false, "Conversion Failed");
+                    await dialogTask;
+                    return;
+                }
+
+                progressDialog.UpdateOverallStatus("Conversion successful! Press OK to select a save location.");
+                progressDialog.ProgressItems[0].StatusText = "Done";
+                progressDialog.ProgressItems[0].ProgressValue = 100;
+                progressDialog.ShowCloseButton(true, "Conversion Complete");
+                await dialogTask;
+
+                var savePath = await _dialogService.ShowSaveFileDialog("Save Converted OEMInfo File", $"converted-oeminfo-{model}.img");
+                if (!string.IsNullOrWhiteSpace(savePath))
+                {
+                    await File.WriteAllBytesAsync(savePath, result.ConvertedData);
+
+                    if (result.PulledFromDevice)
+                    {
+                        var flashResult = await _dialogService.ShowConfirmDialog("Flash Back to Device?", "OEMInfo conversion completed successfully!\n\nDo you want to flash the converted OEMInfo back to the device?", "Yes, Flash", "Cancel");
+
+                        if (flashResult == true)
+                        {
+                            await FlashOemInfoToDevice(savePath);
+                        }
+                        else
+                        {
+                            await ShowMessageBox("Success", $"Converted OEMInfo saved to:\n{savePath}");
+                        }
+                    }
+                    else
+                    {
+                        await ShowMessageBox("Success", $"Converted OEMInfo saved to:\n{savePath}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageBox("Conversion Error", $"An error occurred during conversion: {ex.Message}");
+            }
+            finally
+            {
+                _oemInfoService.CleanupTempFiles();
+            }
+        }
+
+        private async Task FlashOemInfoToDevice(string filePath)
+        {
+            try
+            {
+                var progressDialog = new ProgressDialog(new ObservableCollection<ProgressItemViewModel>
+                {
+                    new ProgressItemViewModel { FileName = "Flashing OEMInfo", StatusText = "Starting...", ProgressValue = 0 }
+                });
+
+                var dialogTask = _dialogService.ShowDialog(progressDialog);
+
+                progressDialog.UpdateOverallStatus("Flashing OEMInfo to device...");
+                progressDialog.ProgressItems[0].StatusText = "Flashing";
+                progressDialog.ProgressItems[0].ProgressValue = 50;
+
+                var flashResult = await _oemInfoService.FlashConvertedOemInfo(filePath);
+
+                if (flashResult.IsSuccess && flashResult.Output.ToUpper().Contains("OKAY"))
+                {
+                    progressDialog.UpdateOverallStatus("OEMInfo flashed successfully!");
+                    progressDialog.ProgressItems[0].StatusText = "Done";
+                    progressDialog.ProgressItems[0].ProgressValue = 100;
+                    progressDialog.ShowCloseButton(true, "Flash Complete");
+                }
+                else
+                {
+                    progressDialog.UpdateOverallStatus("Failed to flash OEMInfo to device.");
+                    progressDialog.ProgressItems[0].StatusText = "Failed";
+                    progressDialog.ProgressItems[0].ProgressValue = 0;
+                    progressDialog.ShowCloseButton(false, "Flash Failed");
+                }
+
+                await dialogTask;
+            }
+            catch (Exception ex)
+            {
+                await ShowMessageBox("Flash Error", $"Error flashing OEMInfo: {ex.Message}");
+            }
+        }
+
+        private async void BrowseOemInfoFile_Click(object sender, RoutedEventArgs e)
+        {
+            var fileResult = await _dialogService.ShowOpenFileDialog("Select OEMInfo File", new List<string> { "img", "*" });
+            if (!string.IsNullOrWhiteSpace(fileResult))
+            {
+                TxtOemInfoFile.Text = fileResult;
+            }
+        }
+
+        private void TogLivePull_Toggled(object sender, RoutedEventArgs e)
+        {
+            FileSelectionPanel.IsEnabled = !(TogLivePull.IsChecked == true);
+            if (TogLivePull.IsChecked == true) TxtOemInfoFile.Text = "";
+        }
+
+        private void CpuComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateOemInfoUI();
+            UpdateSecurityUI();
+            
+            if (UseFastFlashLoaderSwitch != null)
+            {
+                UseFastFlashLoaderSwitch.IsVisible = GetSelectedCpu() == "hisi980" ? true : false;
+            }
+        }
+
+        private void UpdateOemInfoUI()
+        {
+            string selectedCpu = GetSelectedCpu();
+            bool useDirectCommand = selectedCpu == "hisi710" || selectedCpu == "hisi710a" || selectedCpu == "hisi980" || selectedCpu == "hisi970" ||
+                                    selectedCpu == "hisi810" || selectedCpu == "hisi820" || selectedCpu == "hisi985" || selectedCpu == "hisi990";
+
+            if (useDirectCommand)
+            {
+                TogLivePull.IsVisible = false;
+                FileSelectionPanel.IsVisible = false;
+                devSwtxt.IsVisible = false;
+            }
+            else
+            {
+                TogLivePull.IsVisible = true;
+                FileSelectionPanel.IsVisible = true;
+                devSwtxt.IsVisible = true;
+            }
+        }
+
+        private void UpdateSecurityUI()
+        {
+            string selectedCpu = GetSelectedCpu();
+            bool isSupported = selectedCpu == "hisi710" || selectedCpu == "hisi970" || selectedCpu == "hisi980" || selectedCpu == "hisi990";
+
+            if (UnlockBootloaderPanel != null)
+            {
+                UnlockBootloaderPanel.IsVisible = isSupported ? true : false;
+            }
+        }
+
+        private string GetSelectedCpu()
+        {
+            string content = (CpuComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+            if (!string.IsNullOrEmpty(content) && content.Contains('('))
+            {
+                int start = content.IndexOf('(') + 1;
+                int end = content.IndexOf(')');
+                if (end > start)
+                {
+                    return content.Substring(start, end - start);
+                }
+            }
+            return "none";
+        }
+
+        private async Task ShowMessageBox(string title, string message)
+        {
+            await _dialogService.ShowMessageBox(title, message);
+        }
+
+        private string GetFileDisplayName(string fileType)
+        {
+            return fileType switch
+            {
+                "BasePtable" => "Base PTABLE",
+                "BaseUpdate" => "Base UPDATE",
+                "CustPtable" => "Cust PTABLE",
+                "CustUpdate" => "Cust UPDATE",
+                "PreloadPtable" => "Preload PTABLE",
+                "PreloadUpdate" => "Preload UPDATE",
+                "SwTpUpdate" => "SW TP Base Update",
+                "UsbUpdate" => "USB Update APP",
+                _ => fileType
+            };
+        }
+
+        private FullOtaFile GetOtaFileByType(string fileType)
+        {
+            return fileType switch
+            {
+                "BasePtable" => BasePtableFile,
+                "BaseUpdate" => BaseUpdateFile,
+                "CustPtable" => CustPtableFile,
+                "CustUpdate" => CustUpdateFile,
+                "PreloadPtable" => PreloadPtableFile,
+                "PreloadUpdate" => PreloadUpdateFile,
+                "SwTpUpdate" => SwTpUpdateFile,
+                "UsbUpdate" => UsbUpdateFile,
+                _ => null
+            };
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private void HelpButton_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo { FileName = "https://kirintool.cfd", UseShellExecute = true });
+
+        }
+
+        private void TelegramButton_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo { FileName = "https://t.me/kirintoolsupport", UseShellExecute = true });
+        }
+
+        private void GithubButton_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start(new ProcessStartInfo { FileName = "https://github.com/Redminote11tech/kirin-tool-linux", UseShellExecute = true });
+        }
+        private async Task<bool> ShowGlobalInteractionPromptAsync(string message)
+        {
+            if (!Dispatcher.UIThread.CheckAccess())
+            {
+                return await Dispatcher.UIThread.InvokeAsync(async () => await ShowGlobalInteractionPromptAsync(message));
+            }
+
+            InteractionMessageTextBlock.Text = message;
+            GlobalInteractionOverlay.IsVisible = true;
+
+            _globalInteractionTcs = new TaskCompletionSource<bool>();
+            bool result = await _globalInteractionTcs.Task;
+
+            GlobalInteractionOverlay.IsVisible = false;
+            return result;
+        }
+
+        private void GlobalInteractionDone_Click(object sender, RoutedEventArgs e)
+        {
+            _globalInteractionTcs?.TrySetResult(true);
+        }
+
+        private void GlobalInteractionCancel_Click(object sender, RoutedEventArgs e)
+        {
+            _globalInteractionTcs?.TrySetResult(false);
+        }
+
+        private async void ReadDeviceInfo_Click(object sender, RoutedEventArgs e)
+        {
+            if (!await _fastbootClient.IsDeviceConnected())
+            {
+                await ShowMessageBox("Device Not Found", "No device detected in fastboot mode. Please connect your device and try again.");
+                return;
+            }
+
+            InfoFbLock.Text = "Reading...";
+            InfoUserLock.Text = "Reading...";
+            InfoDeviceModel.Text = "Reading...";
+            InfoVendorCountry.Text = "Reading...";
+            InfoBuildNumber.Text = "Reading...";
+            InfoBaseVersion.Text = "Reading...";
+            InfoCustomVersion.Text = "Reading...";
+            InfoPreloadVersion.Text = "Reading...";
+
+            try
+            {
+                string lockOutput = await _fastbootClient.OemCommandAsync("lock-state info");
+                InfoFbLock.Text = ParseOemLine(lockOutput, "FB LockState:", "Unknown");
+                InfoUserLock.Text = ParseOemLine(lockOutput, "USER LockState:", "Unknown");
+            }
+            catch { InfoFbLock.Text = "Unknown"; InfoUserLock.Text = "Unknown"; }
+
+            await Task.Delay(300);
+
+            try
+            {
+                InfoDeviceModel.Text = ParseGetVar(await _fastbootClient.GetVarAsync("devicemodel"), "Unknown");
+            }
+            catch { InfoDeviceModel.Text = "Unknown"; }
+
+            await Task.Delay(300);
+
+            try
+            {
+                InfoVendorCountry.Text = ParseGetVar(await _fastbootClient.GetVarAsync("vendorcountry"), "Unknown");
+            }
+            catch { InfoVendorCountry.Text = "Unknown"; }
+
+            await Task.Delay(300);
+
+            try
+            {
+                InfoBaseVersion.Text = ParseOemVersion(await _fastbootClient.OemCommandAsync("oeminforead-BASE_VERSION"));
+            }
+            catch { InfoBaseVersion.Text = "Unknown"; }
+
+            await Task.Delay(300);
+
+            try
+            {
+                InfoCustomVersion.Text = ParseOemVersion(await _fastbootClient.OemCommandAsync("oeminforead-CUSTOM_VERSION"));
+            }
+            catch { InfoCustomVersion.Text = "Unknown"; }
+
+            await Task.Delay(300);
+
+            try
+            {
+                InfoPreloadVersion.Text = ParseOemVersion(await _fastbootClient.OemCommandAsync("oeminforead-PRELOAD_VERSION"));
+            }
+            catch { InfoPreloadVersion.Text = "Unknown"; }
+
+            await Task.Delay(300);
+
+            try
+            {
+                string buildOutput = await _fastbootClient.OemCommandAsync("get-build-number");
+                string rawBuild = ParseOemVersion(buildOutput);
+                if (rawBuild != "Unknown" && rawBuild.Contains(" "))
+                    InfoBuildNumber.Text = rawBuild.Substring(rawBuild.IndexOf(' ') + 1);
+                else
+                    InfoBuildNumber.Text = rawBuild;
+            }
+            catch { InfoBuildNumber.Text = "Unknown"; }
+
+            if (DeviceInfoExpander != null)
+            {
+                DeviceInfoExpander.IsExpanded = true;
+            }
+        }
+
+        private string ParseOemLine(string output, string key, string fallback)
+        {
+            if (string.IsNullOrEmpty(output)) return fallback;
+            
+            var line = output.Split('\n', '\r')
+                             .Select(l => l.Trim())
+                             .FirstOrDefault(l => l.Contains(key));
+                             
+            if (line != null)
+            {
+                int keyIndex = line.IndexOf(key);
+                return line.Substring(keyIndex + key.Length).Trim();
+            }
+            return fallback;
+        }
+
+        private string ParseGetVar(string output, string fallback)
+        {
+            if (string.IsNullOrEmpty(output)) return fallback;
+
+            var line = output.Split('\n', '\r')
+                             .Select(l => l.Trim())
+                             .FirstOrDefault(l => l.Contains(":") && !l.StartsWith("finished") && !l.StartsWith("OKAY"));
+                             
+            if (line != null)
+            {
+                return line.Substring(line.IndexOf(':') + 1).Trim();
+            }
+            return fallback;
+        }
+
+        private string ParseOemVersion(string output)
+        {
+            if (string.IsNullOrEmpty(output)) return "Unknown";
+
+            var line = output.Split('\n', '\r')
+                             .Select(l => l.Trim())
+                             .FirstOrDefault(l => l.Contains("(bootloader)") && l.Contains(":") && !l.EndsWith("s") && !l.Contains("total time") && !l.Contains("Error"));
+            
+            if (line != null)
+            {
+                int colonIndex = line.LastIndexOf(':');
+                if (colonIndex != -1)
+                {
+                    string value = line.Substring(colonIndex + 1).Trim();
+                    return string.IsNullOrEmpty(value) ? "Unknown" : value;
+                }
+            }
+            
+            return "Unknown";
+        }
+
+        private async void RebootDevice_Click(object sender, RoutedEventArgs e)
+        {
+            if (!await _fastbootClient.IsDeviceConnected())
+            {
+                await ShowMessageBox("Device Not Found", "No device detected in fastboot mode. Please connect your device and try again.");
+                return;
+            }
+
+            var result = await _fastbootClient.RebootAsync();
+            if (result.IsSuccess)
+            {
+                await ShowMessageBox("Success", "Rebooted successfully!");
+            }
+            else
+            {
+                await ShowMessageBox("Error", $"Failed to reboot device: {result.Output}");
+            }
+        }
+    }
+}

@@ -1,0 +1,104 @@
+# Kirin Tool for Linux
+
+> [!WARNING]
+> **THIS PROJECT IS NOT OPEN SOURCE, BUT RATHER SOURCE AVAILABLE UNDER THE Business Source License 1.1**<br>
+> **READ THE LICENSE BEFORE COPYING OR MODIFYING THE SOURCE!**
+
+> [!WARNING]
+> **THIS IS AN UNOFFICIAL, COMMUNITY LINUX PORT OF [Kirin-Tool](https://github.com/kethily-daniel/Kirin-Tool).**<br>
+> **IT IS NOT AFFILIATED WITH, SPONSORED BY, OR ENDORSED BY THE ORIGINAL AUTHORS.**
+
+> [!WARNING]
+> **WE ARE NOT RESPONSIBLE FOR ANY BRICKED DEVICES, ERASED NM CARDS, LOST DATA, ETC**<br>
+> **EVERYTHING YOU DO WITH KIRIN TOOL FOR LINUX IS PURELY YOUR RESPONSIBILITY**
+
+This is the ONLY free public Huawei tool with Kirin 990 support — ported to Linux!
+
+You can rebrand, flash and unlock (even Kirin 990's bootloader!) Huawei devices.
+
+We support Kirin 620-990 5g SoCs (as of 2.4.2, excluding 990 4g).
+
+---
+
+## Requirements
+
+- Linux x86_64
+- `android-tools` (provides `fastboot`) on your PATH
+- udev permissions to access USB serial devices. Install the bundled rule:
+
+```bash
+sudo cp packaging/51-kirin-tool-fastboot.rules /etc/udev/rules.d/
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+## Installation
+
+### Arch-based distributions
+
+```bash
+makepkg -f
+sudo pacman -U kirin-tool-linux-2.4.2-1-x86_64.pkg.tar.zst
+```
+
+Then launch `kirin-tool` from your application menu or a terminal.
+
+### From source
+
+```bash
+dotnet publish Kirin-Tool.csproj -c Release -r linux-x64 --self-contained true -p:PublishTrimmed=false -o out
+./out/Kirin-Tool
+```
+
+## Links
+
+| | |
+|---|---|
+| Linux port repository | https://github.com/Redminote11tech/kirin-tool-linux |
+| Upstream project | https://github.com/kethily-daniel/Kirin-Tool |
+| Upstream website | https://kirintool.cfd |
+| Upstream Telegram support | https://t.me/kirintoolsupport |
+
+## About this fork
+
+Linux-focused fork of [Kirin-Tool](https://github.com/kethily-daniel/Kirin-Tool) by Kethily Daniel & NDXCode,
+ported single-handedly by Redminote11tech and published under the terms of the
+Business Source License 1.1. All original copyright notices are retained.
+
+### License summary (non-exhaustive; the LICENSE file is authoritative)
+
+- You may copy, modify, create derivative works, redistribute, and make **non-production** use.
+- **Production use is not permitted** until the Change Date (four years from each version's first public distribution).
+- On the Change Date each version becomes available under **GPL-3.0-or-later**.
+- All copies must conspicuously retain this license and the original copyright notices.
+
+# Donating
+
+Support the original authors — they built Kirin-Tool:
+
+Ko-Fi: https://ko-fi.com/kirintool
+
+Crypto:
+
+BTC: `bc1q70khwtwdp0jtpvfmct4gu8ktktzv5rurk0kdky`
+
+ETH: `0xF7585F5d27bB7f10558a99CBa53459Be1969b090`
+
+LTC: `ltc1qmyuy4vqevmszxjpl3dqdtkqpg7fper5vw48ulz`
+
+SOL: `4CrT7dSL6kTCkJU4Fu4DT1LisU4rLFwbpE5GFS5wdEcR`
+
+USDT SPL(SOL): `4CrT7dSL6kTCkJU4Fu4DT1LisU4rLFwbpE5GFS5wdEcR`
+
+USDT Tether (TRC20): `TD2sJbEmYa93sJhDBmTrvqmScqQSVTCfCK`
+
+# Credits
+
+[TASZK Security Labs SL](https://taszk.io) for the head resend bootrom exploit
+
+[kasnria001](https://github.com/kasnria001) for decrypted xloaders and LOTS of help in general
+
+**Redminote11tech** - single-handedly ported Kirin Tool to Linux
+
+---
+
+*NOTICE: This tool is an independent software product and has not been authorized, sponsored, or otherwise approved by Huawei Technologies Co., Ltd. HiSilicon and Kirin are trademarks of Huawei Technologies Co., Ltd. All product and company names are trademarks™ or registered® trademarks of their respective holders. Use of them does not imply any affiliation with or endorsement by them.*
