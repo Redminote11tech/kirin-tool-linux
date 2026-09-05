@@ -1,0 +1,19 @@
+NOTICE for fastboot-src/
+========================
+
+This directory contains software from the Android Open Source Project (AOSP),
+platform/system/core, tag android-6.0.1_r1: the `fastboot` host tool and
+`libsparse`.
+
+Most files are licensed under the Apache License, Version 2.0
+(http://www.apache.org/licenses/LICENSE-2.0); a small number of older files
+(protocol.c, parts of libsparse) carry a BSD-style Google license. The full
+license text of every file is preserved in its header — see the individual
+source files in src/ and libsparse/.
+
+Copyright (C) 2008-2015 The Android Open Source Project.
+
+Modifications for Kirin Tool for Linux (OEM upload-to-file capture, format
+and update.zip trimming) are described in PATCHES.md and are licensed the
+same way as the surrounding AOSP code, under the project license of Kirin
+Tool for Linux (see ../LICENSE).
