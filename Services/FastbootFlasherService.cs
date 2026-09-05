@@ -73,7 +73,8 @@ namespace Kirin_Tool.Services
             try
             {
                 var result = await _fastbootClient.OemCommandAsync($"dump-emmc {partitionName} \"{savePath}\"", timeoutMinutes: 300);
-                bool isSuccess = !string.IsNullOrEmpty(result) &&
+                bool isSuccess = DumpFileWasWritten(savePath) &&
+                                !string.IsNullOrEmpty(result) &&
                                 !result.ToLower().Contains("fail") &&
                                 !result.ToLower().Contains("error");
 
@@ -81,10 +82,17 @@ namespace Kirin_Tool.Services
                     return (true, result ?? "Dump completed");
 
                 var storageResult = await _fastbootClient.OemCommandAsync($"dump-storage {partitionName} \"{savePath}\"", timeoutMinutes: 300);
-                bool storageSuccess = !string.IsNullOrEmpty(storageResult) &&
+                bool storageSuccess = DumpFileWasWritten(savePath) &&
+                                     !string.IsNullOrEmpty(storageResult) &&
                                      !storageResult.ToLower().Contains("fail") &&
                                      !storageResult.ToLower().Contains("error");
-                return (storageSuccess, storageResult ?? "Dump completed");
+                if (!storageSuccess)
+                {
+                    return (false, string.IsNullOrEmpty(storageResult) || storageResult.ToLower().Contains("fail") || storageResult.ToLower().Contains("error")
+                        ? $"Dump failed. The Huawei fastboot client normally writes '{savePath}' on the host; the system fastboot cannot save uploaded partition data."
+                        : storageResult);
+                }
+                return (true, storageResult ?? "Dump completed");
             }
             catch (TimeoutException)
             {
@@ -93,6 +101,21 @@ namespace Kirin_Tool.Services
             catch (Exception ex)
             {
                 return (false, $"Dump failed: {ex.Message}");
+            }
+        }
+
+        // Stock fastboot passes "oem dump-*" through without saving the uploaded data,
+        // so a "successful" response can still leave no file behind.
+        private static bool DumpFileWasWritten(string savePath)
+        {
+            try
+            {
+                var info = new FileInfo(savePath);
+                return info.Exists && info.Length > 0;
+            }
+            catch
+            {
+                return false;
             }
         }
 

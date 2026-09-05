@@ -31,6 +31,9 @@ mono_crash.*
 obj/
 bin/x64/
 obj/x64/
+bin/Debug/
+.zcode/
+
 
 [Dd]ebug/x86/
 [Dd]ebugPublic/x86/
