@@ -1,0 +1,89 @@
+# Maintainer: Redminote11tech
+pkgname=kirin-tool-linux
+pkgver=2.4.2
+pkgrel=4
+install=kirin-tool-linux.install
+pkgdesc="Kirin Tool for Linux - Huawei Kirin bootloader/fastboot tooling (community Linux port)"
+arch=('x86_64')
+url="https://github.com/kethily-daniel/Kirin-Tool"
+license=('custom:BSL-1.1')
+depends=()
+makedepends=('dotnet-sdk')
+optdepends=('android-tools: fallback fastboot if the bundled Huawei-capable binary is removed')
+source=("kirin-tool-linux-$pkgver.tar.gz")
+# sha256sums is regenerated per release when the source tarball is rebuilt
+# (tarballs are not reproducible). See the maintainer workflow in the repo.
+sha256sums=("SKIP")
+
+build() {
+    export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+    cd "$srcdir/$pkgname-$pkgver"
+    dotnet publish Kirin-Tool.csproj \
+        -c Release \
+        -r linux-x64 \
+        --self-contained true \
+        -o "$srcdir/publish-out" \
+        -p:PublishTrimmed=false \
+        -p:DebugType=none \
+        -p:DebugSymbols=false
+
+    # Bundled Huawei-capable fastboot (OEM dump upload-to-file client); the
+    # app prefers it over the system binary. See fastboot-src/PATCHES.md.
+    make -C "$srcdir/$pkgname-$pkgver/fastboot-src"
+}
+
+check() {
+    cd "$srcdir/$pkgname-$pkgver"
+    test -x "$srcdir/publish-out/Kirin-Tool"
+    test -x "$srcdir/$pkgname-$pkgver/fastboot-src/fastboot"
+    "$srcdir/$pkgname-$pkgver/fastboot-src/fastboot" --version >/dev/null
+}
+
+package() {
+    _appdir="$pkgdir/usr/lib/$pkgbase"
+    install -dm755 "$_appdir"
+
+    # Self-contained application files (includes bundled loaders/ and fastboot payload)
+    cp -a "$srcdir/publish-out/." "$_appdir/"
+    find "$_appdir" -name '*.pdb' -delete
+
+    # Bundled Huawei-capable fastboot (preferred by the app, system fastboot stays as fallback)
+    install -dm755 "$_appdir/fastboot"
+    install -m755 "$srcdir/$pkgname-$pkgver/fastboot-src/fastboot" "$_appdir/fastboot/fastboot"
+    install -Dm644 "$srcdir/$pkgname-$pkgver/fastboot-src/NOTICE" \
+        "$pkgdir/usr/share/licenses/$pkgbase/NOTICE.fastboot-src"
+
+    # Launcher
+    install -dm755 "$pkgdir/usr/bin"
+    ln -sf "/usr/lib/$pkgbase/Kirin-Tool" "$pkgdir/usr/bin/kirin-tool"
+
+    # Desktop entry
+    install -dm755 "$pkgdir/usr/share/applications"
+    cat > "$pkgdir/usr/share/applications/kirin-tool.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Kirin Tool for Linux
+GenericName=Huawei Kirin Flash Tool
+Comment=Flash, unlock and repair Huawei Kirin devices
+Exec=/usr/bin/kirin-tool
+Icon=kirin-tool
+Categories=Development;Utility;
+Terminal=false
+EOF
+
+    # Application icon (extracted from the project's logo.ico)
+    install -Dm644 "$srcdir/$pkgname-$pkgver/packaging/kirin-tool.png" \
+        "$pkgdir/usr/share/pixmaps/kirin-tool.png"
+
+    # udev rules: fastboot (adbusers/uaccess) + VCOM serial (uucp/uaccess)
+    install -Dm644 "$srcdir/$pkgname-$pkgver/packaging/51-kirin-tool-fastboot.rules" \
+        "$pkgdir/usr/lib/udev/rules.d/51-kirin-tool-fastboot.rules"
+
+    # License (BSL 1.1 - must stay conspicuous per license terms)
+    install -Dm644 "$srcdir/$pkgname-$pkgver/LICENSE" \
+        "$pkgdir/usr/share/licenses/$pkgbase/LICENSE"
+
+    # README for completeness
+    install -Dm644 "$srcdir/$pkgname-$pkgver/README.md" \
+        "$pkgdir/usr/share/doc/$pkgbase/README.md"
+}

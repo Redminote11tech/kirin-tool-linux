@@ -23,8 +23,14 @@ We support Kirin 620-990 5g SoCs (as of 2.4.2, excluding 990 4g).
 ## Requirements
 
 - Linux x86_64
-- `android-tools` (provides `fastboot`) on your PATH
-- udev permissions to access USB serial devices. Install the bundled rule:
+- **No `android-tools` needed** — a Huawei-capable `fastboot` is bundled with the package
+  (built from AOSP with OEM dump/upload-to-file support; see `fastboot-src/PATCHES.md`).
+  The system `fastboot` from `android-tools` is used only as a fallback if the bundled
+  binary is removed.
+- udev permissions to access USB devices. The pacman package installs the rules
+  automatically (`/usr/lib/udev/rules.d/51-kirin-tool-fastboot.rules`) and your user must
+  be in the `adbusers` (fastboot) and `uucp` (VCOM serial) groups. For non-pacman installs,
+  copy the rule manually:
 
 ```bash
 sudo cp packaging/51-kirin-tool-fastboot.rules /etc/udev/rules.d/
@@ -37,7 +43,7 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 ```bash
 makepkg -f
-sudo pacman -U kirin-tool-linux-2.4.2-1-x86_64.pkg.tar.zst
+sudo pacman -U kirin-tool-linux-2.4.2-4-x86_64.pkg.tar.zst
 ```
 
 Then launch `kirin-tool` from your application menu or a terminal.
