@@ -150,8 +150,9 @@ namespace Kirin_Tool.UI
                 }
                 else
                 {
-                    var completedItems = PartitionItems.Count(p => p.ProgressValue >= 100);
-                    var totalProgress = PartitionItems.Sum(p => p.ProgressValue) / PartitionItems.Count;
+                    var totalProgress = PartitionItems.Count == 0
+                        ? 0
+                        : PartitionItems.Sum(p => p.ProgressValue) / PartitionItems.Count;
                     OverallProgress = totalProgress;
                 }
 
@@ -228,7 +229,9 @@ namespace Kirin_Tool.UI
                 }
                 else
                 {
-                    var totalProgress = PartitionItems.Sum(p => p.ProgressValue) / PartitionItems.Count;
+                    var totalProgress = PartitionItems.Count == 0
+                        ? 0
+                        : PartitionItems.Sum(p => p.ProgressValue) / PartitionItems.Count;
                     OverallProgress = totalProgress;
                 }
 

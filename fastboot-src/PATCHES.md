@@ -33,6 +33,15 @@ file headers. This is the same code lineage as the Huawei-modified
    This is what makes partition dumps and OEMInfo backups work on Linux.
 2. `FASTBOOT_REVISION` reports `kirin-tool-linux-1.0 (AOSP android-6.0.1_r1)`.
 
+3. `do_oem_command()` hardening (2026-09-05 code review):
+   - the dump filename is taken from the parsed `argv` token, not the
+     space-joined command, so save paths containing spaces work;
+   - the OEM command join buffer is bounds-checked (upstream `strcat` into a
+     fixed 256-byte buffer overflowed on long `oem` commands);
+   - a failed upload prints `FAILED (<error>)` and exits with code 1 —
+     previously a failed dump exited 0, which could fool the app's
+     output-based success heuristic into reporting a fake success.
+
 ## Verification status
 
 The upload framing follows the standard fastboot protocol (device sends
@@ -41,6 +50,13 @@ NOT been verified against real Huawei hardware; if a dump fails or produces an
 empty file, capture the Windows tool doing the same dump (USBPcap/Wireshark)
 and adjust `fb_command_upload` to the observed framing. Non-dump commands are
 stock fastboot behavior and unaffected.
+
+Hardware-affecting surface of the patch (the only parts that touch the wire):
+1. the upload framing itself (`fb_command_upload`),
+2. the full OEM command — including the local filename token — is sent to the
+   bootloader, matching the Windows client (its embedded deprecation string
+   says the filename "will not be used" by the device; unverified on hardware).
+Everything else in the binary is stock android-6.0.1 fastboot behavior.
 
 ## Build
 

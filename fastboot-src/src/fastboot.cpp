@@ -749,45 +749,50 @@ int do_bypass_unlock_command(int argc, char **argv)
     return 0;
 }
 
-/* Kirin Tool Linux port: Huawei bootloaders answer these OEM commands by
- * uploading raw storage/DDR data in fastboot "DATA" frames; the client-side
- * job of writing that stream to the trailing filename argument is what the
- * vendor fastboot client (shipped with Kirin Tool for Windows) implements.
+/* Kirin Tool Linux port: the Huawei OEM sub-commands whose bootloaders upload
+ * raw storage/DDR data in fastboot "DATA" frames. Writing that stream to the
+ * trailing filename argument is the client-side half that the vendor fastboot
+ * client (shipped with Kirin Tool for Windows) implements.
  */
-static const char *oem_upload_filename(const char *command)
+static int oem_is_upload_command(const char *subcmd)
 {
-    static const char *const upload_cmds[] = {
-        "oem dump-emmc", "oem dump-storage", "oem memory", "oem memupload", NULL
-    };
-    int i;
-    for (i = 0; upload_cmds[i]; i++) {
-        if (!strncmp(command, upload_cmds[i], strlen(upload_cmds[i]))) {
-            const char *fname = strrchr(command, ' ');
-            if (fname != NULL && fname[1] != '\0') {
-                return fname + 1;
-            }
-            return NULL;
-        }
-    }
-    return NULL;
+    return !strcmp(subcmd, "dump-emmc") || !strcmp(subcmd, "dump-storage") ||
+           !strcmp(subcmd, "memory")    || !strcmp(subcmd, "memupload");
 }
 
 int do_oem_command(int argc, char **argv, usb_handle *usb)
 {
     char command[256];
+    int is_upload = 0;
+    const char *upload_path = NULL;
     if (argc <= 1) return 0;
+
+    /* capture the upload target before skip() advances argv; taken from argv
+     * (not the space-joined command) so paths containing spaces work */
+    if (argc >= 4 && oem_is_upload_command(argv[1])) {
+        is_upload = 1;
+        upload_path = argv[argc - 1];
+    }
 
     command[0] = 0;
     while(1) {
+        if (strlen(command) + strlen(*argv) + 2 >= sizeof(command)) {
+            fprintf(stderr, "oem command too long\n");
+            return 0;
+        }
         strcat(command,*argv);
         skip(1);
         if(argc == 0) break;
         strcat(command," ");
     }
 
-    const char *upload_path = oem_upload_filename(command);
-    if (upload_path != NULL) {
-        fb_command_upload(usb, command, upload_path);
+    if (is_upload) {
+        if (fb_command_upload(usb, command, upload_path) < 0) {
+            /* the app judges dump success from this output and the process
+             * exit code; a failed dump must not look successful */
+            fprintf(stderr, "FAILED (%s)\n", fb_get_error());
+            exit(1);
+        }
         return 0;
     }
 

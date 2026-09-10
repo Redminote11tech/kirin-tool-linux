@@ -172,3 +172,20 @@ Linux-only transport):
 - The PKGBUILD compiles it and installs it as `/usr/lib/kirin-tool-linux/fastboot/fastboot`,
   which `FastbootClient.ResolveDefaultFastbootPath()` prefers automatically; system
   android-tools fastboot remains the fallback for anyone without the bundled copy.
+
+### 7.1 First on-device run checklist (hardware-affecting surface)
+
+Everything restored by the parity pass sends the same bytes the Windows tool
+sends; the items below are the only places where reality must confirm design,
+plus the code-review fixes applied 2026-09-05 (stale-dump deletion, space-safe
+dump filenames, dump-failure exit codes, progress-dialog divide-by-zero
+guards — none change device behavior):
+
+1. `fb_command_upload` framing: dump a small partition first; if the file is
+   missing/short, capture the Windows tool with USBPcap and compare.
+2. The full OEM command (including the filename token) reaching the
+   bootloader — expected harmless ("will not be used" per the vendor client's
+   own strings); confirm via `(bootloader)` responses.
+3. Full OTA flash and USB Update (HDLC) flash are now *reachable* on Linux for
+   the first time — run the first session with a dump-first habit and expect
+   the same warning dialogs as Windows.

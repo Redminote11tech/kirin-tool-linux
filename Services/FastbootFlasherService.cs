@@ -72,6 +72,10 @@ namespace Kirin_Tool.Services
         {
             try
             {
+                // A stale file from an earlier run would otherwise make the
+                // file-exists success check pass without a real dump.
+                try { if (File.Exists(savePath)) File.Delete(savePath); } catch { }
+
                 var result = await _fastbootClient.OemCommandAsync($"dump-emmc {partitionName} \"{savePath}\"", timeoutMinutes: 300);
                 bool isSuccess = DumpFileWasWritten(savePath) &&
                                 !string.IsNullOrEmpty(result) &&
