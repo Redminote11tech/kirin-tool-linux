@@ -116,3 +116,59 @@ This fork's compliance evidence, for that scenario:
 Prepared 2026-09-05 by the fork maintainer as a factual record and good-faith
 license analysis. It is **not legal advice**; for an actual takedown,
 escalation, or commercial-use question, consult a lawyer.
+
+---
+
+## 8. ADDENDUM 2026-09-11: upstream relicensed to a view-only license
+
+**Event.** On 2026-09-11 (today), upstream replaced BSL 1.1 with a
+"Kirin-Tool Read-Only Reference License" (upstream commit `81f89f4`,
+"Change license", 2026-09-11 16:32 CEST). The commit replaced the LICENSE
+file, stamped a view-only license header onto every file, and included code
+changes to App/MainWindow/UI files. The new license permits *viewing only*:
+no copying, cloning, forking, caching, modification, derivative works, or
+distribution, for commercial or non-commercial purposes, plus an explicit
+AI/LLM-training prohibition and an EU TDM opt-out.
+
+**This fork is unaffected, for three independent reasons:**
+
+1. **The fork base was distributed under BSL 1.1.** The code this fork
+   derives from is upstream v2.4.2, first publicly distributed 2026-06-28
+   (upstream commit `45440d4`, last BSL-era commit `818aa1a`). BSL 1.1 —
+   which grants copy/modify/redistribute/non-production-use rights — governs
+   *those copies* permanently. The new license attaches only to upstream
+   versions first distributed under it (i.e., post-`818aa1a` content). A
+   licensor can change terms for future distributions; it cannot retroactively
+   revoke the grant attached to copies already distributed.
+2. **Per-version licensing is written into BSL itself:** "This License applies
+   separately for each version of the Licensed Work and the Change Date may
+   vary for each version of the Licensed Work released by Licensor."
+3. **The Change Date mechanism is a one-way covenant:** for the inherited
+   version, BSL terminates and **GPL-3.0-or-later** applies from
+   **2030-06-28** (four years from 2026-06-28). That conversion is a promise
+   in the license text the code was distributed under and does not depend on
+   the licensor's future conduct.
+
+**Sync policy (effective immediately):** this fork **stops syncing upstream**.
+No file, diff, or content from upstream after commit `818aa1a` (2026-06-28,
+BSL era) may be copied into this fork — upstream content from `81f89f4`
+onward is view-only. Any future functionality this fork needs will be written
+independently or sourced from properly licensed projects. The fork's
+retained `LICENSE` file (BSL 1.1) is the evidence of the terms under which
+the inherited code was received; it must remain in place unchanged.
+
+**GitHub ToS note (secondary):** independently of copyright license, GitHub's
+Terms of Service grant users the right to view and fork public repositories
+through the service's functionality. That covers repository forking as a
+platform act; it does not license building or distributing products from
+post-relicensing content — which is why the sync stop above is the safe
+policy regardless.
+
+**AI restriction note:** the new license's AI/LLM training prohibition
+applies to the upstream content published under it. It has no bearing on this
+fork (no model training occurs here) and, notably, no such restriction
+existed in BSL 1.1 for the code this fork inherited.
+
+Checklist item from §6 ("If upstream relicenses future versions, record the
+date and the new terms here") — **recorded**: 2026-09-11, Kirin-Tool
+Read-Only Reference License, sync stopped.
