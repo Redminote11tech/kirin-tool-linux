@@ -107,3 +107,52 @@ except the ProjectMenu setting itself — it is read-only research.
   mode does on your specific device" remains the honest answer — community
   descriptions of the three modes are plausible but unverified by this
   project.
+
+---
+
+## 7. LIVE CAPTURE 2026-09-12 — NOH-AN00 (Mate 40 Pro) in manufacture mode
+
+First real-device capture of the feature, on **NOH-AN00 (Mate 40 Pro,
+Kirin 9000E)** with USB Port Settings = Manufacture mode:
+
+**USB enumeration** (`lsusb -v`, `udevadm`): PID `12d1:107e` (lsusb DB name
+"P10 smartphone" is bogus; product string is `NOH-AN00`), 4 vendor-specific
+interfaces:
+
+| If | SubClass | Protocol | Bound by CachyOS kernel | Interpretation |
+|----|----------|----------|--------------------------|----------------|
+| 0 | 0x13 (19) | 0x21 (33) | `usbserial_generic` → ttyUSB0 | silent (no spontaneous output) |
+| 1 | 0x13 (19) | 0x22 (34) | `usbserial_generic` → ttyUSB1 | **live AT interpreter** |
+| 2 | 0x13 (19) | 0x23 (35) | `usbserial_generic` → ttyUSB2 | silent |
+| 3 | 0x42 (66) | 0x01 | `usbserial_generic` → ttyUSB3 (wrongly) | **ADB** (class 255/0x42/1) |
+
+Notes: `usbserial_generic` claiming interface 3 *blocks adb* (interface busy
+for libusb). Unbind it to use ADB:
+`echo 3-2:1.3 | sudo tee /sys/bus/usb/drivers/usbserial_generic/unbind`.
+Also worth binding the silent ports to the `option` driver instead of
+generic (`echo 12d1 107e | sudo tee /sys/bus/usb-serial/drivers/option1/new_id`)
+— option's per-interface quirk tables often unmask Huawei protocols.
+
+**AT gate result** (probe scripts in `tools/serial-probe/`):
+- `AT` → `OK`. Everything else — every `AT+` and `AT^` command tried
+  (CGMI/CGMM/CGMR/CGSN/CIMI/CSQ/CPAS, E1/V1/Z/&F, ^GETPORTMODE, ^VERSION?,
+  ^SN?, ^HVER?, ^AUTH (all forms), ^NVWREX=? …, even garbage) → `\r\nno
+  permission\r\n`.
+- Interpretation: the manufacture-mode AT interpreter runs, but the command
+  permission layer is closed. Per repair-community reports, sensitive
+  factory AT operations on modern Huaweis are authorized cryptographically /
+  server-side (the reason paid tools exist); no public unlock is documented.
+- ttyUSB0/2: no response to text, AT set, or simple DIAG-frame pings
+  (`0x7e…`) — likely binary diag/log streams needing a proper session
+  handshake; not identified.
+
+**Where this leaves the paths from §3:**
+- Path C (hidden fastboot/AT OEM commands): the AT surface exists but is
+  permission-gated; without factory authorization nothing is permitted.
+  Deprioritized.
+- Path D (ADB) is now the primary research route: manufacture mode exposes a
+  dedicated ADB interface; after the unbind, test `adb devices` —
+  manufacture-mode ADB commonly connects without the RSA prompt. Then
+  `getprop` / `settings list` to find the key storing the port mode.
+- Paths A/B (oeminfo/nve diff) remain available via fastboot dumps and are
+  still the most likely storage location.
