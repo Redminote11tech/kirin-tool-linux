@@ -115,3 +115,50 @@ excluding 990 4g)"). What is known/unknown:
   later with community evidence + a tester (possibly already working via the
   existing hisi990 entry, untested). 9000-series needs bootrom research that
   does not publicly exist. Until then: **we don't attempt.**
+
+---
+
+## 7. ADDENDUM 2026-09-12 — Kirin 9000 (NOH-AN00) stock bootloader surface, live capture
+
+First documented survey of a **Kirin 9000** stock bootloader from this fork
+(Mate 40 Pro, NOH-AN00, build `NOH-AN00 4.2.0.196(C00E182R6P6)`, EMUI 14.2,
+bootloader reached via `adb reboot bootloader` from manufacture mode).
+
+Permitted (read-only) commands:
+
+| Command | Response |
+|---|---|
+| `getvar devicemodel` | `NOH-AN00` |
+| `getvar vendorcountry` | `all/cn` |
+| `getvar rescue_ugs_port` | `UGSA` |
+| `oem lock-state info` | `FB LockState: LOCKED`, `USER LockState: LOCKED` |
+| `oem get-build-number` | `NOH-AN00 4.2.0.196(C00E182R6P6)` |
+
+Blocked with `FAILED (remote: 'Command not allowed')`: `getvar all`,
+`getvar product`, `version-bootloader`, `version-baseband`, `unlocked`,
+`security-state`, `ptable`, `oem device-info` — i.e. the stock bootloader
+whitelists a handful of identification queries and blocks everything else,
+including every read/write surface Kirin Tool uses on Kirin ≤990 (`ptable`,
+`oem oeminfowrite-*`, `oem dump-emmc`, rescue vars, …).
+
+**Consequences for the §4 assessment (unchanged, now evidence-backed):**
+
+- With FB+USER locked, no flashing or rebranding is possible through the
+  stock bootloader — Kirin Tool's whole flashing/rebrand path on ≤990 assumes
+  an unlocked fastboot first (VCOM loader upload), and no public loader or
+  bootrom exploit exists for the 9000.
+- Manufacture mode does not change this: it is a booted-OS USB configuration
+  (see `usb-port-manufacture-mode.md`); its AT surface is factory-
+  permission-gated and its ADB is unprivileged. Neither reaches the
+  bootloader's write surface.
+- Practical consequence: on a Kirin 9000 device the tool's realistic scope is
+  **identification and state display** (devicemodel, vendorcountry,
+  lock-state, build number all work) — the same read-only set could power a
+  device-info page for currently-unsupported SoCs. Unlocking remains blocked
+  on both the fastboot path (locked, write-blocked) and the VCOM path (no
+  loader/exploit for the 9000 generation).
+
+A `oem unlock` attempt was deliberately **not** performed: on a locked
+stock bootloader it cannot succeed (the unlocked-fastboot loader the flow
+requires does not exist for this SoC) and unlock attempts risk ARB
+increment per the tool's own warnings.

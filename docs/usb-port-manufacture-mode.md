@@ -113,7 +113,7 @@ except the ProjectMenu setting itself — it is read-only research.
 ## 7. LIVE CAPTURE 2026-09-12 — NOH-AN00 (Mate 40 Pro) in manufacture mode
 
 First real-device capture of the feature, on **NOH-AN00 (Mate 40 Pro,
-Kirin 9000E)** with USB Port Settings = Manufacture mode:
+Kirin 9000)** with USB Port Settings = Manufacture mode:
 
 **USB enumeration** (`lsusb -v`, `udevadm`): PID `12d1:107e` (lsusb DB name
 "P10 smartphone" is bogus; product string is `NOH-AN00`), 4 vendor-specific
