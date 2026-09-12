@@ -156,3 +156,56 @@ generic (`echo 12d1 107e | sudo tee /sys/bus/usb-serial/drivers/option1/new_id`)
   `getprop` / `settings list` to find the key storing the port mode.
 - Paths A/B (oeminfo/nve diff) remain available via fastboot dumps and are
   still the most likely storage location.
+
+## 8. ADDENDUM 2026-09-12 (ADB session) — storage identified: Android persistent properties
+
+With ADB authorized on the NOH-AN00 (PQY0220B18020151, non-root production
+build, EMUI 14.2 / Android 12):
+
+**The mechanism is found:**
+
+- `/vendor/etc/init/usb_port.rc` defines the `usb_port` daemon
+  (`/vendor/bin/usb_port`, running as `system`) plus `usb_port -w 1`
+  (usb_port_n) and `usb_port -m` (usb_monitor), and init **property bridges**:
+  - `vendor.set_usb_config`   → `sys.usb.config`            (runtime switch)
+  - `vendor.set_p_usb_config` → `persist.sys.usb.config`    (persisted default)
+- Live state: `sys.usb.config` = `manufacture,adb` (current, manufacture
+  mode), `persist.sys.usb.config` = `hisuite,mtp,mass_storage,adb`
+  (persisted default). Mode strings are comma-separated USB function lists —
+  "manufacture" and "hisuite" are function names understood by the vendor USB
+  stack, not magic numbers.
+- `dumpsys usb` confirms the active functions (`ADB` + `0x4000`) and exposes
+  Huawei's extension service `hwUsbExService`
+  (`huawei.android.hardware.usb.IHwUsbManagerEx`).
+
+**What is blocked, and why:**
+
+- `setprop vendor.set_usb_config / vendor.set_p_usb_config` from `adb shell`
+  → SELinux denial (`shell` context may not set vendor properties). The
+  init-bridge write path exists but requires a context allowed to set vendor
+  properties: i.e. **root** (or the `usb_port` daemon itself).
+- `adb root` → "adbd cannot run as root in production builds".
+- `cmd usb` on this build → "No shell command implementation".
+- Calling `hwUsbExService` directly → HwBinder, SELinux-gated from shell.
+
+**Conclusions for P-22:**
+
+1. **Storage identified:** the port mode lives in Android persistent
+   properties (`persist.sys.usb.config`), managed by the vendor `usb_port`
+   daemon — **not** in oeminfo, **not** in nve. Paths A/B from §3 are ruled
+   out for this device (EMUI 14.2). Path C stays gated (§7). Path D works
+   read-only.
+2. **What the tool can do without root:** *read and display* the current
+   (`sys.usb.config`) and persisted (`persist.sys.usb.config`) USB mode over
+   ADB — safe, useful, and implementable now. Switching modes
+   programmatically requires root (`setprop vendor.set_usb_config <list>` →
+   init bridge applies it) or the factory authorization the AT gate demands.
+3. Switching is trivially possible for the *user* via ProjectMenu — the
+   feature's remaining tool value is display/guidance + root-only switching.
+
+Documented live evidence: probe transcripts in §7; this section's property
+dumps taken over ADB on 2026-09-12. One live observation worth keeping:
+during earlier testing the persisted config was `hisuite,…` while the active
+config was `manufacture,adb` — i.e. the ProjectMenu toggle applied the
+runtime config while the persisted default had not been changed, which is
+why the mode can revert after reboot unless the daemon persists it.
