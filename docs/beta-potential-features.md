@@ -68,6 +68,11 @@ git checkout linux-v2.4.2  # stable stays the default/1:1 branch
   manifest'd backup folder.
 - **P-15 NVMe/nve variable explorer** — read/write arbitrary `nve:` vars (not just SN) with
   backup/restore per var.
+- **P-22 USB Port Settings / Manufacture mode** — read/write the device's USB port
+  configuration (default / hisuite / manufacture). **Research-required**: the feature does
+  not exist in the Windows tool, and the storage location (oeminfo record vs `nve:` var vs
+  hidden OEM command) is unidentified — see `usb-port-manufacture-mode.md` for the
+  diff-based identification procedure before any implementation.
 
 ### UX / quality
 - **P-16 Error translation** — map known bootloader FAIL strings to human explanations
