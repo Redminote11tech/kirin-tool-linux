@@ -60,8 +60,23 @@ namespace Kirin_Tool.Services
             { "hisi990", new List<(string, int, bool)>{ ("null", 0x22000, false), ("XLOADER", 0x22000, true), ("UCE", unchecked((int)0x60000000), false), ("FASTBOOT", 0x1A400000, false), ("BL2", 0x1E400000, false) } },
         };
 
+        // Beta track only: Kirin 990 4G is a near-identical die to the 990 5G
+        // (same boot chain generation, no 5G modem); the alias reuses the
+        // hisi990 loader set and addresses. UNTESTED on hardware — see
+        // docs/soc-support-fast-flash-loader.md §8. No new loader blobs ship.
+        private static readonly Dictionary<string, string> CpuAliases = new Dictionary<string, string>
+        {
+            { "hisi990_4g", "hisi990" }
+        };
+
+        public static string NormalizeCpu(string cpu)
+        {
+            return cpu != null && CpuAliases.TryGetValue(cpu, out var baseCpu) ? baseCpu : cpu;
+        }
+
         public async Task<UnlockResult> UnlockFastboot(string cpu, ObservableCollection<ProgressItemViewModel> progressItems, IProgress<string> overallProgress, Func<string, Task<bool>> interactionHandler = null, bool useFastFlashLoader = false)
         {
+            cpu = NormalizeCpu(cpu);
             try
             {
                 var loaderDir = Path.Combine(AppContext.BaseDirectory, "loaders", cpu);

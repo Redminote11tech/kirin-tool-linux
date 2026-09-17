@@ -1369,6 +1369,25 @@ namespace Kirin_Tool
                 return;
             }
 
+            // Beta track: the 990 4G alias reuses the 990 5G loader set and is
+            // unverified on real hardware — require an explicit acknowledgement.
+            if (cpu == "hisi990_4g")
+            {
+                var experimentalResult = await _dialogService.ShowConfirmDialog(
+                    "Experimental - Untested",
+                    "Kirin 990 4G support is EXPERIMENTAL and has never been verified on real hardware.\n\n" +
+                    "It reuses the Kirin 990 5G loader set. The attempt may fail safely (device re-enters " +
+                    "download mode) or, in the worst case, brick the device. If it succeeds, the ARB " +
+                    "counter is permanently incremented.\n\n" +
+                    "Are you absolutely sure you want to continue?",
+                    "Continue Anyway", "Cancel");
+
+                if (experimentalResult != true)
+                {
+                    return;
+                }
+            }
+
             if (cpu == "hisi820" || cpu == "hisi985")
             {
                 var warningResult = await _dialogService.ShowConfirmDialog(
@@ -2055,7 +2074,7 @@ namespace Kirin_Tool
         {
             string model = TxtDeviceModel.Text.Trim();
             string vendor = TxtVendor.Text.Trim();
-            string selectedCpu = GetSelectedCpu();
+            string selectedCpu = FirmwareUnlocker.NormalizeCpu(GetSelectedCpu());
             bool useDirectCommand = selectedCpu == "hisi710" || selectedCpu == "hisi710a" || selectedCpu == "hisi980" || selectedCpu == "hisi970" ||
                                     selectedCpu == "hisi810" || selectedCpu == "hisi820" || selectedCpu == "hisi985" || selectedCpu == "hisi990";
 
@@ -2296,7 +2315,7 @@ namespace Kirin_Tool
 
         private void UpdateOemInfoUI()
         {
-            string selectedCpu = GetSelectedCpu();
+            string selectedCpu = FirmwareUnlocker.NormalizeCpu(GetSelectedCpu());
             bool useDirectCommand = selectedCpu == "hisi710" || selectedCpu == "hisi710a" || selectedCpu == "hisi980" || selectedCpu == "hisi970" ||
                                     selectedCpu == "hisi810" || selectedCpu == "hisi820" || selectedCpu == "hisi985" || selectedCpu == "hisi990";
 
@@ -2316,7 +2335,7 @@ namespace Kirin_Tool
 
         private void UpdateSecurityUI()
         {
-            string selectedCpu = GetSelectedCpu();
+            string selectedCpu = FirmwareUnlocker.NormalizeCpu(GetSelectedCpu());
             bool isSupported = selectedCpu == "hisi710" || selectedCpu == "hisi970" || selectedCpu == "hisi980" || selectedCpu == "hisi990";
 
             if (UnlockBootloaderPanel != null)

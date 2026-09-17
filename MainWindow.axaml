@@ -62,6 +62,7 @@
                                 <ComboBoxItem Content="Kirin 980 (hisi980)"/>
                                 <ComboBoxItem Content="Kirin 985 (hisi985)"/>
                                 <ComboBoxItem Content="Kirin 990 5G (hisi990)"/>
+                                <ComboBoxItem Content="Kirin 990 4G (hisi990_4g) [EXPERIMENTAL - UNTESTED]"/>
                                 <ComboBoxItem Content="Kirin 710 (hisi710)"/>
                                 <ComboBoxItem Content="Kirin 710a (hisi710a)"/>
                                 <ComboBoxItem Content="Kirin 810 (hisi810)"/>
