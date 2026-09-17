@@ -162,3 +162,34 @@ A `oem unlock` attempt was deliberately **not** performed: on a locked
 stock bootloader it cannot succeed (the unlocked-fastboot loader the flow
 requires does not exist for this SoC) and unlock attempts risk ARB
 increment per the tool's own warnings.
+
+---
+
+## 8. ADDENDUM 2026-09-12 — Kirin 990 4G: community evidence and the experimental alias
+
+Question: 990 5G is supported — is 990 4G possible?
+
+**Hardware relationship:** the 990 4G is a near-identical die to the 990 5G
+(TSMC N7 without the integrated Balong 5000 modem), same generation boot
+chain and bootrom family. The staged loaders (`hisi990`: null/XLOADER/UCE/
+FASTBOOT/BL2) and load addresses therefore have a credible chance of working
+unchanged on the 4G variant — but nothing public confirms it.
+
+**Community evidence (2026-09-12):** the free 990 5G unlock is this tool's
+own headline capability (upstream authors); for 990 4G devices (Mate 30 4G,
+P40 4G…) no free public method is documented — only paid servicing tools
+claim support. Upstream explicitly excludes 990 4G, which may be caution
+rather than a known failure.
+
+**Status per track:**
+- **Stable (`linux-v2.4.2`): unchanged.** Upstream does not support 990 4G;
+  adding it would break the strictly-1:1 contract. A 4G owner *can* select
+  `hisi990` today and attempt the flow (nothing blocks it) — this document
+  neither encourages nor warns beyond what §3 says: RAM-upload mismatches
+  usually fail safely (device re-enters bootrom), success permanently
+  increments ARB, and a first run is brick-risk territory.
+- **Beta:** carries an *experimental* `hisi990_4g` selection that resolves to
+  the hisi990 loader set with an explicit UNTESTED warning dialog. No new
+  blobs are shipped (reuses `loaders/hisi990/`). It exists to make the
+  attempt visible, labeled, and honest — **it is not verified support**.
+  The moment a 4G owner reports success/failure, record it here.
