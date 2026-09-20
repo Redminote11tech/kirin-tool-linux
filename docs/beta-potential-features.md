@@ -53,11 +53,14 @@ git checkout linux-v2.4.2  # stable stays the default/1:1 branch
   removes the android-tools dependency and the bundled-binary size cost. Large effort.
 - **P-08 USB hotplug monitoring** — watch udev/netlink for fastboot/VCOM/DBAdapter appear
   events instead of polling `fastboot devices`; instant UI updates.
-- **P-09 First-run permission wizard** — detect missing udev rules / group membership
-  (`adbusers`, `uucp`) and offer a pkexec-driven fix with the bundled rules file.
-- **P-10 usbfs buffer check** — detect the 16 MB `usbfs_memory_mb` default and warn/tune for
-  large downloads.
-- **P-11 Packaging breadth** — AppImage and/or Flatpak alongside the pacman package; CI builds.
+- **P-09 First-run permission wizard** — ✅ lite implemented (beta): read-only startup
+  diagnostics (`Utils/LinuxEnvironmentCheck`) detect missing udev rules and missing
+  adbusers/uucp membership and show the exact fix commands. No pkexec wizard yet.
+- **P-10 usbfs buffer check** — ✅ lite implemented (beta): same startup diagnostics detect
+  the 16 MB `usbfs_memory_mb` default and print the tuning commands.
+- **P-11 Packaging breadth** — ✅ CI started: GitHub Actions workflow (`.github/workflows/build.yml`)
+  builds the self-contained app + bundled fastboot and the pacman package as artifacts
+  (tag push / manual). AppImage/Flatpak remain open.
 - **P-12 Headless CLI mode** — scriptable `kirin-tool-cli flash --xml ...` using the same
   services; enables automation and CI testing.
 
@@ -68,15 +71,16 @@ git checkout linux-v2.4.2  # stable stays the default/1:1 branch
   manifest'd backup folder.
 - **P-15 NVMe/nve variable explorer** — read/write arbitrary `nve:` vars (not just SN) with
   backup/restore per var.
-- **P-22 USB Port Settings / Manufacture mode** — read/write the device's USB port
-  configuration (default / hisuite / manufacture). **Research-required**: the feature does
-  not exist in the Windows tool, and the storage location (oeminfo record vs `nve:` var vs
-  hidden OEM command) is unidentified — see `usb-port-manufacture-mode.md` for the
-  diff-based identification procedure before any implementation.
+- **P-22 USB Port Settings / Manufacture mode** — storage identified (`persist.sys.usb.config`
+  + vendor `usb_port` daemon, see `usb-port-manufacture-mode.md`). ✅ lite implemented (beta):
+  read-only display of active + persisted USB mode over ADB (`Services/UsbPortModeReader`,
+  DeviceInfo page button). Programmatic switching requires root — intentionally not performed.
 
 ### UX / quality
-- **P-16 Error translation** — map known bootloader FAIL strings to human explanations
-  (locked device, wrong firmware, sec-phone state, ptable mismatch).
+- **P-16 Error translation** — ✅ lite implemented (beta): `Utils/FastbootErrorHints` maps
+  known failure patterns (locked bootloader "Command not allowed", factory "no permission",
+  usbfs stalls, usbfs/memory errors) to actionable hints, applied to partition-flash
+  completion messages and dump failures. Full coverage across all dialogs remains open.
 - **P-17 Firmware package browser** — inspect UPDATE.APP contents (partition list, sizes)
   before choosing anything.
 - **P-18 Profiles** — saved per-device presets (CPU selection, file slots, operation sets).

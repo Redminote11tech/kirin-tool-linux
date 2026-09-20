@@ -1,0 +1,70 @@
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    tags: [ 'v*' ]
+
+jobs:
+  app-linux-x64:
+    name: self-contained app + bundled fastboot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish self-contained app
+        run: >
+          dotnet publish Kirin-Tool.csproj
+          -c Release -r linux-x64 --self-contained true
+          -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false
+          -o publish-out
+
+      - name: Build bundled Huawei-capable fastboot
+        run: |
+          make -C fastboot-src
+          mkdir -p publish-out/fastboot
+          cp fastboot-src/fastboot publish-out/fastboot/fastboot
+          ./publish-out/fastboot/fastboot --version
+
+      - name: Smoke test
+        run: test -x publish-out/Kirin-Tool && test -f publish-out/fastboot/payload
+
+      - name: Upload app bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: kirin-tool-linux-app-${{ github.sha }}
+          path: publish-out/
+
+  pacman-package:
+    name: pacman package (Arch)
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:base-devel
+    steps:
+      - name: Install toolchain
+        run: |
+          pacman -Syu --noconfirm git
+          pacman -Syu --noconfirm dotnet-sdk
+
+      - uses: actions/checkout@v4
+
+      - name: Build package
+        run: |
+          useradd -m builder
+          build=$(mktemp -d /home/builder/pkg-XXXX)
+          cp packaging/PKGBUILD packaging/kirin-tool-linux.install "$build/"
+          tar czf "$build/kirin-tool-linux-2.4.2.tar.gz" \
+            --exclude .git --exclude bin --exclude obj --exclude .github \
+            --transform 's,^\.,kirin-tool-linux-2.4.2,' .
+          chown -R builder:builder "$build"
+          su builder -c "cd $build && makepkg -f --noconfirm"
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: kirin-tool-linux-pacman-${{ github.sha }}
+          path: /home/builder/pkg-*/kirin-tool-linux-*.pkg.tar.zst

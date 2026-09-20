@@ -164,6 +164,31 @@ namespace Kirin_Tool
             InitializeFullOta();
 
             ShowWelcomePage();
+
+            // Beta track: read-only environment diagnostics once the window is up.
+            Dispatcher.UIThread.Post(async () =>
+            {
+                try
+                {
+                    var issues = Utils.LinuxEnvironmentCheck.GetIssues();
+                    if (issues.Count > 0)
+                    {
+                        await ShowMessageBox("Linux Environment Notice",
+                            "Some conditions that commonly break device operations were detected:\n\n" +
+                            string.Join("\n\n", issues));
+                    }
+                }
+                catch
+                {
+                    // diagnostics must never block startup
+                }
+            });
+        }
+
+        private async void ReadUsbPortMode_Click(object sender, RoutedEventArgs e)
+        {
+            var result = await Services.UsbPortModeReader.ReadAsync();
+            await ShowMessageBox(result.Success ? "USB Port Mode" : "USB Port Mode — Read Failed", result.Message);
         }
 
         private void InitializeFullOta()
@@ -651,7 +676,9 @@ namespace Kirin_Tool
             bool allSuccessful = successCount == totalCount;
             string message = allSuccessful
                 ? $"Successfully flashed all {totalCount} partitions!"
-                : $"Flash completed with {successCount}/{totalCount} successful.";
+                : Utils.FastbootErrorHints.AppendHint(
+                    $"Flash completed with {successCount}/{totalCount} successful.",
+                    lastError);
 
             return (allSuccessful, message);
         }

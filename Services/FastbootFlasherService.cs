@@ -93,8 +93,10 @@ namespace Kirin_Tool.Services
                 if (!storageSuccess)
                 {
                     return (false, string.IsNullOrEmpty(storageResult) || storageResult.ToLower().Contains("fail") || storageResult.ToLower().Contains("error")
-                        ? $"Dump failed. The Huawei fastboot client normally writes '{savePath}' on the host; the system fastboot cannot save uploaded partition data."
-                        : storageResult);
+                        ? Kirin_Tool.Utils.FastbootErrorHints.AppendHint(
+                            $"Dump failed. The Huawei fastboot client normally writes '{savePath}' on the host; the system fastboot cannot save uploaded partition data.",
+                            storageResult)
+                        : Kirin_Tool.Utils.FastbootErrorHints.AppendHint(storageResult, storageResult));
                 }
                 return (true, storageResult ?? "Dump completed");
             }
