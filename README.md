@@ -70,6 +70,12 @@ Linux-focused fork of [Kirin-Tool](https://github.com/kethily-daniel/Kirin-Tool)
 ported single-handedly by Redminote11tech and published under the terms of the
 Business Source License 1.1. All original copyright notices are retained.
 
+**Independence notice (2026-09-11):** upstream has since been republished under a
+view-only reference license. This fork derives from upstream v2.4.2, which was
+distributed under BSL 1.1, and is now developed **independently** — it no longer
+syncs upstream. See [docs/FORK-NOTICE.md](docs/FORK-NOTICE.md) for the full
+provenance and license position.
+
 ### License summary (non-exhaustive; the LICENSE file is authoritative)
 
 - You may copy, modify, create derivative works, redistribute, and make **non-production** use.
