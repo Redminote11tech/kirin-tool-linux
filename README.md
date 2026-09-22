@@ -48,6 +48,19 @@ sudo pacman -U kirin-tool-linux-2.4.2-4-x86_64.pkg.tar.zst
 
 Then launch `kirin-tool` from your application menu or a terminal.
 
+### AppImage (any distro)
+
+Build it from this repo (needs `dotnet-sdk` 8 + `gcc`/`make`, no root/FUSE):
+
+```bash
+./packaging/build-appimage.sh publish-out 2.4.2
+./kirin-tool-linux-2.4.2-x86_64.AppImage
+```
+
+CI also produces AppImage artifacts on every tag. Fastboot invocation logs
+are written to `~/.local/state/Kirin-Tool/log/` when the app directory is
+not writable (AppImage / system installs).
+
 ### From source
 
 ```bash
