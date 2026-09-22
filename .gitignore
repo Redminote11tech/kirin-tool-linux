@@ -433,3 +433,7 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+publish-out/
+*.AppImage
+appimagetool*.AppImage
+squashfs-root/

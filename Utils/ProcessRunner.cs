@@ -85,23 +85,37 @@ namespace Kirin_Tool.Utils
                 if (!executablePath.Contains("fastboot", StringComparison.OrdinalIgnoreCase))
                     return;
 
-                string exeDir = AppDomain.CurrentDomain.BaseDirectory;
-                string logDir = Path.Combine(exeDir, "log");
-                if (!Directory.Exists(logDir))
-                {
-                    Directory.CreateDirectory(logDir);
-                }
-
                 string fileName = $"kirintool_log_{DateTime.Now:yyyy_MM_dd}.log";
-                string logFilePath = Path.Combine(logDir, fileName);
-
                 string timestamp = DateTime.Now.ToString("HH:mm:ss");
                 string cmdText = $"{Path.GetFileName(executablePath)} {arguments}";
                 string logMessage = $"[{timestamp}] {cmdText}\n{output}\n\n";
 
-                lock (LogLock)
+                // Prefer a log dir next to the executable; when that is not
+                // writable (AppImage squashfs, root-owned pacman install),
+                // fall back to the user's XDG state directory.
+                string exeLogDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log");
+                string xdgState = Environment.GetEnvironmentVariable("XDG_STATE_HOME");
+                if (string.IsNullOrWhiteSpace(xdgState))
                 {
-                    File.AppendAllText(logFilePath, logMessage);
+                    xdgState = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "state");
+                }
+                string userLogDir = Path.Combine(xdgState, "Kirin-Tool", "log");
+
+                foreach (var logDir in new[] { exeLogDir, userLogDir })
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(logDir);
+                        lock (LogLock)
+                        {
+                            File.AppendAllText(Path.Combine(logDir, fileName), logMessage);
+                        }
+                        return;
+                    }
+                    catch
+                    {
+                        // try the next candidate
+                    }
                 }
             }
             catch {}

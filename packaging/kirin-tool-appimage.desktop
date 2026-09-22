@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Kirin Tool for Linux
+GenericName=Huawei Kirin Flash Tool
+Comment=Flash, unlock and repair Huawei Kirin devices
+Exec=AppRun
+Icon=kirin-tool
+Categories=Development;Utility;
+Terminal=false

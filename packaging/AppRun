@@ -1,0 +1,8 @@
+#!/bin/sh
+# AppRun for the Kirin Tool for Linux AppImage.
+# The self-contained app resolves its bundled fastboot/ and loaders/ relative
+# to its own directory (AppContext.BaseDirectory), so keeping the whole
+# publish tree under usr/bin/ preserves all resource lookups.
+HERE=$(dirname "$(readlink -f "$0")")
+export APPDIR="$HERE"
+exec "$HERE/usr/bin/Kirin-Tool" "$@"

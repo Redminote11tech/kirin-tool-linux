@@ -39,6 +39,28 @@ jobs:
           name: kirin-tool-linux-app-${{ github.sha }}
           path: publish-out/
 
+  appimage:
+    name: AppImage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build AppImage
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          case "$V" in *"/"*) V="2.4.2" ;; esac
+          ./packaging/build-appimage.sh publish-out "$V"
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: kirin-tool-linux-appimage-${{ github.sha }}
+          path: kirin-tool-linux-*.AppImage
+
   pacman-package:
     name: pacman package (Arch)
     runs-on: ubuntu-latest
