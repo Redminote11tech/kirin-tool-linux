@@ -61,6 +61,15 @@ CI also produces AppImage artifacts on every tag. Fastboot invocation logs
 are written to `~/.local/state/Kirin-Tool/log/` when the app directory is
 not writable (AppImage / system installs).
 
+**FUSE note:** *building* the AppImage needs no FUSE (appimagetool runs via
+`--appimage-extract-and-run`). *Running* it uses FUSE2 to mount — on
+Arch/CachyOS install it once with `sudo pacman -S fuse2`, or skip the
+install entirely by running:
+
+```bash
+./kirin-tool-linux-2.4.2-x86_64.AppImage --appimage-extract-and-run
+```
+
 ### From source
 
 ```bash
