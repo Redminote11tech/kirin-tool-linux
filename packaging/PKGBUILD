@@ -1,7 +1,7 @@
 # Maintainer: Redminote11tech
 pkgname=kirin-tool-linux
 pkgver=2.4.2
-pkgrel=5
+pkgrel=6
 install=kirin-tool-linux.install
 pkgdesc="Kirin Tool for Linux - Huawei Kirin bootloader/fastboot tooling (community Linux port)"
 arch=('x86_64')
@@ -11,8 +11,6 @@ depends=()
 makedepends=('dotnet-sdk')
 optdepends=('android-tools: fallback fastboot if the bundled Huawei-capable binary is removed')
 source=("kirin-tool-linux-$pkgver.tar.gz")
-# sha256sums is regenerated per release when the source tarball is rebuilt
-# (tarballs are not reproducible). See the maintainer workflow in the repo.
 sha256sums=("SKIP")
 
 build() {
