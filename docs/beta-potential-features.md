@@ -58,9 +58,10 @@ git checkout linux-v2.4.2  # stable stays the default/1:1 branch
   adbusers/uucp membership and show the exact fix commands. No pkexec wizard yet.
 - **P-10 usbfs buffer check** — ✅ lite implemented (beta): same startup diagnostics detect
   the 16 MB `usbfs_memory_mb` default and print the tuning commands.
-- **P-11 Packaging breadth** — ✅ CI started: GitHub Actions workflow (`.github/workflows/build.yml`)
-  builds the self-contained app + bundled fastboot and the pacman package as artifacts
-  (tag push / manual). AppImage/Flatpak remain open.
+- **P-11 Packaging breadth** — ✅ CI + AppImage: GitHub Actions workflow builds the
+  self-contained app + bundled fastboot, the pacman package, and an AppImage
+  (`packaging/build-appimage.sh`, any-distro, no root/FUSE) as artifacts
+  (tag push / manual). Flatpak remains open.
 - **P-12 Headless CLI mode** — scriptable `kirin-tool-cli flash --xml ...` using the same
   services; enables automation and CI testing.
 
