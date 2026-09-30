@@ -40,8 +40,8 @@
     "sha256": "a591aaa27091f76e125a95e61c0ecc69f9e7a29759bb0705a05e06ecd702540e"
   },
   "MainWindow.axaml.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
-    "sha256": "98a9f05452af13cfa69d9166f7705a602b8973473c0321ea3b1567993b47c53d"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix",
+    "sha256": "b4d9100b43d1a11560ed299501f05b94edf2b19cc8d25fd9816a5b3deec22b0f"
   },
   "UI/ProcessDialogUapp.axaml.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",

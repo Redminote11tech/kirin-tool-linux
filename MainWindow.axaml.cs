@@ -2053,8 +2053,8 @@ namespace Kirin_Tool
 
         private async void BtnConvertOem_Click(object sender, RoutedEventArgs e)
         {
-            string model = TxtDeviceModel.Text.Trim();
-            string vendor = TxtVendor.Text.Trim();
+            string model = TxtDeviceModel.Text?.Trim() ?? string.Empty;
+            string vendor = TxtVendor.Text?.Trim() ?? string.Empty;
             string selectedCpu = GetSelectedCpu();
             bool useDirectCommand = selectedCpu == "hisi710" || selectedCpu == "hisi710a" || selectedCpu == "hisi980" || selectedCpu == "hisi970" ||
                                     selectedCpu == "hisi810" || selectedCpu == "hisi820" || selectedCpu == "hisi985" || selectedCpu == "hisi990";
@@ -2146,7 +2146,7 @@ namespace Kirin_Tool
                 return;
             }
 
-            string filePath = TxtOemInfoFile.Text.Trim();
+            string filePath = TxtOemInfoFile.Text?.Trim() ?? string.Empty;
             bool pullFromDevice = TogLivePull.IsChecked == true;
 
             if (!pullFromDevice && (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath)))
