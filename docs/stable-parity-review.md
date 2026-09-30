@@ -1,3 +1,8 @@
+> Historical mixed-tree assessment. Separation completed 2026-09-30: these
+> hardening candidates now live on beta, while linux-v2.4.2 has an independently
+> selected compatibility release. No beta merge into stable occurred. Statements
+> below about an uncommitted/mixed working tree describe the earlier audit state.
+
 # Stable fidelity review — 2026-09-30
 
 ## Finding

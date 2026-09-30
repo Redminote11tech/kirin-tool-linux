@@ -146,3 +146,9 @@ not been validated by flashing a phone. See [the safety review](docs/flashing-sa
 and [corrected Windows comparison](docs/fastboot-windows-linux-diff.md), including
 the UltraFlash gap and USB merged-header limitations. Rebuild the bundled native
 fastboot as well as the application; old clients are rejected for backups.
+
+## Track separation (2026-09-30)
+
+This checkout is beta (2.4.2-beta.1). It includes the audit hardening candidates and
+existing beta features; they have not been merged into stable. Stable packages
+come only from linux-v2.4.2. Serial behavior changes here remain hardware-unvalidated.

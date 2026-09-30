@@ -2,8 +2,8 @@
 
 Purpose: establish fidelity per function, model and firmware. Passing one device
 or one OS mode does not validate all 18 loader sets. Do not test destructive
-functions just to complete a checklist. The dirty working tree currently contains
-unvalidated beta candidates; see [stable-parity-review.md](stable-parity-review.md).
+functions just to complete a checklist. This beta branch contains
+unvalidated hardening candidates; see [stable-parity-review.md](stable-parity-review.md).
 
 Record for each test: date, Windows release SHA-256, Linux commit plus patch hash,
 packaged fastboot SHA-256/version, device model/SoC, exact firmware/region,
