@@ -2,8 +2,8 @@
 # Build a Kirin Tool for Linux AppImage.
 #
 # Usage: packaging/build-appimage.sh [publish-dir] [version]
-#   publish-dir  a dotnet publish output tree (default: publish-out). If it
-#                does not exist, the script publishes it first. A bundled
+#   publish-dir  a refreshed dotnet publish output tree (default: publish-out).
+#                The app is always published first. A bundled
 #                fastboot binary (fastboot-src) is compiled in automatically.
 #   version      AppImage version string (default: 2.4.2)
 #
@@ -15,26 +15,28 @@
 
 set -euo pipefail
 
-VERSION="${2:-2.4.2}"
+VERSION="${2:-2.4.2-stable.1}"
 PUBLISH_DIR="${1:-publish-out}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
-if [ ! -x "$PUBLISH_DIR/Kirin-Tool" ]; then
-    echo "==> Publishing self-contained app to $PUBLISH_DIR"
-    export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
-    dotnet publish Kirin-Tool.csproj \
-        -c Release -r linux-x64 --self-contained true \
-        -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false \
-        -o "$PUBLISH_DIR"
-fi
+# Always refresh both components: existence does not establish source/version freshness.
+echo "==> Publishing self-contained app to $PUBLISH_DIR"
+export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+dotnet publish Kirin-Tool.csproj \
+    -c Release -r linux-x64 --self-contained true \
+    -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false \
+    -o "$PUBLISH_DIR"
 
-if [ ! -x "$PUBLISH_DIR/fastboot/fastboot" ]; then
-    echo "==> Building bundled Huawei-capable fastboot"
-    make -C fastboot-src
-    mkdir -p "$PUBLISH_DIR/fastboot"
-    cp fastboot-src/fastboot "$PUBLISH_DIR/fastboot/fastboot"
-fi
+echo "==> Building bundled Huawei-capable fastboot"
+make -C fastboot-src
+mkdir -p "$PUBLISH_DIR/fastboot"
+cp fastboot-src/fastboot "$PUBLISH_DIR/fastboot/fastboot"
+mkdir -p "$PUBLISH_DIR/licenses" "$PUBLISH_DIR/docs"
+cp LICENSE "$PUBLISH_DIR/licenses/LICENSE"
+cp fastboot-src/NOTICE "$PUBLISH_DIR/licenses/NOTICE.fastboot-src"
+cp docs/stable-release.md docs/testing-checklist.md "$PUBLISH_DIR/docs/"
+git rev-parse HEAD > "$PUBLISH_DIR/BUILD-COMMIT"
 
 echo "==> Assembling AppDir"
 APPDIR="$(mktemp -d)/AppDir"

@@ -86,8 +86,7 @@ git checkout linux-v2.4.2  # stable stays the default/1:1 branch
 - **P-21 Opt-in update check** — query GitHub releases only with explicit user consent.
 
 ### Explicitly out of scope for both tracks
-- UltraFlash / `oem dump-ufseye` / `memupload` UI exposure (no public protocol docs; no app
-  usage on Windows either).
+- UltraFlash / `oem dump-ufseye` / `memupload` UI exposure (no public protocol docs; no app UI; Windows can invoke UltraFlash internally).
 - Anything that phones home, cloud-unlock services, or packaged firmware distribution.
 - Kirin SoCs beyond the 18 loader sets already shipped (would require new loader blobs).
 

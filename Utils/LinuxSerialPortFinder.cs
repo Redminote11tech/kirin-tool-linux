@@ -26,7 +26,7 @@ namespace Kirin_Tool.Utils
 
             foreach (string port in SerialPort.GetPortNames().OrderBy(port => port, StringComparer.Ordinal))
             {
-                if (!IsUsbSerialPort(port) || !TryGetUsbDevice(port, out DirectoryInfo? usbDevice))
+                if (!IsUsbSerialPort(port) || !TryGetUsbDevice(port, out DirectoryInfo? usbDevice, out DirectoryInfo? serialDevice))
                 {
                     continue;
                 }
@@ -36,7 +36,7 @@ namespace Kirin_Tool.Utils
                     continue;
                 }
 
-                string descriptor = GetUsbDescriptor(usbDevice);
+                string descriptor = GetUsbDescriptor(serialDevice);
                 if (descriptorMatches == null || descriptorMatches(descriptor))
                 {
                     return port;
@@ -53,13 +53,14 @@ namespace Kirin_Tool.Utils
                    port.StartsWith("/dev/ttyGS", StringComparison.Ordinal);
         }
 
-        private static bool TryGetUsbDevice(string port, out DirectoryInfo? usbDevice)
+        private static bool TryGetUsbDevice(string port, out DirectoryInfo? usbDevice, out DirectoryInfo? serialDevice)
         {
             string deviceName = Path.GetFileName(port);
             var ttyDevice = new DirectoryInfo(Path.Combine("/sys/class/tty", deviceName, "device"));
             FileSystemInfo? resolvedDevice = ttyDevice.ResolveLinkTarget(returnFinalTarget: true);
 
-            for (DirectoryInfo? directory = resolvedDevice as DirectoryInfo; directory != null; directory = directory.Parent)
+            serialDevice = resolvedDevice as DirectoryInfo;
+            for (DirectoryInfo? directory = serialDevice; directory != null; directory = directory.Parent)
             {
                 if (File.Exists(Path.Combine(directory.FullName, "idVendor")) &&
                     File.Exists(Path.Combine(directory.FullName, "idProduct")))

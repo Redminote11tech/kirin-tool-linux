@@ -10,11 +10,14 @@
     <Product>Kirin Tool for Linux</Product>
     <Version>2.4.2</Version>
     <FileVersion>2.4.2</FileVersion>
-    <InformationalVersion>2.4.2</InformationalVersion>
+    <InformationalVersion>2.4.2-stable.1</InformationalVersion>
     <ApplicationIcon>logo.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <EmbeddedResource Remove="tests/**" />
+    <AvaloniaXaml Remove="tests/**" />
     <Content Include="logo.ico" />
     <Content Include="fastboot/payload">
       <Link>fastboot/payload</Link>

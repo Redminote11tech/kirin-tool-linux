@@ -130,13 +130,13 @@ namespace Kirin_Tool.Services.USBUpdate
                     if (mappingParts.Length >= 2)
                     {
                         string sourceDir = mappingParts[1];
-                        string imgPath = Path.Combine(sourceDir, "super.img");
+                        string imgPath = Path.Combine(sourceDir, $"{allPartitions[idx].partitionName}.img");
                         if (File.Exists(imgPath))
                         {
                             superImgPaths.Add(imgPath);
                             if (firstSuperHeaderPath == null)
                             {
-                                string headerPath = Path.Combine(sourceDir, "super.img.header");
+                                string headerPath = Path.Combine(sourceDir, $"{allPartitions[idx].partitionName}.img.header");
                                 if (File.Exists(headerPath))
                                     firstSuperHeaderPath = headerPath;
                             }

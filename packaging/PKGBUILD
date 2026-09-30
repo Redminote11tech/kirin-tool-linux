@@ -1,7 +1,7 @@
 # Maintainer: Redminote11tech
 pkgname=kirin-tool-linux
 pkgver=2.4.2
-pkgrel=6
+pkgrel=7
 install=kirin-tool-linux.install
 pkgdesc="Kirin Tool for Linux - Huawei Kirin bootloader/fastboot tooling (community Linux port)"
 arch=('x86_64')

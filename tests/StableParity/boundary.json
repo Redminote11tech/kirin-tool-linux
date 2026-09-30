@@ -1,0 +1,54 @@
+{
+  "Utils/SuperMerger.cs": {
+    "reference": "45440d47296ef4c250fc03730259dbeebb245ebc",
+    "sha256": "96eb33c436ee987640a27bd0e49d5fd83a9b76798263baafbd9920eb8837fa2f"
+  },
+  "Services/USBUpdate/XloaderPatcher.cs": {
+    "reference": "45440d47296ef4c250fc03730259dbeebb245ebc",
+    "sha256": "17da39cb6a3bfe2abf3ec422dc95c8c6e68b02d325354c48f4ae6d8750636415"
+  },
+  "Services/OemInfoEditor.cs": {
+    "reference": "45440d47296ef4c250fc03730259dbeebb245ebc",
+    "sha256": "63cb0cc92e13914a66ab9140d7b419ee92b9b75dda38f9244292ebd3eaaefe6d"
+  },
+  "Security/CryptoUtil.cs": {
+    "reference": "45440d47296ef4c250fc03730259dbeebb245ebc",
+    "sha256": "5eb56d71b5b9aabaf6ade2529c03dfc998b2124e71e61d0d140ddb1044a1f465"
+  },
+  "Utils/Crc16.cs": {
+    "reference": "45440d47296ef4c250fc03730259dbeebb245ebc",
+    "sha256": "768f0c3ec23df7754011f9f9b538c538200ac6865ae4c9e62f3c9de451f92c28"
+  },
+  "Services/USBUpdate/SoftwareTestpointService.cs": {
+    "reference": "45440d47296ef4c250fc03730259dbeebb245ebc",
+    "sha256": "cb3e363a7181270da41f376b365cdc3fb8c471d321f2d3654b3addcf43677262"
+  },
+  "Services/VcomFlasher.cs": {
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
+    "sha256": "f6f17f1bd15bc6e71b3795c8bf3e4e8854e1dcede43a7a80fa6da3115be924a8"
+  },
+  "Services/FirmwareUnlocker.cs": {
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
+    "sha256": "292e8ac29ac92da632b8ffe3e261d5ea97fe5da01c54159512e37aa7d851d4f2"
+  },
+  "Services/USBUpdate/UsbDownloadService.cs": {
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
+    "sha256": "76161fae500de362966d20540be14f46836b9e75c1d2ba2cb666316fef712668"
+  },
+  "Services/USBUpdate/USBUpdateApp.cs": {
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
+    "sha256": "a591aaa27091f76e125a95e61c0ecc69f9e7a29759bb0705a05e06ecd702540e"
+  },
+  "MainWindow.axaml.cs": {
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
+    "sha256": "98a9f05452af13cfa69d9166f7705a602b8973473c0321ea3b1567993b47c53d"
+  },
+  "UI/ProcessDialogUapp.axaml.cs": {
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
+    "sha256": "e4fad3bd71f8ceb401304a1772a61e80dc7785cf2bf24545582fde10e694c6c6"
+  },
+  "UI/ProgressDialog.axaml.cs": {
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
+    "sha256": "23454d5e2fcf416dce62c9037db8c876de07c0c7aa96a8b8fe7cd4d82ede2110"
+  }
+}

@@ -34,13 +34,12 @@
 #if defined(__cplusplus)
 extern "C" {
 
-/* Kirin Tool Linux port: OEM upload-to-file (see protocol.c). */
-int fb_command_upload(usb_handle *usb, const char *cmd, const char *filename);
 #endif
 
 struct sparse_file;
 
 /* protocol.c - fastboot protocol */
+int fb_dump_partition(usb_handle *usb, const char *kind, const char *partition, const char *filename);
 int fb_command(usb_handle *usb, const char *cmd);
 int fb_command_response(usb_handle *usb, const char *cmd, char *response);
 int fb_download_data(usb_handle *usb, const void *data, unsigned size);

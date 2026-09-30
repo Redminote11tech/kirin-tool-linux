@@ -309,9 +309,6 @@ void usage(void)
             "Huawei OEM dump commands (Kirin Tool Linux port):\n"
             "  oem dump-emmc <partition> <filename>     upload emmc data by partition\n"
             "  oem dump-storage <partition> <filename>  upload storage data by partition\n"
-            "  oem memory <memoryname> <filename>       upload DDR data by memoryname\n"
-            "  oem memupload <address> <length> <filename>\n"
-            "                                           upload DDR data by address and length\n"
             "\n"
             "options:\n"
             "  -w                                       erase userdata and cache (and format\n"
@@ -756,54 +753,28 @@ int do_bypass_unlock_command(int argc, char **argv)
     return 0;
 }
 
-/* Kirin Tool Linux port: the Huawei OEM sub-commands whose bootloaders upload
- * raw storage/DDR data in fastboot "DATA" frames. Writing that stream to the
- * trailing filename argument is the client-side half that the vendor fastboot
- * client (shipped with Kirin Tool for Windows) implements.
- */
-static int oem_is_upload_command(const char *subcmd)
-{
-    return !strcmp(subcmd, "dump-emmc") || !strcmp(subcmd, "dump-storage") ||
-           !strcmp(subcmd, "memory")    || !strcmp(subcmd, "memupload");
-}
-
 int do_oem_command(int argc, char **argv, usb_handle *usb)
 {
-    char command[256];
-    int is_upload = 0;
-    const char *upload_path = NULL;
     if (argc <= 1) return 0;
-
-    /* capture the upload target before skip() advances argv; taken from argv
-     * (not the space-joined command) so paths containing spaces work */
-    if (argc >= 4 && oem_is_upload_command(argv[1])) {
-        is_upload = 1;
-        upload_path = argv[argc - 1];
-    }
-
-    command[0] = 0;
-    while(1) {
-        if (strlen(command) + strlen(*argv) + 2 >= sizeof(command)) {
-            fprintf(stderr, "oem command too long\n");
-            return 0;
-        }
-        strcat(command,*argv);
-        skip(1);
-        if(argc == 0) break;
-        strcat(command," ");
-    }
-
-    if (is_upload) {
-        if (fb_command_upload(usb, command, upload_path) < 0) {
-            /* the app judges dump success from this output and the process
-             * exit code; a failed dump must not look successful */
+    if (!strcmp(argv[1], "dump-emmc") || !strcmp(argv[1], "dump-storage")) {
+        if (argc != 4) die("dump requires exactly a partition and a local filename");
+        const char *kind = !strcmp(argv[1], "dump-emmc") ? "emmc" : "storage";
+        if (fb_dump_partition(usb, kind, argv[2], argv[3]) < 0) {
             fprintf(stderr, "FAILED (%s)\n", fb_get_error());
             exit(1);
         }
         return 0;
     }
-
-    fb_queue_command(command,"");
+    if (!strcmp(argv[1], "memory") || !strcmp(argv[1], "memupload"))
+        die("Memory upload is not implemented; refusing to send an assumed protocol");
+    char command[65] = {0};
+    for (int i = 0; i < argc; ++i) {
+        if (strlen(command) + strlen(argv[i]) + (i ? 1 : 0) >= sizeof(command))
+            die("oem command exceeds the 64-byte protocol limit");
+        if (i) strcat(command, " ");
+        strcat(command, argv[i]);
+    }
+    fb_queue_command(command, "");
     return 0;
 }
 

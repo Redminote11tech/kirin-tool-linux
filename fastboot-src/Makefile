@@ -9,7 +9,7 @@ CC      ?= gcc
 CXX     ?= g++
 CFLAGS  ?= -O2 -Wall
 CFLAGS  += -I libsparse/include -I src
-CFLAGS  += '-DFASTBOOT_REVISION="kirin-tool-linux-1.0 (AOSP android-6.0.1_r1)"'
+CFLAGS  += '-DFASTBOOT_REVISION="kirin-tool-linux-2.0-stable vendor-storage-upload-v1 (AOSP android-6.0.1_r1)"'
 LIBS    := -lz -lpthread
 
 SRCS_CXX := src/fastboot.cpp src/bootimg_utils.cpp
@@ -20,6 +20,8 @@ SRCS_C   := src/protocol.c src/usb_linux.c src/util.c src/util_linux.c src/engin
 OBJS := $(SRCS_CXX:.cpp=.o) $(SRCS_C:.c=.o)
 
 all: fastboot
+
+$(OBJS): Makefile src/fastboot.h
 
 fastboot: $(OBJS)
 	$(CXX) -o $@ $(OBJS) $(LIBS) $(LDFLAGS)
@@ -34,3 +36,14 @@ clean:
 	rm -f fastboot $(OBJS)
 
 .PHONY: all clean
+
+# Fake USB only: never links usb_linux.c or opens a device.
+test: tests/vendor-upload-test
+	@mkdir -p tests/output
+	./tests/vendor-upload-test tests/output/backup.img
+	@test -z "$$(find tests/output -type f -name '*.partial.*' -print -quit)"
+
+tests/vendor-upload-test: tests/vendor_upload_test.c src/protocol.c src/fastboot.h
+	$(CC) $(CFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -o $@ tests/vendor_upload_test.c src/protocol.c
+
+.PHONY: test

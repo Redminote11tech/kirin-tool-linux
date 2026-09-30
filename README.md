@@ -136,3 +136,10 @@ USDT Tether (TRC20): `TD2sJbEmYa93sJhDBmTrvqmScqQSVTCfCK`
 ---
 
 *NOTICE: This tool is an independent software product and has not been authorized, sponsored, or otherwise approved by Huawei Technologies Co., Ltd. HiSilicon and Kirin are trademarks of Huawei Technologies Co., Ltd. All product and company names are trademarks™ or registered® trademarks of their respective holders. Use of them does not imply any affiliation with or endorsement by them.*
+
+## Stable 2.4.2-stable.1
+
+Stable and beta are separate tracks. See [release scope and known limitations](docs/stable-release.md)
+and the [hardware test checklist](docs/testing-checklist.md). Stable preserves frozen
+Windows behavior, including inherited defects; it is not a hardware safety certification.
+The independent merger, stricter validation and changed failure policies remain on beta.

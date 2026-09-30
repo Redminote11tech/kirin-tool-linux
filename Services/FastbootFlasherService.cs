@@ -188,7 +188,7 @@ namespace Kirin_Tool.Services
             {
                 var name = image.Attribute("name")?.Value;
                 var identifier = image.Attribute("identifier")?.Value;
-                var fileName = image.Value?.Trim();
+                var fileName = image.Value?.Trim().Replace('\\', '/');
 
                 if (string.IsNullOrEmpty(fileName))
                     continue;
