@@ -1,8 +1,19 @@
-# Kirin Tool Linux 2.4.2-stable.1
+# Kirin Tool Linux 2.4.2-stable.2
 
 Local stable compatibility package, 2026-09-30. This release is not a claim of
 hardware validation. It preserves the frozen v2.4.2 Windows behavior where ported;
 known gaps below remain. No newer upstream read-only source was imported.
+
+## UI hotfix since stable.1
+
+Untouched Avalonia TextBox.Text values can be null, unlike the empty-string
+assumption inherited from WPF. Clicking OEMInfo Convert on an empty form could
+throw before validation and terminate the application. Model, vendor and file-path
+inputs now normalize null to empty and show the existing input-error dialogs.
+Five headless tests exercise the actual click handler; the first reproduced the
+old NullReferenceException. This changes no OEMInfo bytes or device commands.
+
+Run the UI regression: `dotnet run --project tests/OemInfoUi/OemInfoUi.csproj`.
 
 ## Included on stable
 
