@@ -19,137 +19,152 @@
  */
 
 using System;
-using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Kirin_Tool.Utils
 {
+    // Merge sparse extents in partition coordinates, never in compressed-file order.
     public static class SuperMerger
     {
-        public static async Task MergeSuperImages(string path1, string path2, string outputPath, Action<double> progressCallback = null)
+        private const ushort Raw = 0xCAC1, Fill = 0xCAC2, Skip = 0xCAC3;
+        private sealed record Extent(uint Start, uint Blocks, ushort Type, long Offset, byte[] Pattern);
+        private sealed record Image(uint BlockSize, uint Blocks, List<Extent> Extents);
+
+        public static Task MergeSuperImages(string path1, string path2, string outputPath, Action<double> progressCallback = null)
+            => Task.Run(() => Merge(path1, path2, outputPath, progressCallback));
+
+        private static Image Parse(FileStream stream)
         {
-            await Task.Run(() => PerformMerge(path1, path2, outputPath, progressCallback));
+            using var r = new BinaryReader(stream, System.Text.Encoding.UTF8, leaveOpen: true);
+            if (stream.Length < 28 || r.ReadUInt32() != 0xED26FF3A || r.ReadUInt16() != 1 ||
+                r.ReadUInt16() != 0 || r.ReadUInt16() != 28 || r.ReadUInt16() != 12)
+                throw new InvalidDataException("Unsupported or truncated sparse header.");
+            uint blockSize = r.ReadUInt32(), blocks = r.ReadUInt32(), count = r.ReadUInt32();
+            uint checksum = r.ReadUInt32();
+            if (blockSize == 0 || blockSize % 4 != 0 || blocks == 0 || count > (stream.Length - 28) / 12)
+                throw new InvalidDataException("Invalid sparse geometry.");
+            // Do not silently discard an integrity check we have not verified.
+            if (checksum != 0) throw new InvalidDataException("Checksummed sparse images require verification before merging.");
+            var extents = new List<Extent>();
+            ulong at = 0;
+            for (uint i = 0; i < count; i++)
+            {
+                if (stream.Length - stream.Position < 12) throw new EndOfStreamException("Truncated sparse chunk.");
+                ushort type = r.ReadUInt16(); r.ReadUInt16();
+                uint n = r.ReadUInt32(), size = r.ReadUInt32();
+                ulong payload = type switch
+                {
+                    Raw => (ulong)n * blockSize,
+                    Fill => 4,
+                    Skip => 0,
+                    _ => throw new InvalidDataException("Unsupported sparse chunk (including unverified CRC32 chunks).")
+                };
+                if (n == 0 || (ulong)size != payload + 12 || payload > (ulong)(stream.Length - stream.Position) || at + n > blocks)
+                    throw new InvalidDataException("Invalid sparse chunk length or block range.");
+                long offset = stream.Position;
+                byte[] pattern = type == Fill ? r.ReadBytes(4) : Array.Empty<byte>();
+                if (type != Skip) extents.Add(new Extent((uint)at, n, type, offset, pattern));
+                stream.Position = checked(offset + (long)payload);
+                at += n;
+            }
+            if (at != blocks || stream.Position != stream.Length)
+                throw new InvalidDataException("Sparse block count or file length does not match its header.");
+            return new Image(blockSize, blocks, extents);
         }
 
-        private static void PerformMerge(string path1, string path2, string outputPath, Action<double> progressCallback)
+        private static void ReadExtent(FileStream stream, Extent extent, uint blockSize, uint start, long offset, Span<byte> buffer)
         {
-            var len1 = new FileInfo(path1).Length;
-            var len2 = new FileInfo(path2).Length;
-
-            string largePath = path1, smallPath = path2;
-            long largeLen = len1, smallLen = len2;
-
-            if (len2 > len1)
+            if (extent.Type == Fill)
             {
-                largePath = path2;
-                smallPath = path1;
-                largeLen = len2;
-                smallLen = len1;
+                for (int i = 0; i < buffer.Length; i++) buffer[i] = extent.Pattern[(int)((offset + i) % 4)];
             }
+            else
+            {
+                stream.Position = checked(extent.Offset + (long)(start - extent.Start) * blockSize + offset);
+                stream.ReadExactly(buffer);
+            }
+        }
 
-            long totalSize = largeLen + smallLen;
-            const int bufferSize = 4 * 1024 * 1024;
-            var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-
+        private static void Merge(string path1, string path2, string outputPath, Action<double> progress)
+        {
+            string output = Path.GetFullPath(outputPath);
+            if (output == Path.GetFullPath(path1) || output == Path.GetFullPath(path2))
+                throw new ArgumentException("Merge output must be different from both inputs.");
+            using var a = new FileStream(path1, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using var b = new FileStream(path2, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var ia = Parse(a); var ib = Parse(b);
+            if (ia.BlockSize != ib.BlockSize || ia.Blocks != ib.Blocks)
+                throw new InvalidDataException("Sparse images describe different partition geometry.");
+            var boundaries = new SortedSet<uint> { 0, ia.Blocks };
+            foreach (var e in ia.Extents.Concat(ib.Extents)) { boundaries.Add(e.Start); boundaries.Add(e.Start + e.Blocks); }
+            var points = boundaries.ToArray();
+            string temp = output + "." + Guid.NewGuid().ToString("N") + ".partial";
             try
             {
-                long lastChunkOffset = 0;
-                uint lastLargeChunkSize = 0;
-                uint smallBlocksFromSecondChunkOnward = 0;
-                SparseHeader hLarge, hSmall;
-
-                using (var fs = new FileStream(largePath, FileMode.Open, FileAccess.Read))
-                using (var reader = new BinaryReader(fs))
+                using (var dst = new FileStream(temp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                using (var w = new BinaryWriter(dst))
                 {
-                    hLarge = ReadStruct<SparseHeader>(reader);
-                    if (hLarge.Magic != SparseConstants.SPARSE_HEADER_MAGIC) 
-                        throw new Exception($"File {Path.GetFileName(largePath)} is not a valid sparse image.");
-
-                    for (int i = 0; i < hLarge.TotalChunks; i++)
+                    w.Write(0xED26FF3Au); w.Write((ushort)1); w.Write((ushort)0);
+                    w.Write((ushort)28); w.Write((ushort)12); w.Write(ia.BlockSize); w.Write(ia.Blocks);
+                    w.Write(0u); w.Write(0u);
+                    uint chunkCount = 0;
+                    int ai = 0, bi = 0;
+                    byte[] buf = new byte[1024 * 1024], other = new byte[1024 * 1024];
+                    for (int i = 0; i + 1 < points.Length; i++)
                     {
-                        lastChunkOffset = fs.Position;
-                        var chunk = ReadStruct<ChunkHeader>(reader);
-                        lastLargeChunkSize = chunk.ChunkSize;
-                        fs.Seek(chunk.TotalSize - SparseConstants.CHUNK_HEADER_SIZE, SeekOrigin.Current);
+                        uint start = points[i], blocks = points[i + 1] - start;
+                        while (ai < ia.Extents.Count && ia.Extents[ai].Start + ia.Extents[ai].Blocks <= start) ai++;
+                        while (bi < ib.Extents.Count && ib.Extents[bi].Start + ib.Extents[bi].Blocks <= start) bi++;
+                        var ea = ai < ia.Extents.Count && ia.Extents[ai].Start <= start ? ia.Extents[ai] : null;
+                        var eb = bi < ib.Extents.Count && ib.Extents[bi].Start <= start ? ib.Extents[bi] : null;
+                        var chosen = ea ?? eb;
+                        var source = ea != null ? a : b;
+                        // An overlap is valid only if every byte agrees. In particular,
+                        // never let a later package silently replace super metadata.
+                        long length = (long)blocks * ia.BlockSize;
+                        if (ea != null && eb != null)
+                        {
+                            for (long offset = 0; offset < length;)
+                            {
+                                int n = (int)Math.Min(buf.Length, length - offset);
+                                ReadExtent(a, ea, ia.BlockSize, start, offset, buf.AsSpan(0, n));
+                                ReadExtent(b, eb, ia.BlockSize, start, offset, other.AsSpan(0, n));
+                                if (!buf.AsSpan(0, n).SequenceEqual(other.AsSpan(0, n)))
+                                    throw new InvalidDataException($"Conflicting super image data at block {start + offset / ia.BlockSize}.");
+                                offset += n;
+                            }
+                        }
+                        ushort type = chosen?.Type ?? Skip;
+                        uint maxBlocks = type == Raw ? (uint.MaxValue - 12) / ia.BlockSize : uint.MaxValue;
+                        if (maxBlocks == 0) throw new InvalidDataException("Sparse block size exceeds chunk capacity.");
+                        for (uint written = 0; written < blocks;)
+                        {
+                            uint nBlocks = Math.Min(blocks - written, maxBlocks);
+                            long bytes = (long)nBlocks * ia.BlockSize;
+                            w.Write(type); w.Write((ushort)0); w.Write(nBlocks);
+                            w.Write(type == Raw ? checked((uint)(bytes + 12)) : type == Fill ? 16u : 12u);
+                            if (type == Fill) w.Write(chosen.Pattern);
+                            if (type == Raw)
+                            {
+                                for (long offset = 0; offset < bytes;)
+                                {
+                                    int n = (int)Math.Min(buf.Length, bytes - offset);
+                                    ReadExtent(source, chosen, ia.BlockSize, start + written, offset, buf.AsSpan(0, n));
+                                    w.Write(buf, 0, n); offset += n;
+                                }
+                            }
+                            chunkCount = checked(chunkCount + 1); written += nBlocks;
+                        }
+                        progress?.Invoke((double)points[i + 1] * 100 / ia.Blocks);
                     }
+                    dst.Position = 20; w.Write(chunkCount); w.Flush(); dst.Flush(true);
                 }
-
-                using (var src = new FileStream(largePath, FileMode.Open, FileAccess.Read))
-                using (var dst = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
-                {
-                    long remaining = lastChunkOffset;
-                    while (remaining > 0)
-                    {
-                        int toRead = (int)Math.Min(bufferSize, remaining);
-                        int read = src.Read(buffer, 0, toRead);
-                        if (read == 0) break;
-                        dst.Write(buffer, 0, read);
-                        remaining -= read;
-                        progressCallback?.Invoke((double)dst.Position * 100 / totalSize);
-                    }
-                }
-
-                long newDataOffset = 0;
-                using (var fs = new FileStream(smallPath, FileMode.Open, FileAccess.Read))
-                using (var reader = new BinaryReader(fs))
-                {
-                    hSmall = ReadStruct<SparseHeader>(reader);
-                    if (hSmall.Magic != SparseConstants.SPARSE_HEADER_MAGIC) 
-                        throw new Exception($"File {Path.GetFileName(smallPath)} is not a valid sparse image.");
-
-                    var firstChunk = ReadStruct<ChunkHeader>(reader);
-                    newDataOffset = fs.Position + (firstChunk.TotalSize - SparseConstants.CHUNK_HEADER_SIZE);
-
-                    fs.Seek(newDataOffset, SeekOrigin.Begin);
-                    for (int i = 1; i < hSmall.TotalChunks; i++)
-                    {
-                        var chunk = ReadStruct<ChunkHeader>(reader);
-                        smallBlocksFromSecondChunkOnward = checked(smallBlocksFromSecondChunkOnward + chunk.ChunkSize);
-                        fs.Seek(chunk.TotalSize - SparseConstants.CHUNK_HEADER_SIZE, SeekOrigin.Current);
-                    }
-                }
-
-                using (var src = new FileStream(smallPath, FileMode.Open, FileAccess.Read))
-                using (var dst = new FileStream(outputPath, FileMode.Append, FileAccess.Write))
-                {
-                    src.Seek(newDataOffset, SeekOrigin.Begin);
-                    int read;
-                    while ((read = src.Read(buffer, 0, bufferSize)) > 0)
-                    {
-                        dst.Write(buffer, 0, read);
-                        progressCallback?.Invoke((double)dst.Position * 100 / totalSize);
-                    }
-                }
-
-                uint newTotalChunks = (hLarge.TotalChunks - 1) + (hSmall.TotalChunks - 1);
-                uint newTotalBlocks = hLarge.TotalBlocks - lastLargeChunkSize + smallBlocksFromSecondChunkOnward;
-                using (var fs = new FileStream(outputPath, FileMode.Open, FileAccess.Write))
-                using (var writer = new BinaryWriter(fs))
-                {
-                    fs.Seek(0x0C, SeekOrigin.Begin);
-                    writer.Write(4096);
-
-                    fs.Seek(0x10, SeekOrigin.Begin);
-                    writer.Write(newTotalBlocks);
-
-                    fs.Seek(0x14, SeekOrigin.Begin);
-                    writer.Write(newTotalChunks);
-                }
+                File.Move(temp, output, overwrite: true);
             }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
-        }
-
-        private static T ReadStruct<T>(BinaryReader reader) where T : struct
-        {
-            byte[] bytes = reader.ReadBytes(Marshal.SizeOf<T>());
-            GCHandle handle = GCHandle.Alloc(bytes, GCHandleType.Pinned);
-            try { return Marshal.PtrToStructure<T>(handle.AddrOfPinnedObject()); }
-            finally { handle.Free(); }
+            finally { if (File.Exists(temp)) File.Delete(temp); }
         }
     }
 }

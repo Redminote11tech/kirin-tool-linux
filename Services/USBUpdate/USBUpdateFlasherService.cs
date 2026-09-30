@@ -53,7 +53,7 @@ namespace Kirin_Tool.Services.USBUpdate
         {
             if (Directory.Exists(_dloadDirectory))
             {
-                try { Directory.Delete(_dloadDirectory, true); } catch { }
+                Directory.Delete(_dloadDirectory, true);
             }
             Directory.CreateDirectory(_dloadDirectory);
 
@@ -68,8 +68,7 @@ namespace Kirin_Tool.Services.USBUpdate
                 cancellationToken.ThrowIfCancellationRequested();
                 if (string.IsNullOrWhiteSpace(data.FilePath) || !File.Exists(data.FilePath))
                 {
-                    fileIndex++;
-                    continue;
+                    throw new FileNotFoundException($"Selected firmware is missing: {data.FilePath}");
                 }
 
                 string subDir = Path.Combine(_dloadDirectory, $"part{fileIndex}");
@@ -130,13 +129,13 @@ namespace Kirin_Tool.Services.USBUpdate
                     if (mappingParts.Length >= 2)
                     {
                         string sourceDir = mappingParts[1];
-                        string imgPath = Path.Combine(sourceDir, "super.img");
-                        if (File.Exists(imgPath))
+                        string imgPath = Path.Combine(sourceDir, $"{allPartitions[idx].partitionName}.img");
+                        if (!File.Exists(imgPath)) throw new FileNotFoundException("Missing super fragment", imgPath);
                         {
                             superImgPaths.Add(imgPath);
                             if (firstSuperHeaderPath == null)
                             {
-                                string headerPath = Path.Combine(sourceDir, "super.img.header");
+                                string headerPath = Path.Combine(sourceDir, $"{allPartitions[idx].partitionName}.img.header");
                                 if (File.Exists(headerPath))
                                     firstSuperHeaderPath = headerPath;
                             }
@@ -179,6 +178,7 @@ namespace Kirin_Tool.Services.USBUpdate
                         byte[] headerBytes = File.ReadAllBytes(mergedHeaderPath);
                         if (headerBytes.Length >= 28)
                         {
+                            if (mergedSize > uint.MaxValue) throw new InvalidDataException("Merged super exceeds USB Update's 32-bit image length.");
                             headerBytes[24] = (byte)(mergedSize & 0xFF);
                             headerBytes[25] = (byte)((mergedSize >> 8) & 0xFF);
                             headerBytes[26] = (byte)((mergedSize >> 16) & 0xFF);
@@ -187,6 +187,7 @@ namespace Kirin_Tool.Services.USBUpdate
                         }
                     }
 
+                    if (firstSuperHeaderPath == null) throw new InvalidDataException("Missing super header.");
                     int firstSuperIndex = superIndices[0];
                     for (int i = superIndices.Count - 1; i >= 0; i--)
                     {
@@ -228,7 +229,7 @@ namespace Kirin_Tool.Services.USBUpdate
             bool flashSuccess = false;
             try
             {
-                flashSuccess = await Task.Run(() => usbService.FlashImages(), cancellationToken);
+                flashSuccess = await Task.Run(() => usbService.FlashImages(cancellationToken), cancellationToken);
             }
             catch (OperationCanceledException)
             {

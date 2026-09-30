@@ -27,6 +27,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace Kirin_Tool.Services
 {
@@ -51,8 +52,8 @@ namespace Kirin_Tool.Services
                 return result.IsSuccess && result.Output
                     .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(line => line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
-                    .Any(columns => columns.Length >= 2 &&
-                        string.Equals(columns[1], "fastboot", StringComparison.OrdinalIgnoreCase));
+                    .Count(columns => columns.Length >= 2 &&
+                        string.Equals(columns[1], "fastboot", StringComparison.OrdinalIgnoreCase)) == 1;
             }
             catch (Exception)
             {
@@ -106,7 +107,41 @@ namespace Kirin_Tool.Services
 
         public async Task<ProcessResult> FlashPartition(string partitionName, string filePath)
         {
-            return await ProcessRunner.RunAsync(_fastbootPath, $"flash {partitionName} \"{filePath}\"");
+            ValidatePartitionName(partitionName);
+            if (!File.Exists(filePath) || new FileInfo(filePath).Length == 0)
+                throw new InvalidDataException($"Missing or empty image: {filePath}");
+            return await ProcessRunner.RunAsync(_fastbootPath, new[] { "flash", partitionName, Path.GetFullPath(filePath) });
+        }
+
+        internal static void ValidatePartitionName(string name)
+        {
+            if (string.IsNullOrEmpty(name) || name.Length > 32 || name == "." || name == ".." ||
+                name.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '_' && c != '-' && c != '.'))
+                throw new ArgumentException("Invalid partition name.");
+        }
+
+        public async Task<ProcessResult> DumpPartition(string partitionName, string outputPath)
+        {
+            ValidatePartitionName(partitionName);
+            var version = await ProcessRunner.RunAsync(_fastbootPath, new[] { "--version" }, timeoutSeconds: 10);
+            if (!version.IsSuccess || !version.Output.Contains("vendor-storage-upload-v1", StringComparison.Ordinal))
+                throw new NotSupportedException("Backup requires the rebuilt Kirin fastboot with vendor-storage-upload-v1. System fastboot and the older Linux bundle cannot verify this backup.");
+            string destination = Path.GetFullPath(outputPath);
+            string temporary = destination + "." + Guid.NewGuid().ToString("N") + ".partial";
+            try
+            {
+                var result = await ProcessRunner.RunAsync(_fastbootPath, new[] { "oem", "dump-emmc", partitionName, temporary });
+                // Only retry a failed metadata query, never an interrupted upload.
+                if (!result.IsSuccess && Regex.IsMatch(result.Output, @"(?m)^KIRIN_DUMP_QUERY_FAILED\r?$"))
+                    result = await ProcessRunner.RunAsync(_fastbootPath, new[] { "oem", "dump-storage", partitionName, temporary });
+                var match = Regex.Match(result.Output, @"(?m)^KIRIN_DUMP_OK bytes=([0-9]+)\r?$");
+                if (!result.IsSuccess || !match.Success || !long.TryParse(match.Groups[1].Value, out long expected) ||
+                    expected <= 0 || !File.Exists(temporary) || new FileInfo(temporary).Length != expected)
+                    return new ProcessResult { ExitCode = 1, Arguments = result.Arguments, Output = "Backup failed validation. " + result.Output };
+                File.Move(temporary, destination, overwrite: true);
+                return result;
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
 
         public async Task<FrpBypassResult> EraseFrpWithSteps()
@@ -152,15 +187,9 @@ namespace Kirin_Tool.Services
             return result;
         }
 
-        public async Task<ProcessResult> PullOemInfo(string outputPath)
-        {
-            return await ProcessRunner.RunAsync(_fastbootPath, $"oem dump-emmc oeminfo \"{outputPath}\"");
-        }
+        public Task<ProcessResult> PullOemInfo(string outputPath) => DumpPartition("oeminfo", outputPath);
 
-        public async Task<ProcessResult> FlashOemInfo(string filePath)
-        {
-            return await ProcessRunner.RunAsync(_fastbootPath, $"flash oeminfo \"{filePath}\"");
-        }
+        public Task<ProcessResult> FlashOemInfo(string filePath) => FlashPartition("oeminfo", filePath);
 
         public async Task<string> GetVarAsync(string variable)
         {

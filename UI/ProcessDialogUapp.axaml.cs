@@ -303,7 +303,7 @@ namespace Kirin_Tool.UI
             {
                 _cancellationTokenSource?.Cancel();
                 CanCancel = false;
-                CurrentOperationText = "Cancelling operation and cleaning up...";
+                CurrentOperationText = "Stopping after the current partition. Keep the device connected.";
 
 
                 Dispatcher.UIThread.Post(() =>
@@ -322,6 +322,18 @@ namespace Kirin_Tool.UI
             }
         }
 
+
+        protected override void OnClosing(WindowClosingEventArgs e)
+        {
+            if (!ShowCloseButton)
+            {
+                e.Cancel = true;
+                _cancellationTokenSource?.Cancel();
+                CanCancel = false;
+                CurrentOperationText = "Stopping after the current partition. Keep the device connected.";
+            }
+            base.OnClosing(e);
+        }
 
         private void CloseButton_Click(object sender, RoutedEventArgs e)
         {

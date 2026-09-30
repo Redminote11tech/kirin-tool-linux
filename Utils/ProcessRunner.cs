@@ -24,6 +24,8 @@ using System.Threading.Tasks;
 using System;
 using System.Threading;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Kirin_Tool.Utils
 {
@@ -31,18 +33,29 @@ namespace Kirin_Tool.Utils
     {
         private static readonly object LogLock = new object();
 
-        public static async Task<ProcessResult> RunAsync(string executablePath, string arguments, int timeoutMinutes = 300, int timeoutSeconds = 0)
+        public static Task<ProcessResult> RunAsync(string executablePath, string arguments, int timeoutMinutes = 300, int timeoutSeconds = 0)
         {
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = executablePath,
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
+            var info = StartInfo(executablePath);
+            info.Arguments = arguments;
+            return RunAsync(info, arguments, timeoutMinutes, timeoutSeconds);
+        }
 
+        public static Task<ProcessResult> RunAsync(string executablePath, IReadOnlyList<string> arguments, int timeoutMinutes = 300, int timeoutSeconds = 0)
+        {
+            var info = StartInfo(executablePath);
+            foreach (string arg in arguments) info.ArgumentList.Add(arg);
+            return RunAsync(info, string.Join(" ", arguments.Select(a => System.Text.Json.JsonSerializer.Serialize(a))), timeoutMinutes, timeoutSeconds);
+        }
+
+        private static ProcessStartInfo StartInfo(string executablePath) => new ProcessStartInfo
+        {
+            FileName = executablePath, RedirectStandardOutput = true, RedirectStandardError = true,
+            UseShellExecute = false, CreateNoWindow = true
+        };
+
+        private static async Task<ProcessResult> RunAsync(ProcessStartInfo processStartInfo, string arguments, int timeoutMinutes, int timeoutSeconds)
+        {
+            string executablePath = processStartInfo.FileName;
             using var process = new Process { StartInfo = processStartInfo };
             process.Start();
 

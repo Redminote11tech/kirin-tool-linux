@@ -45,7 +45,7 @@ namespace Kirin_Tool.Services.USBUpdate
         {
             if (Directory.Exists(_dloadDirectory))
             {
-                try { Directory.Delete(_dloadDirectory, true); } catch { }
+                Directory.Delete(_dloadDirectory, true);
             }
             Directory.CreateDirectory(_dloadDirectory);
 
@@ -119,7 +119,7 @@ namespace Kirin_Tool.Services.USBUpdate
         {
             if (Directory.Exists(_dloadDirectory))
             {
-                try { Directory.Delete(_dloadDirectory, true); } catch { }
+                Directory.Delete(_dloadDirectory, true);
             }
             Directory.CreateDirectory(_dloadDirectory);
 

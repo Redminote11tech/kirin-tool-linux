@@ -13,6 +13,7 @@ namespace Kirin_Tool.UI
     public partial class ProgressDialog : Window
     {
         public ObservableCollection<ProgressItemViewModel> ProgressItems { get; }
+        private bool operationComplete;
 
         public ProgressDialog()
         {
@@ -35,9 +36,16 @@ namespace Kirin_Tool.UI
         {
             Dispatcher.UIThread.InvokeAsync(() =>
             {
+                operationComplete = true;
                 CloseButton.IsVisible = true;
                 Title = title ?? (isSuccess ? "Operation Complete" : "Operation Failed");
             });
+        }
+
+        protected override void OnClosing(WindowClosingEventArgs e)
+        {
+            if (!operationComplete) e.Cancel = true;
+            base.OnClosing(e);
         }
 
         private void CloseButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
