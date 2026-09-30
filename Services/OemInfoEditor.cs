@@ -97,17 +97,14 @@ namespace Kirin_Tool.Services
             var newBytes = Encoding.UTF8.GetBytes(newString);
             int newLen = newBytes.Length;
 
-            int dataStartOffset = blockOffset + DataPayloadOffsetInBlock;
-            if (dataStartOffset + newLen > data.Length)
-            {
-                throw new InvalidDataException($"OEMINFO entry block at 0x{blockOffset:X} is too small for payload '{newString}'.");
-            }
-
             System.Buffer.BlockCopy(System.BitConverter.GetBytes(newLen), 0, data, blockOffset + 20, 4);
+
+            int dataStartOffset = blockOffset + DataPayloadOffsetInBlock;
             System.Buffer.BlockCopy(newBytes, 0, data, dataStartOffset, newLen);
 
-            int paddingEnd = Math.Min(blockOffset + BlockSize, data.Length);
-            for (int i = dataStartOffset + newLen; i < paddingEnd; i++)
+            int paddingStart = dataStartOffset + newLen;
+            int maxPayloadSize = BlockSize - DataPayloadOffsetInBlock;
+            for (int i = paddingStart; i < blockOffset + DataPayloadOffsetInBlock + maxPayloadSize; i++)
             {
                 data[i] = 0xFF;
             }

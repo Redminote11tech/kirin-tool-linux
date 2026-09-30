@@ -24,6 +24,8 @@ using System.Threading.Tasks;
 using System;
 using System.Threading;
 using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Kirin_Tool.Utils
 {
@@ -31,18 +33,29 @@ namespace Kirin_Tool.Utils
     {
         private static readonly object LogLock = new object();
 
-        public static async Task<ProcessResult> RunAsync(string executablePath, string arguments, int timeoutMinutes = 300, int timeoutSeconds = 0)
+        public static Task<ProcessResult> RunAsync(string executablePath, string arguments, int timeoutMinutes = 300, int timeoutSeconds = 0)
         {
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = executablePath,
-                Arguments = arguments,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-            };
+            var info = StartInfo(executablePath);
+            info.Arguments = arguments;
+            return RunAsync(info, arguments, timeoutMinutes, timeoutSeconds);
+        }
 
+        public static Task<ProcessResult> RunAsync(string executablePath, IReadOnlyList<string> arguments, int timeoutMinutes = 300, int timeoutSeconds = 0)
+        {
+            var info = StartInfo(executablePath);
+            foreach (string arg in arguments) info.ArgumentList.Add(arg);
+            return RunAsync(info, string.Join(" ", arguments.Select(a => System.Text.Json.JsonSerializer.Serialize(a))), timeoutMinutes, timeoutSeconds);
+        }
+
+        private static ProcessStartInfo StartInfo(string executablePath) => new ProcessStartInfo
+        {
+            FileName = executablePath, RedirectStandardOutput = true, RedirectStandardError = true,
+            UseShellExecute = false, CreateNoWindow = true
+        };
+
+        private static async Task<ProcessResult> RunAsync(ProcessStartInfo processStartInfo, string arguments, int timeoutMinutes, int timeoutSeconds)
+        {
+            string executablePath = processStartInfo.FileName;
             using var process = new Process { StartInfo = processStartInfo };
             process.Start();
 
@@ -85,23 +98,37 @@ namespace Kirin_Tool.Utils
                 if (!executablePath.Contains("fastboot", StringComparison.OrdinalIgnoreCase))
                     return;
 
-                string exeDir = AppDomain.CurrentDomain.BaseDirectory;
-                string logDir = Path.Combine(exeDir, "log");
-                if (!Directory.Exists(logDir))
-                {
-                    Directory.CreateDirectory(logDir);
-                }
-
                 string fileName = $"kirintool_log_{DateTime.Now:yyyy_MM_dd}.log";
-                string logFilePath = Path.Combine(logDir, fileName);
-
                 string timestamp = DateTime.Now.ToString("HH:mm:ss");
                 string cmdText = $"{Path.GetFileName(executablePath)} {arguments}";
                 string logMessage = $"[{timestamp}] {cmdText}\n{output}\n\n";
 
-                lock (LogLock)
+                // Prefer a log dir next to the executable; when that is not
+                // writable (AppImage squashfs, root-owned pacman install),
+                // fall back to the user's XDG state directory.
+                string exeLogDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "log");
+                string xdgState = Environment.GetEnvironmentVariable("XDG_STATE_HOME");
+                if (string.IsNullOrWhiteSpace(xdgState))
                 {
-                    File.AppendAllText(logFilePath, logMessage);
+                    xdgState = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "state");
+                }
+                string userLogDir = Path.Combine(xdgState, "Kirin-Tool", "log");
+
+                foreach (var logDir in new[] { exeLogDir, userLogDir })
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(logDir);
+                        lock (LogLock)
+                        {
+                            File.AppendAllText(Path.Combine(logDir, fileName), logMessage);
+                        }
+                        return;
+                    }
+                    catch
+                    {
+                        // try the next candidate
+                    }
                 }
             }
             catch {}

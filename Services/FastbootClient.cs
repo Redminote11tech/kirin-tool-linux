@@ -106,7 +106,7 @@ namespace Kirin_Tool.Services
 
         public async Task<ProcessResult> FlashPartition(string partitionName, string filePath)
         {
-            return await ProcessRunner.RunAsync(_fastbootPath, $"flash {partitionName} \"{filePath}\"");
+            return await ProcessRunner.RunAsync(_fastbootPath, new[] { "flash", partitionName, filePath });
         }
 
         public async Task<FrpBypassResult> EraseFrpWithSteps()

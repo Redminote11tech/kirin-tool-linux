@@ -31,6 +31,9 @@ mono_crash.*
 obj/
 bin/x64/
 obj/x64/
+bin/Debug/
+.zcode/
+
 
 [Dd]ebug/x86/
 [Dd]ebugPublic/x86/
@@ -430,3 +433,11 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+publish-out/
+*.AppImage
+appimagetool*.AppImage
+squashfs-root/
+
+# Hardware-free native regression artifacts
+fastboot-src/tests/vendor-upload-test
+fastboot-src/tests/output/

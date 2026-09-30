@@ -23,8 +23,14 @@ We support Kirin 620-990 5g SoCs (as of 2.4.2, excluding 990 4g).
 ## Requirements
 
 - Linux x86_64
-- `android-tools` (provides `fastboot`) on your PATH
-- udev permissions to access USB serial devices. Install the bundled rule:
+- **No `android-tools` needed** — a Huawei-capable `fastboot` is bundled with the package
+  (built from AOSP with OEM dump/upload-to-file support; see `fastboot-src/PATCHES.md`).
+  The system `fastboot` from `android-tools` is used only as a fallback if the bundled
+  binary is removed.
+- udev permissions to access USB devices. The pacman package installs the rules
+  automatically (`/usr/lib/udev/rules.d/51-kirin-tool-fastboot.rules`) and your user must
+  be in the `adbusers` (fastboot) and `uucp` (VCOM serial) groups. For non-pacman installs,
+  copy the rule manually:
 
 ```bash
 sudo cp packaging/51-kirin-tool-fastboot.rules /etc/udev/rules.d/
@@ -37,10 +43,32 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 ```bash
 makepkg -f
-sudo pacman -U kirin-tool-linux-2.4.2-1-x86_64.pkg.tar.zst
+sudo pacman -U kirin-tool-linux-2.4.2-4-x86_64.pkg.tar.zst
 ```
 
 Then launch `kirin-tool` from your application menu or a terminal.
+
+### AppImage (any distro)
+
+Build it from this repo (needs `dotnet-sdk` 8 + `gcc`/`make`, no root/FUSE):
+
+```bash
+./packaging/build-appimage.sh publish-out 2.4.2
+./kirin-tool-linux-2.4.2-x86_64.AppImage
+```
+
+CI also produces AppImage artifacts on every tag. Fastboot invocation logs
+are written to `~/.local/state/Kirin-Tool/log/` when the app directory is
+not writable (AppImage / system installs).
+
+**FUSE note:** *building* the AppImage needs no FUSE (appimagetool runs via
+`--appimage-extract-and-run`). *Running* it uses FUSE2 to mount — on
+Arch/CachyOS install it once with `sudo pacman -S fuse2`, or skip the
+install entirely by running:
+
+```bash
+./kirin-tool-linux-2.4.2-x86_64.AppImage --appimage-extract-and-run
+```
 
 ### From source
 
@@ -63,6 +91,12 @@ dotnet publish Kirin-Tool.csproj -c Release -r linux-x64 --self-contained true -
 Linux-focused fork of [Kirin-Tool](https://github.com/kethily-daniel/Kirin-Tool) by Kethily Daniel & NDXCode,
 ported single-handedly by Redminote11tech and published under the terms of the
 Business Source License 1.1. All original copyright notices are retained.
+
+**Independence notice (2026-09-11):** upstream has since been republished under a
+view-only reference license. This fork derives from upstream v2.4.2, which was
+distributed under BSL 1.1, and is now developed **independently** — it no longer
+syncs upstream. See [docs/FORK-NOTICE.md](docs/FORK-NOTICE.md) for the full
+provenance and license position.
 
 ### License summary (non-exhaustive; the LICENSE file is authoritative)
 
@@ -102,3 +136,10 @@ USDT Tether (TRC20): `TD2sJbEmYa93sJhDBmTrvqmScqQSVTCfCK`
 ---
 
 *NOTICE: This tool is an independent software product and has not been authorized, sponsored, or otherwise approved by Huawei Technologies Co., Ltd. HiSilicon and Kirin are trademarks of Huawei Technologies Co., Ltd. All product and company names are trademarks™ or registered® trademarks of their respective holders. Use of them does not imply any affiliation with or endorsement by them.*
+
+## Stable 2.4.2-stable.1
+
+Stable and beta are separate tracks. See [release scope and known limitations](docs/stable-release.md)
+and the [hardware test checklist](docs/testing-checklist.md). Stable preserves frozen
+Windows behavior, including inherited defects; it is not a hardware safety certification.
+The independent merger, stricter validation and changed failure policies remain on beta.

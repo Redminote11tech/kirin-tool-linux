@@ -10,11 +10,14 @@
     <Product>Kirin Tool for Linux</Product>
     <Version>2.4.2</Version>
     <FileVersion>2.4.2</FileVersion>
-    <InformationalVersion>2.4.2</InformationalVersion>
+    <InformationalVersion>2.4.2-stable.1</InformationalVersion>
     <ApplicationIcon>logo.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <EmbeddedResource Remove="tests/**" />
+    <AvaloniaXaml Remove="tests/**" />
     <Content Include="logo.ico" />
     <Content Include="fastboot/payload">
       <Link>fastboot/payload</Link>
@@ -34,18 +37,6 @@
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.3" />
     <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.3" />
     <PackageReference Include="BouncyCastle.NetCore" Version="2.2.1" />
-    <PackageReference Include="Costura.Fody" Version="6.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Fody" Version="6.9.2">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Obfuscar" Version="2.2.50">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="System.Management" Version="9.0.7" />
     <PackageReference Include="System.IO.Ports" Version="9.0.7" />
   </ItemGroup>
