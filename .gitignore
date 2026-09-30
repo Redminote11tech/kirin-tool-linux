@@ -437,3 +437,7 @@ publish-out/
 *.AppImage
 appimagetool*.AppImage
 squashfs-root/
+
+# Hardware-free native regression artifacts
+fastboot-src/tests/vendor-upload-test
+fastboot-src/tests/output/

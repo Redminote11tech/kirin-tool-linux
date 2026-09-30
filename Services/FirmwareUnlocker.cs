@@ -70,6 +70,22 @@ namespace Kirin_Tool.Services
                     return new UnlockResult { IsSuccess = false, Message = $"Loader directory for {cpu} not found at '{loaderDir}'" };
                 }
 
+                if (!CpuAddresses.TryGetValue(cpu, out var stages))
+                    throw new NotSupportedException($"Unsupported CPU: {cpu}");
+                if (useFastFlashLoader && cpu != "hisi980")
+                    throw new NotSupportedException("The fast flash loader is supplied only for Kirin 980.");
+                var prepared = new Dictionary<string, byte[]>();
+                foreach (var stage in stages)
+                {
+                    if (!progressItems.Any(p => p.FileName == stage.Name))
+                        throw new InvalidOperationException($"Missing required loader stage: {stage.Name}");
+                    string name = useFastFlashLoader && stage.Name == "FASTBOOT" ? "fastbootf.ktl" : $"{stage.Name.ToLowerInvariant()}.ktl";
+                    string path = Path.Combine(loaderDir, name);
+                    byte[] data = CryptoUtil.DTL(await File.ReadAllBytesAsync(path));
+                    if (data.Length == 0) throw new InvalidDataException($"Empty loader: {name}");
+                    prepared.Add(stage.Name, data);
+                }
+
                 using (var flasher = new VcomFlasher())
                 {
                     overallProgress.Report("Attempting to connect to device in VCOM mode...");
@@ -81,26 +97,9 @@ namespace Kirin_Tool.Services
                     foreach (var loaderInfo in CpuAddresses[cpu])
                     {
                         var currentItem = progressItems.FirstOrDefault(p => p.FileName == loaderInfo.Name);
-                        if (currentItem == null) continue;
+                        if (currentItem == null) throw new InvalidOperationException("Required loader stage is missing.");
 
-                        string fileName = $"{loaderInfo.Name.ToLower()}.ktl";
-                        if (useFastFlashLoader && loaderInfo.Name == "FASTBOOT")
-                        {
-                            fileName = "fastbootf.ktl";
-                        }
-
-                        var filePath = Path.Combine(loaderDir, fileName);
-                        if (!File.Exists(filePath))
-                        {
-                            currentItem.ProgressValue = 100;
-                            currentItem.StatusText = "Skipped";
-                            overallProgress.Report($"Skipping missing file: {Path.GetFileName(filePath)}");
-                            continue;
-                        }
-
-                        currentItem.StatusText = "Decrypting";
-                        overallProgress.Report($"Decrypting {Path.GetFileName(filePath)}...");
-                        var decryptedData = CryptoUtil.DTL(await File.ReadAllBytesAsync(filePath));
+                        var decryptedData = prepared[loaderInfo.Name];
 
                         currentItem.StatusText = "Uploading...";
                         overallProgress.Report($"Uploading {loaderInfo.Name}...");
@@ -136,12 +135,21 @@ namespace Kirin_Tool.Services
                         }
 
                         // await interactionHandler("If you are using a modified cable (Harmony TP):\n1. Unplug it from both sides\n2. Connect the device to the computer with a normal cable\n3. Wait a few seconds\n4. Reconnect using the modified cable");
-                        await interactionHandler(replugStr);
+                        if (!await interactionHandler(replugStr))
+                            return new UnlockResult { IsSuccess = false, Message = "Cable reconnection cancelled; loader state is unverified." };
                     }
                 }
 
-                overallProgress.Report("Unlock process completed successfully!");
-                return new UnlockResult { IsSuccess = true, Message = "Unlocked fastboot should be loaded now." };
+                var client = new FastbootClient();
+                bool connected = false;
+                for (int attempt = 0; attempt < 15; attempt++)
+                {
+                    if (await client.IsDeviceConnected()) { connected = true; break; }
+                    await Task.Delay(1000);
+                }
+                if (!connected) throw new IOException("Loader transfer ended, but a unique fastboot device was not detected. Do not assume unlock succeeded.");
+                overallProgress.Report("Loader transfer completed; fastboot device detected. Lock state has not been verified.");
+                return new UnlockResult { IsSuccess = true, Message = "Fastboot device detected after loader transfer; lock state unverified." };
             }
             catch (Exception ex)
             {

@@ -595,7 +595,10 @@ namespace Kirin_Tool
 
             try
             {
-
+                foreach (var candidate in selectedPartitions.Where(p => !skipSecure || !IsSecurePartition(p.Name, p.Identifier)))
+                    FastbootClient.ValidatePartitionName(candidate.Identifier);
+                using var inputs = new FlashInputSet(selectedPartitions
+                    .Where(p => !skipSecure || !IsSecurePartition(p.Name, p.Identifier)).Select(p => p.DumpPath));
                 for (int i = 0; i < selectedPartitions.Count; i++)
                 {
                     var partition = selectedPartitions[i];
@@ -629,6 +632,7 @@ namespace Kirin_Tool
                         {
                             progressDialog.CompletePartition(partition.Name, false, "Flash failed");
                             lastError = result.Message;
+                            return (false, $"Flashing stopped after {successCount}/{totalCount} successful partitions. {lastError}");
                         }
                     }
                     catch (OperationCanceledException)
@@ -640,6 +644,7 @@ namespace Kirin_Tool
                     {
                         progressDialog.CompletePartition(partition.Name, false, ex.Message);
                         lastError = ex.Message;
+                            return (false, $"Flashing stopped after {successCount}/{totalCount} successful partitions. {lastError}");
                     }
                 }
             }
@@ -945,7 +950,7 @@ namespace Kirin_Tool
 
             try
             {
-                _usbUpdateFlasherService.OnExtractionStarted += (label) =>
+                _usbUpdateFlasherService.OnExtractionStarted = (label) =>
                 {
                     Dispatcher.UIThread.InvokeAsync(() =>
                     {
@@ -954,7 +959,7 @@ namespace Kirin_Tool
                     });
                 };
 
-                _usbUpdateFlasherService.OnExtractionProgress += (progress) =>
+                _usbUpdateFlasherService.OnExtractionProgress = (progress) =>
                 {
                     Dispatcher.UIThread.InvokeAsync(() =>
                     {
@@ -962,7 +967,7 @@ namespace Kirin_Tool
                     });
                 };
 
-                _usbUpdateFlasherService.OnPartitionsDiscovered += (partitions) =>
+                _usbUpdateFlasherService.OnPartitionsDiscovered = (partitions) =>
                 {
                     Dispatcher.UIThread.InvokeAsync(() =>
                     {
@@ -971,12 +976,12 @@ namespace Kirin_Tool
                     });
                 };
 
-                _usbUpdateFlasherService.OnPartitionProgress += (index, name, progress) =>
+                _usbUpdateFlasherService.OnPartitionProgress = (index, name, progress) =>
                 {
                     flashDialog.UpdateCurrentPartitionByIndex(index, progress == 100 ? "Finalizing..." : "Processing...", progress);
                 };
 
-                _usbUpdateFlasherService.OnPartitionCompleted += (index, name, success, message) =>
+                _usbUpdateFlasherService.OnPartitionCompleted = (index, name, success, message) =>
                 {
                     flashDialog.CompletePartitionByIndex(index, success, message);
                 };
@@ -1152,7 +1157,7 @@ namespace Kirin_Tool
             {
                 var updateAppPath = partitions.First().Partition.UpdateAppFilePath;
                 var updateAppDirectory = Path.GetDirectoryName(updateAppPath);
-                tempDirectory = Path.Combine(updateAppDirectory, $"temp_full_ota_{DateTime.Now:yyyyMMdd_HHmmss}");
+                tempDirectory = Path.Combine(updateAppDirectory, $"temp_full_ota_{Guid.NewGuid():N}");
 
                 if (!Directory.Exists(tempDirectory))
                 {
@@ -1205,6 +1210,17 @@ namespace Kirin_Tool
                 }
 
                 totalCount = partitions.Count;
+                var preparedPaths = new List<string>();
+                for (int index = 0; index < partitions.Count; index++)
+                {
+                    var (input, source) = partitions[index];
+                    string path = source == "Merged Super" ? input.UpdateAppFilePath : Path.Combine(tempDirectory, $"image_{index}.img");
+                    if (source != "Merged Super")
+                        await ExtractPartitionToTempDirectoryWithCancellation(input, path, cancellationToken);
+                    preparedPaths.Add(path);
+                }
+                foreach (var candidate in partitions) FastbootClient.ValidatePartitionName(candidate.Item1.Name.ToLowerInvariant());
+                using var inputs = new FlashInputSet(preparedPaths);
 
                 for (int i = 0; i < partitions.Count; i++)
                 {
@@ -1218,16 +1234,7 @@ namespace Kirin_Tool
 
                         progressDialog.UpdateCurrentPartitionByIndex(i, source == "Merged Super" ? "Preparing merged image..." : $"Extracting from {source}...", 25);
 
-                        tempFilePath = Path.Combine(tempDirectory, $"{partition.Name}_{source.Replace(" ", "_")}_{i}.img");
-
-                        if (source == "Merged Super" && File.Exists(partition.UpdateAppFilePath))
-                        {
-                            tempFilePath = partition.UpdateAppFilePath;
-                        }
-                        else
-                        {
-                            await ExtractPartitionToTempDirectoryWithCancellation(partition, tempFilePath, cancellationToken);
-                        }
+                        tempFilePath = preparedPaths[i];
 
                         cancellationToken.ThrowIfCancellationRequested();
 
@@ -1248,6 +1255,7 @@ namespace Kirin_Tool
 
                             progressDialog.CompletePartitionByIndex(i, false, $"Failed");
                             lastError = $"Command: fastboot {flashResult.Arguments}\nOutput: {flashResult.Output}";
+                            return (false, $"Flashing stopped after {successCount}/{totalCount} successful partitions. {lastError}");
                         }
                     }
                     catch (OperationCanceledException)
@@ -1265,6 +1273,7 @@ namespace Kirin_Tool
                     {
                         progressDialog.CompletePartitionByIndex(i, false, ex.Message);
                         lastError = ex.Message;
+                            return (false, $"Flashing stopped after {successCount}/{totalCount} successful partitions. {lastError}");
                     }
                 }
             }
@@ -1398,7 +1407,7 @@ namespace Kirin_Tool
             var dialogShowTask = _dialogService.ShowDialog(dialog);
             var unlockResult = await _firmwareUnlocker.UnlockFastboot(cpu, progressItems, overallProgress, interactionHandler, useFastFlashLoader);
 
-            dialog.ShowCloseButton(unlockResult.IsSuccess, unlockResult.IsSuccess ? "Unlock Complete" : "Unlock Failed");
+            dialog.ShowCloseButton(unlockResult.IsSuccess, unlockResult.IsSuccess ? "Loader Transfer Complete" : "Loader Transfer Failed");
             await dialogShowTask;
         }
 
@@ -1461,12 +1470,22 @@ namespace Kirin_Tool
             {
                 var updateAppPath = partitionsToFlash.First().UpdateAppFilePath;
                 var updateAppDirectory = Path.GetDirectoryName(updateAppPath) ?? Directory.GetCurrentDirectory();
-                tempDirectory = Path.Combine(updateAppDirectory, $"temp_flash_{DateTime.Now:yyyyMMdd_HHmmss}");
+                tempDirectory = Path.Combine(updateAppDirectory, $"temp_flash_{Guid.NewGuid():N}");
 
                 if (!Directory.Exists(tempDirectory))
                 {
                     Directory.CreateDirectory(tempDirectory);
                 }
+
+                var preparedPaths = new List<string>();
+                for (int index = 0; index < partitionsToFlash.Count; index++)
+                {
+                    string path = Path.Combine(tempDirectory, $"image_{index}.img");
+                    await ExtractPartitionToTempDirectoryWithCancellation(partitionsToFlash[index], path, cancellationToken);
+                    preparedPaths.Add(path);
+                }
+                foreach (var candidate in partitionsToFlash) FastbootClient.ValidatePartitionName(candidate.Name.ToLowerInvariant());
+                using var inputs = new FlashInputSet(preparedPaths);
 
                 for (int i = 0; i < partitionsToFlash.Count; i++)
                 {
@@ -1479,8 +1498,7 @@ namespace Kirin_Tool
 
                         progressDialog.UpdateCurrentPartition(partition.Name, "Extracting...", 25);
 
-                        tempFilePath = Path.Combine(tempDirectory, $"{partition.Name}.img");
-                        await ExtractPartitionToTempDirectoryWithCancellation(partition, tempFilePath, cancellationToken);
+                        tempFilePath = preparedPaths[i];
 
                         cancellationToken.ThrowIfCancellationRequested();
 
@@ -1498,6 +1516,7 @@ namespace Kirin_Tool
                         {
                             progressDialog.CompletePartition(partition.Name, false, "Flash failed");
                             lastError = flashResult.Output;
+                            return (false, $"Flashing stopped after {successCount}/{totalCount} successful partitions. {lastError}");
                         }
                     }
                     catch (OperationCanceledException)
@@ -1521,6 +1540,7 @@ namespace Kirin_Tool
                     {
                         progressDialog.CompletePartition(partition.Name, false, ex.Message);
                         lastError = ex.Message;
+                            return (false, $"Flashing stopped after {successCount}/{totalCount} successful partitions. {lastError}");
                     }
                 }
             }
@@ -1840,6 +1860,13 @@ namespace Kirin_Tool
 
                 using (var updateApp = new UpdateApp(baseUpdatePath))
                 {
+                    foreach (string name in rescuePartitions)
+                    {
+                        var input = updateApp.Partitions.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                            ?? throw new InvalidDataException($"Required rescue partition {name} is missing.");
+                        await ExtractPartitionToTempDirectoryWithCancellation(input, Path.Combine(tempDir, name + ".img"), cancellationTokenSource.Token);
+                    }
+                    using var inputs = new FlashInputSet(rescuePartitions.Select(name => Path.Combine(tempDir, name + ".img")));
                     for (int i = 0; i < rescuePartitions.Count; i++)
                     {
                         string pName = rescuePartitions[i];
@@ -1848,13 +1875,12 @@ namespace Kirin_Tool
                         if (pInfo == null)
                         {
                             progressDialog.CompletePartitionByIndex(i, false, "Not found in UPDATE.APP");
-                            allSuccess = false;
-                            continue;
+                            throw new InvalidDataException($"Required rescue partition {pName} is missing.");
                         }
 
                         progressDialog.UpdateCurrentPartitionByIndex(i, "Extracting...", 30);
                         string imgPath = Path.Combine(tempDir, $"{pName}.img");
-                        await updateApp.ExtractPartition(pInfo, imgPath);
+                        cancellationTokenSource.Token.ThrowIfCancellationRequested();
 
                         progressDialog.UpdateCurrentPartitionByIndex(i, "Flashing...", 70);
                         string flashCmd = (pName.ToLower()) switch
@@ -1873,7 +1899,7 @@ namespace Kirin_Tool
                         else
                         {
                             progressDialog.CompletePartitionByIndex(i, false, "Flash failed");
-                            allSuccess = false;
+                            throw new IOException($"Rescue flash stopped: {flashResult.Output}");
                         }
                     }
                 }

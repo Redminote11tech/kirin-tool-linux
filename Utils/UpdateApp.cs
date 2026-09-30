@@ -231,7 +231,7 @@ namespace Kirin_Tool.Utils
                 {
                     int toRead = (int)Math.Min(bufferSize, remaining);
                     int read = await _fileStream.ReadAsync(buffer, 0, toRead);
-                    if (read == 0) break;
+                    if (read == 0) throw new EndOfStreamException($"Truncated partition: {partition.Name}");
 
                     await outputStream.WriteAsync(buffer, 0, read);
                     remaining -= read;

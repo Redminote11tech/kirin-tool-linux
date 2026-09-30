@@ -72,31 +72,8 @@ namespace Kirin_Tool.Services
         {
             try
             {
-                // A stale file from an earlier run would otherwise make the
-                // file-exists success check pass without a real dump.
-                try { if (File.Exists(savePath)) File.Delete(savePath); } catch { }
-
-                var result = await _fastbootClient.OemCommandAsync($"dump-emmc {partitionName} \"{savePath}\"", timeoutMinutes: 300);
-                bool isSuccess = DumpFileWasWritten(savePath) &&
-                                !string.IsNullOrEmpty(result) &&
-                                !result.ToLower().Contains("fail") &&
-                                !result.ToLower().Contains("error");
-
-                if (isSuccess)
-                    return (true, result ?? "Dump completed");
-
-                var storageResult = await _fastbootClient.OemCommandAsync($"dump-storage {partitionName} \"{savePath}\"", timeoutMinutes: 300);
-                bool storageSuccess = DumpFileWasWritten(savePath) &&
-                                     !string.IsNullOrEmpty(storageResult) &&
-                                     !storageResult.ToLower().Contains("fail") &&
-                                     !storageResult.ToLower().Contains("error");
-                if (!storageSuccess)
-                {
-                    return (false, string.IsNullOrEmpty(storageResult) || storageResult.ToLower().Contains("fail") || storageResult.ToLower().Contains("error")
-                        ? $"Dump failed. The Huawei fastboot client normally writes '{savePath}' on the host; the system fastboot cannot save uploaded partition data."
-                        : storageResult);
-                }
-                return (true, storageResult ?? "Dump completed");
+                var result = await _fastbootClient.DumpPartition(partitionName, savePath);
+                return (result.IsSuccess, result.Output);
             }
             catch (TimeoutException)
             {
@@ -108,22 +85,6 @@ namespace Kirin_Tool.Services
             }
         }
 
-        // Stock fastboot passes "oem dump-*" through without saving the uploaded data,
-        // so a "successful" response can still leave no file behind.
-        private static bool DumpFileWasWritten(string savePath)
-        {
-            try
-            {
-                var info = new FileInfo(savePath);
-                return info.Exists && info.Length > 0;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-
         public async Task<(bool IsSuccess, string Message)> FlashPartitionAsync(string partitionName, string imagePath)
         {
             try
@@ -134,8 +95,7 @@ namespace Kirin_Tool.Services
             }
             catch (Exception ex)
             {
-                // return (false, $"Flash failed: {ex.Message}");
-                return (false, $"Failed");
+                return (false, $"Flash failed: {ex.Message}");
             }
         }
 
@@ -188,7 +148,7 @@ namespace Kirin_Tool.Services
             {
                 var name = image.Attribute("name")?.Value;
                 var identifier = image.Attribute("identifier")?.Value;
-                var fileName = image.Value?.Trim();
+                var fileName = image.Value?.Trim().Replace('\\', '/');
 
                 if (string.IsNullOrEmpty(fileName))
                     continue;

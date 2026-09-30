@@ -28,7 +28,7 @@ namespace Kirin_Tool.Services
     public class OemInfoService
     {
         private readonly FastbootClient _fastbootClient;
-        private readonly string _tempOemInfoPath = Path.Combine(Path.GetTempPath(), "temp_oeminfo.img");
+        private readonly string _tempOemInfoPath = Path.Combine(Path.GetTempPath(), $"kirin_oeminfo_{Guid.NewGuid():N}.img");
 
         public OemInfoService(FastbootClient fastbootClient)
         {

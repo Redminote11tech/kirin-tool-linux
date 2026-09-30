@@ -48,12 +48,18 @@ namespace Kirin_Tool.Services.USBUpdate
             _dloadDirectory = dloadDirectory;
         }
 
-        public bool FlashImages()
+        public bool FlashImages(CancellationToken cancellationToken = default)
         {
+            // Keep inputs open for the entire operation; do not flash from copied/stale destinations.
+            cancellationToken.ThrowIfCancellationRequested();
+            using var plan = PrepareFlashPlan();
+            byte[] unlockCode = File.ReadAllBytes(Path.Combine(_dloadDirectory, "unlockcode"));
+            if (unlockCode.Length != 8) throw new InvalidDataException("Invalid USB Update unlock code.");
             SerialPort port = null;
             
             while (port == null)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 port = BuildConnection();
                 if (port == null)
                 {
@@ -78,12 +84,13 @@ namespace Kirin_Tool.Services.USBUpdate
             {
                 DoHandshake(port);
                 
-                SendUnlockCommand(port);
+                SendUnlockCommand(port, unlockCode);
                 
-                success = FlashPartitions(port);
+                success = FlashPreparedPartitions(port, plan, cancellationToken);
 
                 if (success)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     SendCommand(port, CreateRebootCommand(), 0.3);
                     Thread.Sleep(50);
                     SendCommand(port, CreateForceRebootCommand(), 0.3);
@@ -115,8 +122,8 @@ namespace Kirin_Tool.Services.USBUpdate
                     ReadBufferSize = 1024 * 1024
                 };
 
-                port.Open();
-                return port;
+                try { port.Open(); return port; }
+                catch { port.Dispose(); throw; }
             }
             catch { return null; }
         }
@@ -182,18 +189,11 @@ namespace Kirin_Tool.Services.USBUpdate
                     Thread.Sleep(200);
                 }
             }
-
+            throw new IOException("USB Update handshake failed; no partition writes were started.");
         }
 
-        private void SendUnlockCommand(SerialPort port)
+        private void SendUnlockCommand(SerialPort port, byte[] unlockCode)
         {
-            string unlockPath = Path.Combine(_dloadDirectory, "unlockcode");
-            if (!File.Exists(unlockPath))
-            {
-                return;
-            }
-
-            byte[] unlockCode = File.ReadAllBytes(unlockPath);
 
             List<byte> cmd = new List<byte> { 0x0B };
             cmd.AddRange(unlockCode);
@@ -207,211 +207,132 @@ namespace Kirin_Tool.Services.USBUpdate
             finalCmd.AddRange(converted);
             finalCmd.Add(0x7E);
 
-            if (!SendCommand(port, finalCmd.ToArray(), 0.1)) {}
+            string? error = SendCommandInternal(port, finalCmd.ToArray(), 0.1);
+            if (error != null) throw new IOException($"USB Update unlock failed: {error}");
+        }
+
+        private sealed record FlashImage(int Index, string Name, FileStream Image, byte[] Header);
+        private sealed class FlashPlan : IDisposable
+        {
+            public List<FlashImage> Images { get; } = new();
+            public void Dispose() { foreach (var image in Images) image.Image.Dispose(); }
+        }
+
+        private FlashPlan PrepareFlashPlan()
+        {
+            var plan = new FlashPlan();
+            try
+            {
+                var lines = File.ReadAllLines(Path.Combine(_dloadDirectory, "list.txt"));
+                string mappingPath = Path.Combine(_dloadDirectory, "partition_mapping.txt");
+                string[]? mapping = File.Exists(mappingPath) ? File.ReadAllLines(mappingPath) : null;
+                if (mapping != null && mapping.Length != lines.Length)
+                    throw new InvalidDataException("Partition mapping does not match the flash list.");
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    var parts = lines[i].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length != 2 || (parts[1] != "0" && parts[1] != "1"))
+                        throw new InvalidDataException("Malformed flash list entry.");
+                    string name = parts[0];
+                    if (name == "." || name == ".." || name.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '_' && c != '-' && c != '.'))
+                        throw new InvalidDataException("Invalid partition name.");
+                    if (parts[1] == "0") continue;
+                    string dir = _dloadDirectory;
+                    if (mapping != null)
+                    {
+                        var entry = mapping[i].Split('|');
+                        if (entry.Length != 2 || entry[0] != name || string.IsNullOrWhiteSpace(entry[1]))
+                            throw new InvalidDataException("Malformed partition source mapping.");
+                        dir = entry[1];
+                    }
+                    byte[] header = File.ReadAllBytes(Path.Combine(dir, name + ".img.header"));
+                    if (header.Length < 98 || BitConverter.ToUInt32(header, 0) != 0xA55AAA55 ||
+                        BitConverter.ToUInt32(header, 4) != header.Length)
+                        throw new InvalidDataException($"Invalid header for {name}.");
+                    string headerName = System.Text.Encoding.ASCII.GetString(header, 60, 32).TrimEnd('\0');
+                    // Software testpoint deliberately sends patched XLOADER with the PRELOADER header.
+                    if (!headerName.Equals(name, StringComparison.OrdinalIgnoreCase) &&
+                        !(name.Equals("XLOADER", StringComparison.OrdinalIgnoreCase) && headerName == "PRELOADER"))
+                        throw new InvalidDataException($"Header/partition mismatch for {name}.");
+                    var image = new FileStream(Path.Combine(dir, name + ".img"), FileMode.Open, FileAccess.Read, FileShare.Read);
+                    plan.Images.Add(new FlashImage(i, name, image, header));
+                    if (image.Length == 0 || image.Length != BitConverter.ToUInt32(header, 24))
+                        throw new InvalidDataException($"Image/header length mismatch for {name}.");
+                }
+                if (plan.Images.Count == 0) throw new InvalidDataException("No enabled images to flash.");
+                return plan;
+            }
+            catch { plan.Dispose(); throw; }
         }
 
         private bool FlashPartitions(SerialPort port)
         {
-            string listPath = Path.Combine(_dloadDirectory, "list.txt");
-            if (!File.Exists(listPath))
+            using var plan = PrepareFlashPlan();
+            return FlashPreparedPartitions(port, plan);
+        }
+
+        private bool FlashPreparedPartitions(SerialPort port, FlashPlan plan, CancellationToken cancellationToken = default)
+        {
+            foreach (var image in plan.Images)
             {
-                return false;
-            }
-
-            var lines = File.ReadAllLines(listPath);
-            
-            Dictionary<int, string> partitionSourceMap = new Dictionary<int, string>();
-            string mappingPath = Path.Combine(_dloadDirectory, "partition_mapping.txt");
-            if (File.Exists(mappingPath))
-            {
-                var mappingLines = File.ReadAllLines(mappingPath);
-                for (int i = 0; i < mappingLines.Length && i < lines.Length; i++)
-                {
-                    var mappingParts = mappingLines[i].Split('|');
-                    if (mappingParts.Length >= 2)
-                    {
-                        partitionSourceMap[i] = mappingParts[1];
-                    }
-                }
-            }
-
-            int lineIndex = 0;
-            foreach (var line in lines)
-            {
-                var parts = line.Split(' ');
-                if (parts.Length < 2)
-                    continue;
-
-                string name = parts[0];
-                int flag = 0;
-                int.TryParse(parts[1], out flag);
-
-                if (flag != 1)
-                {
-                    lineIndex++;
-                    continue;
-                }
-
-                if (partitionSourceMap.ContainsKey(lineIndex))
-                {
-                    string sourceDir = partitionSourceMap[lineIndex];
-                    string sourceImg = Path.Combine(sourceDir, $"{name}.img");
-                    string sourceHeader = Path.Combine(sourceDir, $"{name}.img.header");
-                    string destImg = Path.Combine(_dloadDirectory, $"{name}.img");
-                    string destHeader = Path.Combine(_dloadDirectory, $"{name}.img.header");
-                    
-                    if (File.Exists(sourceImg))
-                    {
-                        long sourceSize = new FileInfo(sourceImg).Length;
-                        if (sourceSize == 0)
-                        {
-                            lineIndex++;
-                            continue;
-                        }
-                        File.Copy(sourceImg, destImg, true);
-                    }
-                    if (File.Exists(sourceHeader))
-                    {
-                        File.Copy(sourceHeader, destHeader, true);
-                    }
-                }
-
-                string imgPath = Path.Combine(_dloadDirectory, $"{name}.img");
-                string headerPath = Path.Combine(_dloadDirectory, $"{name}.img.header");
-                
-                if (!File.Exists(imgPath))
-                {
-                    lineIndex++;
-                    continue;
-                }
-                
-                if (!File.Exists(headerPath))
-                {
-                    lineIndex++;
-                    continue;
-                }
-                
-                long fileSize = new FileInfo(imgPath).Length;
-                if (fileSize == 0)
-                {
-                    lineIndex++;
-                    continue;
-                }
-
-                OnPartitionStarted?.Invoke(lineIndex, name);
-                OnPartitionProgressUpdate?.Invoke(lineIndex, name, 0);
-
-                double fileSizeMB = fileSize / 1024.0 / 1024.0;
-                double tailTimeout = Math.Max(35.0, Math.Min(180.0, 15.0 + (fileSizeMB / 10.0)));
-                
-                byte[] header = ReadHeader(name);
-                string? headError = SendCommandInternal(port, CreateHeadCommand(header), 2.0);
-                if (headError != null)
-                {
-                    throw new Exception($"Failed to send partition header.");
-                }
-                
-                int blockSize = 0x20000;
+                // Finish the current partition before honoring cancellation. Never interrupt its data/tail.
+                cancellationToken.ThrowIfCancellationRequested();
+                int index = image.Index;
+                string name = image.Name;
+                OnPartitionStarted?.Invoke(index, name);
+                OnPartitionProgressUpdate?.Invoke(index, name, 0);
+                byte[] header = new byte[image.Header.Length + 1];
+                image.Header.CopyTo(header, 0);
+                header[92] = header[93] = 0;
                 try
                 {
-                    string? imageError = SendImage(port, lineIndex, name, blockSize);
-                    if (imageError != null)
-                    {
-                        throw new Exception($"Failed to send partition data.");
-                    }
-                    string? tailError = SendCommandInternal(port, CreateTailCommand(header), tailTimeout);
-                    if (tailError != null)
-                    {
-                        throw new Exception($"Failed to finalize partition.");
-                    }
-                    OnPartitionCompleted?.Invoke(lineIndex, name, true, "Success");
+                    string? error = SendCommandInternal(port, CreateHeadCommand(header), 2.0);
+                    if (error != null) throw new IOException($"Header rejected for {name}: {error}");
+                    error = SendImage(port, image, header, 0x20000);
+                    if (error != null) throw new IOException($"Data rejected for {name}: {error}");
+                    double tailTimeout = Math.Max(35, Math.Min(180, 15 + image.Image.Length / 1024.0 / 1024 / 10));
+                    error = SendCommandInternal(port, CreateTailCommand(header), tailTimeout);
+                    if (error != null) throw new IOException($"Finalization failed for {name}: {error}");
+                    OnPartitionCompleted?.Invoke(index, name, true, "Success");
                 }
                 catch (Exception ex)
                 {
-                    OnPartitionCompleted?.Invoke(lineIndex, name, false, ex.Message);
+                    OnPartitionCompleted?.Invoke(index, name, false, ex.Message);
+                    _log(ex.Message);
                     return false;
                 }
-                
-                lineIndex++;
             }
             return true;
         }
 
-        private string? SendImage(SerialPort port, int lineIndex, string name, int blockSize)
+        private string? SendImage(SerialPort port, FlashImage image, byte[] header, int blockSize)
         {
-            string imgPath = Path.Combine(_dloadDirectory, $"{name}.img");
-            long fileSize = new FileInfo(imgPath).Length;
-            uint addr = 0;
-
-            byte[] header = ReadHeader(name);
-            byte[] fileSeq = new byte[4];
-            if (header.Length >= 24)
+            var fs = image.Image;
+            fs.Position = 0;
+            long fileSize = BitConverter.ToUInt32(header, 24);
+            byte[] fileSeq = header.Skip(20).Take(4).Reverse().ToArray();
+            byte[] buffer = new byte[blockSize];
+            long sent = 0;
+            int lastProgress = -1;
+            while (sent < fileSize)
             {
-                Array.Copy(header, 20, fileSeq, 0, 4);
-                Array.Reverse(fileSeq);
-            }
-
-            using (FileStream fs = new FileStream(imgPath, FileMode.Open, FileAccess.Read))
-            {
-                long remaining = fileSize;
-                long totalSent = 0;
-                
-                byte[] readBuffer = new byte[blockSize];
-                int lastReportedProgress = -1;
-
-                while (remaining > 0)
+                int count = (int)Math.Min(blockSize, fileSize - sent);
+                fs.ReadExactly(buffer.AsSpan(0, count));
+                byte[] compressed = Compression.ZlibCompress(buffer, 0, count);
+                byte[] command = CreateDataCommand(compressed, count, fileSeq, checked((uint)sent));
+                double timeout = Math.Max(1, Math.Min(8, compressed.Length / 1024.0 / 1024 * 1.5));
+                string? error = SendCommandInternal(port, command, timeout);
+                if (error != null) return error;
+                sent += count;
+                int progress = (int)(sent * 100 / fileSize);
+                if (progress != lastProgress)
                 {
-                    int toRead = (int)Math.Min(blockSize, remaining);
-                    int bytesRead = fs.Read(readBuffer, 0, toRead);
-                    if (bytesRead == 0) break;
-
-                    byte[] compressed = Compression.ZlibCompress(readBuffer, 0, bytesRead);
-                    byte[] dataCmd = CreateDataCommand(compressed, bytesRead, fileSeq, addr);
-
-                    double compressedSizeMB = compressed.Length / 1024.0 / 1024.0;
-                    double timeout = Math.Max(1.0, Math.Min(8.0, compressedSizeMB * 1.5));
-                    
-                    string? dataError = SendCommandInternal(port, dataCmd, timeout);
-                    if (dataError != null)
-                    {
-                        return dataError;
-                    }
-
-                    addr += (uint)toRead;
-                    totalSent += toRead;
-                    remaining -= toRead;
-
-                    if (fileSize > 0)
-                    {
-                        int progress = (int)((totalSent * 100) / fileSize);
-                        if (progress != lastReportedProgress)
-                        {
-                            lastReportedProgress = progress;
-                            OnProgressUpdate?.Invoke(progress);
-                            OnPartitionProgressUpdate?.Invoke(lineIndex, name, progress);
-                        }
-                    }
+                    lastProgress = progress;
+                    OnProgressUpdate?.Invoke(progress);
+                    OnPartitionProgressUpdate?.Invoke(image.Index, image.Name, progress);
                 }
             }
             return null;
-        }
-
-        private byte[] ReadHeader(string name)
-        {
-            string headerPath = Path.Combine(_dloadDirectory, $"{name}.img.header");
-            byte[] header = File.ReadAllBytes(headerPath);
-            
-            if (header.Length > 93)
-            {
-                header[92] = 0;
-                header[93] = 0;
-            }
-            
-            byte[] result = new byte[header.Length + 1];
-            Array.Copy(header, result, header.Length);
-            result[header.Length] = 0x00;
-            
-            return result;
         }
 
         private bool SendCommand(SerialPort port, byte[] cmd, double timeout)
@@ -502,8 +423,8 @@ namespace Kirin_Tool.Services.USBUpdate
             if (bytesToRead > 0)
             {
                 byte[] buffer = new byte[bytesToRead];
-                port.Read(buffer, 0, bytesToRead);
-                return buffer;
+                int read = port.Read(buffer, 0, bytesToRead);
+                return buffer.Take(read).ToArray();
             }
             return new byte[0];
         }

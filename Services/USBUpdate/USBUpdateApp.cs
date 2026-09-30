@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Linq;
 using Kirin_Tool.Models;
 
 namespace Kirin_Tool.Services.USBUpdate
@@ -65,6 +66,9 @@ namespace Kirin_Tool.Services.USBUpdate
                         break;
 
 
+                    if (Directory.EnumerateFiles(_dloadDirectory).Any(p =>
+                        Path.GetFileName(p).Equals($"{partitionName}.img", StringComparison.OrdinalIgnoreCase)))
+                        throw new InvalidDataException($"Duplicate partition image: {partitionName}");
                     string headerPath = Path.Combine(_dloadDirectory, $"{partitionName}.img.header");
                     File.WriteAllBytes(headerPath, headerData);
 
@@ -257,6 +261,9 @@ namespace Kirin_Tool.Services.USBUpdate
                     }
 
 
+                    if (Directory.EnumerateFiles(_dloadDirectory).Any(p =>
+                        Path.GetFileName(p).Equals($"{partitionName}.img", StringComparison.OrdinalIgnoreCase)))
+                        throw new InvalidDataException($"Duplicate partition image: {partitionName}");
                     string headerPath = Path.Combine(_dloadDirectory, $"{partitionName}.img.header");
                     File.WriteAllBytes(headerPath, headerData);
 
@@ -288,6 +295,9 @@ namespace Kirin_Tool.Services.USBUpdate
                 }
             }
 
+            if (includePartitions != null && includePartitions.Any(name =>
+                !imageList.Any(line => line.Split(' ')[0].Equals(name, StringComparison.OrdinalIgnoreCase))))
+                throw new InvalidDataException("One or more selected partitions are missing from UPDATE.APP.");
             return imageList;
         }
 
@@ -308,7 +318,7 @@ namespace Kirin_Tool.Services.USBUpdate
                 {
                     if (buffer[i] == 0x55 && buffer[i + 1] == 0xAA && buffer[i + 2] == 0x5A && buffer[i + 3] == 0xA5)
                     {
-                        startAddr = (int)(currentPos + i);
+                        startAddr = checked((int)(currentPos + i));
                         reader.BaseStream.Seek(startAddr + 12, SeekOrigin.Begin);
                         byte[] unlockCode = reader.ReadBytes(8);
                         
@@ -329,66 +339,49 @@ namespace Kirin_Tool.Services.USBUpdate
 
         private (long dataLength, string partitionName, byte[] headerData) ParseImageHeader(BinaryReader reader)
         {
-            MemoryStream headerStream = new MemoryStream();
-            BinaryWriter headerWriter = new BinaryWriter(headerStream);
-
-            byte[] magic = reader.ReadBytes(4);
-
-            if (magic.Length < 4)
-                return (0, "", new byte[0]);
-
-            headerWriter.Write(magic);
-
-            if (magic[0] != 0x55 || magic[1] != 0xAA || magic[2] != 0x5A || magic[3] != 0xA5)
-                return (0, "", new byte[0]);
-
-            int headerLength = reader.ReadInt32();
-            headerWriter.Write(headerLength);
-
-            headerWriter.Write(reader.ReadBytes(4));
-            headerWriter.Write(reader.ReadBytes(8));
-            headerWriter.Write(reader.ReadBytes(4));
-
-            uint dataLengthUint = reader.ReadUInt32();
-            long dataLength = dataLengthUint;
-            headerWriter.Write(dataLengthUint);
-
-            headerWriter.Write(reader.ReadBytes(16));
-            headerWriter.Write(reader.ReadBytes(16));
-
-            byte[] nameBytes = reader.ReadBytes(32);
-            headerWriter.Write(nameBytes);
-
-            string partitionName = Encoding.UTF8.GetString(nameBytes).TrimEnd('\0');
-
-            headerWriter.Write(reader.ReadBytes(6));
-
-            int remainingHeaderLen = headerLength - 98;
-
-            if (remainingHeaderLen > 0)
-            {
-                headerWriter.Write(reader.ReadBytes(remainingHeaderLen));
-            }
-
-            return (dataLength, partitionName, headerStream.ToArray());
+            long start = reader.BaseStream.Position;
+            byte[] prefix = reader.ReadBytes(8);
+            if (prefix.Length != 8 || BitConverter.ToUInt32(prefix, 0) != 0xA55AAA55)
+                throw new InvalidDataException("Invalid or truncated UPDATE.APP record.");
+            int headerLength = BitConverter.ToInt32(prefix, 4);
+            if (headerLength < 98 || headerLength > 16 * 1024 * 1024 || headerLength > reader.BaseStream.Length - start)
+                throw new InvalidDataException("Invalid UPDATE.APP header length.");
+            byte[] header = new byte[headerLength];
+            prefix.CopyTo(header, 0);
+            reader.BaseStream.ReadExactly(header.AsSpan(8));
+            long length = BitConverter.ToUInt32(header, 24);
+            string name = Encoding.ASCII.GetString(header, 60, 32).TrimEnd('\0');
+            if (string.IsNullOrEmpty(name) || name == "." || name == ".." ||
+                name.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '_' && c != '-' && c != '.'))
+                throw new InvalidDataException("Invalid partition name in UPDATE.APP.");
+            if (length == 0 || length > reader.BaseStream.Length - reader.BaseStream.Position)
+                throw new InvalidDataException($"Missing or truncated payload for {name} (declared {length} bytes).");
+            return (length, name, header);
         }
 
         private void ExtractImageData(BinaryReader reader, string outputPath, long dataLength)
         {
-            using (FileStream outFile = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+            bool created = false;
+            try
             {
+                using var outFile = new FileStream(outputPath, FileMode.CreateNew, FileAccess.Write);
+                created = true;
                 long remaining = dataLength;
-                int bufferSize = 1024 * 1024;
-                byte[] buffer = new byte[bufferSize];
-
+                byte[] buffer = new byte[1024 * 1024];
                 while (remaining > 0)
                 {
-                    int toRead = (int)Math.Min(bufferSize, remaining);
-                    int bytesRead = reader.Read(buffer, 0, toRead);
-                    if (bytesRead == 0) break;
-                    outFile.Write(buffer, 0, bytesRead);
-                    remaining -= bytesRead;
+                    int count = (int)Math.Min(buffer.Length, remaining);
+                    reader.BaseStream.ReadExactly(buffer.AsSpan(0, count));
+                    outFile.Write(buffer, 0, count);
+                    remaining -= count;
                 }
+                outFile.Flush(true);
+            }
+            catch
+            {
+                // The operation directory is private; never leave a partial image eligible for flashing.
+                if (created && File.Exists(outputPath)) File.Delete(outputPath);
+                throw;
             }
         }
     }

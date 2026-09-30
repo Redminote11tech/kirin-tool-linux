@@ -136,3 +136,13 @@ USDT Tether (TRC20): `TD2sJbEmYa93sJhDBmTrvqmScqQSVTCfCK`
 ---
 
 *NOTICE: This tool is an independent software product and has not been authorized, sponsored, or otherwise approved by Huawei Technologies Co., Ltd. HiSilicon and Kirin are trademarks of Huawei Technologies Co., Ltd. All product and company names are trademarks™ or registered® trademarks of their respective holders. Use of them does not imply any affiliation with or endorsement by them.*
+
+## Flashing safety status
+
+The uncommitted September 2026 hardening candidates are **not a stable-parity
+release**; see [the branch review](docs/stable-parity-review.md). They have
+hardware-free regression coverage, but have
+not been validated by flashing a phone. See [the safety review](docs/flashing-safety.md)
+and [corrected Windows comparison](docs/fastboot-windows-linux-diff.md), including
+the UltraFlash gap and USB merged-header limitations. Rebuild the bundled native
+fastboot as well as the application; old clients are rejected for backups.

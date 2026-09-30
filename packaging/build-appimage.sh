@@ -20,21 +20,18 @@ PUBLISH_DIR="${1:-publish-out}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
 
-if [ ! -x "$PUBLISH_DIR/Kirin-Tool" ]; then
-    echo "==> Publishing self-contained app to $PUBLISH_DIR"
-    export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
-    dotnet publish Kirin-Tool.csproj \
-        -c Release -r linux-x64 --self-contained true \
-        -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false \
-        -o "$PUBLISH_DIR"
-fi
+# Always refresh both components: existence does not establish source/version freshness.
+echo "==> Publishing self-contained app to $PUBLISH_DIR"
+export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+dotnet publish Kirin-Tool.csproj \
+    -c Release -r linux-x64 --self-contained true \
+    -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false \
+    -o "$PUBLISH_DIR"
 
-if [ ! -x "$PUBLISH_DIR/fastboot/fastboot" ]; then
-    echo "==> Building bundled Huawei-capable fastboot"
-    make -C fastboot-src
-    mkdir -p "$PUBLISH_DIR/fastboot"
-    cp fastboot-src/fastboot "$PUBLISH_DIR/fastboot/fastboot"
-fi
+echo "==> Building bundled Huawei-capable fastboot"
+make -C fastboot-src
+mkdir -p "$PUBLISH_DIR/fastboot"
+cp fastboot-src/fastboot "$PUBLISH_DIR/fastboot/fastboot"
 
 echo "==> Assembling AppDir"
 APPDIR="$(mktemp -d)/AppDir"

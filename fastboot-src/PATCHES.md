@@ -1,64 +1,42 @@
-# Bundled fastboot — provenance and patches
+# Bundled fastboot — provenance and safety patches
 
-This directory contains the fastboot client that ships with Kirin Tool for Linux
-(`fastboot/fastboot` next to the app binary). The app prefers this bundled
-binary and falls back to the system `fastboot` (android-tools) when absent —
-see `Services/FastbootClient.cs`.
+Base: AOSP platform/system/core `android-6.0.1_r1` fastboot and libsparse.
+Original Apache/BSD notices remain in source. Linux-only build; format/raw image
+filesystem generators and update ZIP support are trimmed out.
 
-## Provenance
+The September 2026 safety changes replace the earlier guessed DATA upload handler
+with independently written `fb_dump_partition`. Static analysis of the frozen
+Windows release shows a getvar emmc/storage address-and-length query followed by
+vendor upload_emmc/upload_storage requests, OKAY, exact raw bytes, and final OKAY.
+Requests are capped at 16 MiB, read buffers at 1 MiB. A local filename is never
+sent as part of the vendor command. Malformed/zero/overflowing ranges are rejected.
 
-Upstream: AOSP `platform/system/core` @ tag `android-6.0.1_r1`
-(fastboot + libsparse), Apache-2.0 / BSD-style Google notices preserved in the
-file headers. This is the same code lineage as the Huawei-modified
-`fastboot/fastboot.exe` shipped inside Kirin Tool for Windows (same
-`fb_command`/`protocol.c` core, AdbWinApi-era build).
+Writes, flush, fsync and close must succeed before an atomic rename publishes the
+backup. Failures preserve the previous destination and remove partial output.
+Success prints `KIRIN_DUMP_OK bytes=N`; only metadata-query failures print the
+fallback marker. Unsupported memory/memupload operations fail explicitly.
+Both normal and sparse downloads now require the exact negotiated DATA size.
+OEM command construction rejects oversized commands.
 
-## Trimmed (not buildable here, not used by the tool)
+Version: `kirin-tool-linux-2.0 vendor-storage-upload-v1`. Managed backup code
+requires this capability and checks both exit status and receipt/file length.
+The application can still use system fastboot for ordinary commands, but cannot
+certify backups made by an old or unrelated client.
 
-- `format` / `flash:raw` fs generators: `fs.c`, ext4_utils, f2fs (system/extras)
-  — `fb_format_supported` now always returns 0, `fb_perform_format` prints an
-  error. The Kirin Tool never formats partitions.
-- `update <zip>` command and libziparchive dependency (update.zip flow).
-- All host-platform code except Linux (`usb_linux.c`, `util_linux.c`).
+UltraFlash is not implemented. Windows can enable it inside ordinary flash;
+see [comparison](../docs/fastboot-windows-linux-diff.md). No claim of identical
+hardware behavior is made. Read protocol evidence comes from binary inspection;
+real-device traces and readback remain outstanding.
 
-## Added (Kirin Tool Linux port)
+Build and hardware-free native regression tests:
 
-1. `fb_command_upload()` in `src/protocol.c` and the `oem_upload_filename()`
-   hook in `do_oem_command()` in `src/fastboot.cpp`:
-   for the Huawei OEM commands `oem dump-emmc`, `oem dump-storage`,
-   `oem memory` and `oem memupload`, the bootloader uploads raw data in
-   standard fastboot `DATA<size>` frames; this client captures the stream and
-   writes it to the trailing filename argument — the client-side half that the
-   vendor fastboot client performs on Windows and that stock fastboot lacks.
-   This is what makes partition dumps and OEMInfo backups work on Linux.
-2. `FASTBOOT_REVISION` reports `kirin-tool-linux-1.0 (AOSP android-6.0.1_r1)`.
+```sh
+make -C fastboot-src
+make -C fastboot-src test
+```
 
-3. `do_oem_command()` hardening (2026-09-05 code review):
-   - the dump filename is taken from the parsed `argv` token, not the
-     space-joined command, so save paths containing spaces work;
-   - the OEM command join buffer is bounds-checked (upstream `strcat` into a
-     fixed 256-byte buffer overflowed on long `oem` commands);
-   - a failed upload prints `FAILED (<error>)` and exits with code 1 —
-     previously a failed dump exited 0, which could fool the app's
-     output-based success heuristic into reporting a fake success.
-
-## Verification status
-
-The upload framing follows the standard fastboot protocol (device sends
-`DATA<8-hex-size>`, raw bytes, then `OKAY`/`FAIL`). As of 2026-09-05 this has
-NOT been verified against real Huawei hardware; if a dump fails or produces an
-empty file, capture the Windows tool doing the same dump (USBPcap/Wireshark)
-and adjust `fb_command_upload` to the observed framing. Non-dump commands are
-stock fastboot behavior and unaffected.
-
-Hardware-affecting surface of the patch (the only parts that touch the wire):
-1. the upload framing itself (`fb_command_upload`),
-2. the full OEM command — including the local filename token — is sent to the
-   bootloader, matching the Windows client (its embedded deprecation string
-   says the filename "will not be used" by the device; unverified on hardware).
-Everything else in the binary is stock android-6.0.1 fastboot behavior.
-
-## Build
-
-    make          # produces ./fastboot
-    make clean
+The test target links fake USB functions, never usb_linux.c. It exercises both
+vendor sequences, the 16-MiB boundary, short reads, malformed metadata, query and
+transfer failures, disk-write failure, previous-file preservation and rejected
+DATA negotiation. Rebuild/package this fastboot with the application; installing
+only a new managed executable does not upgrade an existing bundled fastboot.
