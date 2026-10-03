@@ -1390,7 +1390,7 @@ namespace Kirin_Tool
 
             var interactionHandler = new Func<string, Task<bool>>(async message =>
             {
-                return await ShowGlobalInteractionPromptAsync(message);
+                return await ShowGlobalInteractionPromptAsync(message, dialog);
             });
 
             bool useFastFlashLoader = cpu == "hisi980" && UseFastFlashLoaderSwitch.IsChecked == true;
@@ -2398,12 +2398,16 @@ namespace Kirin_Tool
         {
             Process.Start(new ProcessStartInfo { FileName = "https://github.com/Redminote11tech/kirin-tool-linux", UseShellExecute = true });
         }
-        private async Task<bool> ShowGlobalInteractionPromptAsync(string message)
+        private async Task<bool> ShowGlobalInteractionPromptAsync(string message, Window? promptOwner = null)
         {
             if (!Dispatcher.UIThread.CheckAccess())
             {
-                return await Dispatcher.UIThread.InvokeAsync(async () => await ShowGlobalInteractionPromptAsync(message));
+                return await Dispatcher.UIThread.InvokeAsync(async () => await ShowGlobalInteractionPromptAsync(message, promptOwner));
             }
+
+            if (promptOwner != null)
+                return await new DialogService(promptOwner).ShowConfirmDialog(
+                    "Action needed!", message, "Done!", "Cancel");
 
             InteractionMessageTextBlock.Text = message;
             GlobalInteractionOverlay.IsVisible = true;

@@ -55,11 +55,7 @@ namespace Kirin_Tool.Utils
 
         private static bool TryGetUsbDevice(string port, out DirectoryInfo? usbDevice, out DirectoryInfo? serialDevice)
         {
-            string deviceName = Path.GetFileName(port);
-            var ttyDevice = new DirectoryInfo(Path.Combine("/sys/class/tty", deviceName, "device"));
-            FileSystemInfo? resolvedDevice = ttyDevice.ResolveLinkTarget(returnFinalTarget: true);
-
-            serialDevice = resolvedDevice as DirectoryInfo;
+            serialDevice = ResolveSerialDevice(port);
             for (DirectoryInfo? directory = serialDevice; directory != null; directory = directory.Parent)
             {
                 if (File.Exists(Path.Combine(directory.FullName, "idVendor")) &&
@@ -71,6 +67,27 @@ namespace Kirin_Tool.Utils
             }
 
             usbDevice = null;
+            return false;
+        }
+
+        public static DirectoryInfo? ResolveSerialDevice(string port, string ttyClassRoot = "/sys/class/tty")
+        {
+            // Resolve the class symlink FIRST. The relative device link is
+            // relative to its real parent, not /sys/class/tty/<name>.
+            var entry = new DirectoryInfo(Path.Combine(ttyClassRoot, Path.GetFileName(port)));
+            var realEntry = entry.ResolveLinkTarget(true) as DirectoryInfo ?? entry;
+            return new DirectoryInfo(Path.Combine(realEntry.FullName, "device"))
+                .ResolveLinkTarget(true) as DirectoryInfo;
+        }
+
+        public static bool IsPortUsingDriver(string port, string driverName, string ttyClassRoot = "/sys/class/tty")
+        {
+            for (var directory = ResolveSerialDevice(port, ttyClassRoot); directory != null; directory = directory.Parent)
+            {
+                if (File.Exists(Path.Combine(directory.FullName, "idVendor"))) break;
+                var driver = new DirectoryInfo(Path.Combine(directory.FullName, "driver"));
+                if (driver.Exists && driver.ResolveLinkTarget(true)?.Name == driverName) return true;
+            }
             return false;
         }
 

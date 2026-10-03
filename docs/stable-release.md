@@ -89,3 +89,10 @@ StableParity checks protected-source hashes against explicit frozen/pre-audit
 references, absence of beta-only classes, Windows merger output bytes and argument
 and XML path handling. Native tests exercise the vendor reader without usb_linux.
 See [testing-checklist.md](testing-checklist.md) before hardware validation.
+
+## COM 1.0 compatibility update
+
+Promoted candidate-4 VCOM fixes only: physical tty resolution, Linux option
+DTR/RTS compatibility, progress-owned cable prompt and tty reopen after replug.
+User validated on Mate 20 Pro/Kirin 980, not all devices. No USB Update
+transport or DKMS candidate imported. Packets/ACKs/Windows settings unchanged.

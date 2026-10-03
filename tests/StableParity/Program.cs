@@ -14,6 +14,21 @@ foreach (string absent in new[]{"Utils/FlashInputSet.cs","Utils/FastbootErrorHin
 string dir=Path.Combine(Path.GetTempPath(),"kirin-stable-parity-"+Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(dir);
 try {
+    string fakeSys = Path.Combine(dir, "sys");
+    string classTty = Path.Combine(fakeSys, "class", "tty");
+    string realPort = Path.Combine(fakeSys, "devices", "usb", "interface", "ttyUSB0");
+    string realTty = Path.Combine(realPort, "tty", "ttyUSB0");
+    Directory.CreateDirectory(classTty);
+    Directory.CreateDirectory(realTty);
+    Directory.CreateSymbolicLink(Path.Combine(classTty, "ttyUSB0"), "../../devices/usb/interface/ttyUSB0/tty/ttyUSB0");
+    Directory.CreateSymbolicLink(Path.Combine(realTty, "device"), "../..");
+    Check(LinuxSerialPortFinder.ResolveSerialDevice("/dev/ttyUSB0", classTty)?.FullName == realPort,
+        "sysfs device link resolves relative to physical parent, not class alias");
+    string fakeDriver = Path.Combine(fakeSys, "bus", "usb", "drivers", "option");
+    Directory.CreateDirectory(fakeDriver);
+    Directory.CreateSymbolicLink(Path.Combine(realPort, "driver"), fakeDriver);
+    Check(LinuxSerialPortFinder.IsPortUsingDriver("/dev/ttyUSB0", "option", classTty), "option driver identified on physical tty ancestry");
+    Check(!LinuxSerialPortFinder.IsPortUsingDriver("/dev/ttyUSB0", "kirin_usb_update", classTty), "VCOM workaround does not match unrelated driver");
     byte[] Sparse(uint checksum, params (ushort Type,uint Blocks,byte[] Data)[] chunks) {
         using var stream=new MemoryStream();using var w=new BinaryWriter(stream);
         w.Write(0xed26ff3au);w.Write((ushort)1);w.Write((ushort)0);w.Write((ushort)28);w.Write((ushort)12);
