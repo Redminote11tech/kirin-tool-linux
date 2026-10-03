@@ -1,5 +1,5 @@
 pkgname=kirin-tool-linux-unstable
-pkgver=2.4.2.usb3
+pkgver=2.4.2.usb4
 pkgrel=1
 pkgdesc='Kirin Tool USB Update transport candidate (hardware validation pending)'
 arch=('x86_64')
@@ -14,7 +14,7 @@ optdepends=('linux-cachyos-bore-lto-headers: headers for this CachyOS kernel'
 options=('!strip' '!debug' '!lto')
 install=unstable.install
 source=('bundle.tar.gz')
-sha256sums=('c4d14bfc4e2dfbd262125ce9fc998ab6f2f9d5dfd000fe30e191b8f688fbdc7f')
+sha256sums=('e87c29f4eecb485a4cc9cd0b59effd7c2e55c00f392e3559b108727a366ab130')
 package() {
     local appdir="$pkgdir/usr/lib/$pkgname"
     install -dm755 "$appdir"

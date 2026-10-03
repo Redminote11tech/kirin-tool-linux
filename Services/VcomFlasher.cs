@@ -63,6 +63,24 @@ namespace Kirin_Tool.Services
             _serialPort.Open();
         }
 
+        public async Task ReconnectAfterCableAsync()
+        {
+            // The replug destroys Linux's tty handle. Reopen the same VID/PID
+            // after it enumerates; do not send another start frame or loader.
+            Dispose();
+            var deadline = System.Diagnostics.Stopwatch.StartNew();
+            while (deadline.Elapsed < TimeSpan.FromSeconds(15))
+            {
+                if (FindIdtDevicePort() != null)
+                {
+                    Connect();
+                    return;
+                }
+                await Task.Delay(250);
+            }
+            throw new IOException("COM 1.0 did not reappear after reconnecting the cable. No next-stage loader was sent.");
+        }
+
         public async Task SendStartFrame()
         {
             var startCmd = new byte[] { 0xFE, 0x00, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x02, 0x01, 0x1D, 0x0F };
@@ -228,6 +246,7 @@ namespace Kirin_Tool.Services
         {
             _serialPort?.Close();
             _serialPort?.Dispose();
+            _serialPort = null;
         }
     }
 }

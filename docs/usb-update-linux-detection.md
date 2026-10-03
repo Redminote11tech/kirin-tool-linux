@@ -75,3 +75,19 @@ still filters 12d1:3609. No ACK checks or loader packet routines changed.
 35 parity checks pass. The VcomOpenProbe calls only Connect and Dispose;
 it does not call SendStartFrame or any upload routine. Port opening success
 is not validation of loader transfer or unlock success.
+
+## Candidate 4: cable-prompt ownership and tty lifecycle
+
+Unlock displays a modal progress window. Its cable prompt previously used an
+overlay in the main owner window instead of a dialog owned by the active
+progress window. The unlock callback now supplies the progress window as prompt
+owner. Headless tests verify the resulting owned dialog, enabled Done/Cancel
+buttons, task results and return to progress; native window-manager modality
+is not simulated by those tests.
+
+For Linux only, release the serial handle before the intermediate cable prompt.
+After Done, wait up to 15 seconds for 12d1:3609 and reopen before the next loader.
+Do not resend SendStartFrame or the completed null loader. Cancel exits before
+reopening. Windows retains its original sequence. Packet construction and ACK
+handling remain unchanged. Complete physical replug/loader continuation has
+not been exercised by the agent; no loader commands were sent during this fix.

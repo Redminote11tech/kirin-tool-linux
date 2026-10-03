@@ -119,10 +119,18 @@ namespace Kirin_Tool.Services
                         {
                             overallProgress.Report("Waiting for cable manipulation...");
                             await Task.Delay(1000);
+                            // On Linux, release the old tty before the requested replug.
+                            if (OperatingSystem.IsLinux() && interactionHandler != null) flasher.Dispose();
                             if (interactionHandler != null)
                             {
                                 bool proceed = await interactionHandler("If you are using a modified cable (Harmony TP), please unplug it from the COMPUTER SIDE, wait a few seconds, then plug it back in.");
                                 if (!proceed) return new UnlockResult { IsSuccess = false, Message = "Operation cancelled by user." };
+                                if (OperatingSystem.IsLinux())
+                                {
+                                    overallProgress.Report("Waiting for COM 1.0 to reconnect...");
+                                    await flasher.ReconnectAfterCableAsync();
+                                    overallProgress.Report("COM 1.0 reconnected. Continuing with the next loader...");
+                                }
                             }
                         }
                     }

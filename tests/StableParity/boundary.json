@@ -24,12 +24,12 @@
     "sha256": "cb3e363a7181270da41f376b365cdc3fb8c471d321f2d3654b3addcf43677262"
   },
   "Services/VcomFlasher.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + verified Linux option COM1 port-open DTR/RTS adaptation; packet protocol unchanged",
-    "sha256": "f4144cc817094d74e41276e4fabc694f3cc071c1d92852250ea8bafa4854d288"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + verified Linux option COM1 port-open DTR/RTS adaptation; packet protocol unchanged + candidate modal prompt ownership and Linux tty reopen after instructed cable replug",
+    "sha256": "cdaad87115599a94fd28429b3b107878e98184ec6c4e40ba1a53d6605c320194"
   },
   "Services/FirmwareUnlocker.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
-    "sha256": "292e8ac29ac92da632b8ffe3e261d5ea97fe5da01c54159512e37aa7d851d4f2"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + candidate modal prompt ownership and Linux tty reopen after instructed cable replug",
+    "sha256": "e43e714a9537b2e87d4cf8ec8d20a4c63b7614466bcbd442563bb44be3be1ed5"
   },
   "Services/USBUpdate/UsbDownloadService.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Linux DBAdapter ff/13/23 discovery adaptation (Huawei hw_cdcacm.inf; no transport changes)",
@@ -40,8 +40,8 @@
     "sha256": "a591aaa27091f76e125a95e61c0ecc69f9e7a29759bb0705a05e06ecd702540e"
   },
   "MainWindow.axaml.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix",
-    "sha256": "b4d9100b43d1a11560ed299501f05b94edf2b19cc8d25fd9816a5b3deec22b0f"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug",
+    "sha256": "8268ff3ad601422ffd6eaab553fe6d86310ec96c8bfd22dfc7a0d355a20d1f2d"
   },
   "UI/ProcessDialogUapp.axaml.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Avalonia collection-binding initialization and completion-message fixes",
