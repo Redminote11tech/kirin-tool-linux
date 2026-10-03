@@ -1,0 +1,45 @@
+pkgname=kirin-tool-linux-unstable
+pkgver=2.4.2.usb1
+pkgrel=1
+pkgdesc='Kirin Tool USB Update transport candidate (hardware validation pending)'
+arch=('x86_64')
+url='https://github.com/Redminote11tech/kirin-tool-linux'
+license=('custom:BSL-1.1' 'GPL-2.0-only')
+depends=('glibc' 'gcc-libs' 'fontconfig' 'freetype2' 'libx11' 'libice' 'libsm' 'openssl' 'zlib' 'icu' 'dkms')
+optdepends=('linux-cachyos-bore-lto-headers: headers for this CachyOS kernel'
+            'linux-headers: headers for Arch Linux kernel'
+            'clang: required to build adapter for Clang kernels'
+            'llvm: required to build adapter for Clang kernels'
+            'lld: required to build adapter for Clang kernels')
+options=('!strip' '!debug' '!lto')
+install=unstable.install
+source=('bundle.tar.gz')
+sha256sums=('3e4d00da2aa43f8db6b16bf4c25cd2dffdfa1753f9ab0d6aaa2868fc0b8d7359')
+package() {
+    local appdir="$pkgdir/usr/lib/$pkgname"
+    install -dm755 "$appdir"
+    cp -a "$srcdir/bundle/app/." "$appdir/"
+    install -dm755 "$pkgdir/usr/bin"
+    ln -s "/usr/lib/$pkgname/Kirin-Tool" "$pkgdir/usr/bin/kirin-tool-unstable"
+    ln -s "/usr/lib/$pkgname/UsbUpdateProbe" "$pkgdir/usr/bin/kirin-usb-update-probe"
+    install -dm755 "$pkgdir/usr/src/kirin-usb-update-0.1.0"
+    for f in kirin_usb_update.c match.h Makefile dkms.conf LICENSE; do
+        install -m644 "$srcdir/bundle/driver/$f" "$pkgdir/usr/src/kirin-usb-update-0.1.0/$f"
+    done
+    install -Dm644 "$srcdir/bundle/driver/60-kirin-usb-update.rules" "$pkgdir/usr/lib/udev/rules.d/60-kirin-usb-update.rules"
+    install -Dm644 "$srcdir/bundle/driver/README.md" "$pkgdir/usr/share/doc/$pkgname/USB-UPDATE-DRIVER.md"
+    install -Dm644 "$srcdir/bundle/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -Dm644 "$srcdir/bundle/driver/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE.driver"
+    install -Dm644 "$srcdir/bundle/NOTICE.fastboot-src" "$pkgdir/usr/share/licenses/$pkgname/NOTICE.fastboot-src"
+    install -Dm644 "$srcdir/bundle/kirin-tool.png" "$pkgdir/usr/share/pixmaps/kirin-tool-unstable.png"
+    install -dm755 "$pkgdir/usr/share/applications"
+    cat > "$pkgdir/usr/share/applications/kirin-tool-unstable.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=Kirin Tool — USB Update UNSTABLE
+Exec=kirin-tool-unstable
+Icon=kirin-tool-unstable
+Categories=Development;Utility;
+Terminal=false
+DESKTOP
+}

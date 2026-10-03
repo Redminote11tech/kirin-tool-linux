@@ -1,0 +1,13 @@
+post_install() {
+    cat <<'MESSAGE'
+USB Update candidate installed alongside stable. DKMS must build successfully
+for your running kernel before the adapter can be used.
+Reconnect in USB Update, then run:
+  sudo modprobe kirin_usb_update
+  kirin-usb-update-probe --open-close
+The probe does not write firmware or invoke software testpoint.
+Launch the candidate GUI with kirin-tool-unstable.
+Hardware flashing remains unvalidated. Keep stable installed.
+MESSAGE
+}
+post_upgrade() { post_install; }

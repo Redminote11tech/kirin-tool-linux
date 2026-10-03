@@ -44,8 +44,8 @@
     "sha256": "b4d9100b43d1a11560ed299501f05b94edf2b19cc8d25fd9816a5b3deec22b0f"
   },
   "UI/ProcessDialogUapp.axaml.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
-    "sha256": "e4fad3bd71f8ceb401304a1772a61e80dc7785cf2bf24545582fde10e694c6c6"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Avalonia collection-binding initialization and completion-message fixes",
+    "sha256": "c073b26526ce74f03835bb96265633dc3891eeec6a9329e08dc9765b8197d4b0"
   },
   "UI/ProgressDialog.axaml.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",

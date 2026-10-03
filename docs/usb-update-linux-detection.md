@@ -28,3 +28,15 @@ subclass/protocol and endpoint-count checks. Module build succeeds for the
 installed 7.2.6-1-cachyos-bore-lto kernel. Hardware attachment and SerialPort
 open/close remain pending. See the adapter README for the staged no-write probe.
 This is an isolated candidate, not a published or validated stable release.
+
+The candidate also fixes the blank partition list: Avalonia DataContext now
+binds after PartitionItems has been initialized. Completion keeps the caller's
+USB Update success message. Headless tests reproduced the empty list before
+this change and verify three rendered rows, success/failure text and controls
+for both constructors after it. No fastboot operation was executed by the test.
+
+A side-by-side Arch/CachyOS package is provided as kirin-tool-linux-unstable.
+It includes the adapter's DKMS source and ModemManager exclusion rule, and a
+self-contained `kirin-usb-update-probe` command for list/open-close verification.
+It does not replace kirin-tool-linux. Driver loading requires local sudo; the
+agent could not load it because sudo required the user's password.

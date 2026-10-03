@@ -97,7 +97,6 @@ namespace Kirin_Tool.UI
         public ProcessDialogUapp(List<PartitionInfo> selectedPartitions, CancellationTokenSource cancellationTokenSource)
         {
             InitializeComponent();
-            this.DataContext = this;
 
             _cancellationTokenSource = cancellationTokenSource;
 
@@ -110,12 +109,12 @@ namespace Kirin_Tool.UI
 
             OverallStatusText = $"Ready to flash {PartitionItems.Count} partitions";
             CurrentOperationText = "Waiting to start...";
+            DataContext = this;
         }
 
         public ProcessDialogUapp(List<(PartitionInfo Partition, string Source)> partitionsWithSources, CancellationTokenSource cancellationTokenSource)
         {
             InitializeComponent();
-            this.DataContext = this;
 
             _cancellationTokenSource = cancellationTokenSource;
 
@@ -128,6 +127,7 @@ namespace Kirin_Tool.UI
 
             OverallStatusText = $"Ready to flash {PartitionItems.Count} partitions";
             CurrentOperationText = "Waiting to start...";
+            DataContext = this;
         }
 
         public void UpdateCurrentPartitionByIndex(int index, string status, double progress)
@@ -270,7 +270,7 @@ namespace Kirin_Tool.UI
                 if (success && successCount == totalCount)
                 {
                     OverallStatusText = $"Successfully flashed all {totalCount} partitions!";
-                    CurrentOperationText = "Flashing completed successfully.";
+                    CurrentOperationText = message ?? "Flashing completed successfully.";
                 }
                 else
                 {
