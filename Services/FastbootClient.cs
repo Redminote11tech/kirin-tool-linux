@@ -89,15 +89,12 @@ namespace Kirin_Tool.Services
 
         public async Task<string> ReadNveVariable(string variable)
         {
-            var result = await ProcessRunner.RunAsync(_fastbootPath, $"getvar nve:{variable}");
-            if (result.IsSuccess && result.Output.Contains($"nve:{variable}:"))
-            {
-                return result.Output.Split('\n')
-                    .FirstOrDefault(line => line.StartsWith($"nve:{variable}:"))
-                    ?.Substring($"nve:{variable}:".Length).Trim() ?? string.Empty;
-            }
-            return string.Empty;
+            var result = await QueryVariableAsync($"nve:{variable}");
+            return FastbootReadResponses.Variable(result, $"nve:{variable}");
         }
+
+        public Task<ProcessResult> QueryVariableAsync(string variable) =>
+            ProcessRunner.RunAsync(_fastbootPath, new[] { "getvar", variable }, timeoutSeconds: 10);
 
         public async Task<ProcessResult> WriteNveVariable(string variable, string value)
         {

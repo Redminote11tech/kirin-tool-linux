@@ -1924,8 +1924,15 @@ namespace Kirin_Tool
 
         private async Task HandleReadSerialNumber()
         {
-            var sn = await _fastbootClient.ReadNveVariable("SN");
-            CurrentSerialDisplay.Text = string.IsNullOrEmpty(sn) ? "Could not read Serial Number." : sn;
+            try
+            {
+                CurrentSerialDisplay.Text = await _fastbootClient.ReadNveVariable("SN");
+            }
+            catch (Exception ex)
+            {
+                CurrentSerialDisplay.Text = "Serial number unavailable.";
+                await ShowMessageBox("Read Serial Number", ex.Message);
+            }
         }
 
         private async Task HandleWriteSerialNumber()

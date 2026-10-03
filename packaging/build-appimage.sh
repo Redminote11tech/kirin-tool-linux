@@ -15,7 +15,7 @@
 
 set -euo pipefail
 
-VERSION="${2:-2.4.2-stable.2}"
+VERSION="${2:-2.4.2-usb-update-candidate.5}"
 PUBLISH_DIR="${1:-publish-out}"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO_ROOT"
@@ -34,6 +34,12 @@ mkdir -p "$PUBLISH_DIR/fastboot"
 cp fastboot-src/fastboot "$PUBLISH_DIR/fastboot/fastboot"
 mkdir -p "$PUBLISH_DIR/licenses" "$PUBLISH_DIR/docs"
 cp LICENSE "$PUBLISH_DIR/licenses/LICENSE"
+cp -L "$(pkg-config --variable=libdir libusb-1.0)/libusb-1.0.so.0" "$PUBLISH_DIR/libusb-1.0.so.0"
+cp native/usb-update/LICENSE "$PUBLISH_DIR/licenses/LICENSE.usb-bridge"
+cp native/usb-update/LICENSE.libusb "$PUBLISH_DIR/licenses/LICENSE.libusb"
+printf 'libusb %s; source: https://github.com/libusb/libusb/releases\n' "$(pkg-config --modversion libusb-1.0)" > "$PUBLISH_DIR/licenses/libusb-source.txt"
+cp docs/usb-update-userspace.md "$PUBLISH_DIR/docs/"
+cp packaging/51-kirin-tool-fastboot.rules "$PUBLISH_DIR/docs/"
 cp fastboot-src/NOTICE "$PUBLISH_DIR/licenses/NOTICE.fastboot-src"
 cp docs/stable-release.md docs/testing-checklist.md "$PUBLISH_DIR/docs/"
 BUILD_COMMIT="${KIRIN_BUILD_COMMIT:-$(git rev-parse HEAD)}"

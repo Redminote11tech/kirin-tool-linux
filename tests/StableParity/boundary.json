@@ -32,16 +32,16 @@
     "sha256": "e43e714a9537b2e87d4cf8ec8d20a4c63b7614466bcbd442563bb44be3be1ed5"
   },
   "Services/USBUpdate/UsbDownloadService.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Linux DBAdapter ff/13/23 discovery adaptation (Huawei hw_cdcacm.inf; no transport changes)",
-    "sha256": "9c94aa745306b1fcc8ddd409e7b132487a5bd4510bfa8777a73b524992ca1d73"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Linux DBAdapter ff/13/23 discovery adaptation (Huawei hw_cdcacm.inf; no transport changes) + candidate5 transport abstraction; protocol checked against candidate4",
+    "sha256": "02f5fa9a0c5438b808d8decae4074a35cdc36b85d727128f47411c666a5f58a3"
   },
   "Services/USBUpdate/USBUpdateApp.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
     "sha256": "a591aaa27091f76e125a95e61c0ecc69f9e7a29759bb0705a05e06ecd702540e"
   },
   "MainWindow.axaml.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug",
-    "sha256": "8268ff3ad601422ffd6eaab553fe6d86310ec96c8bfd22dfc7a0d355a20d1f2d"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug + candidate5 read-only query error reporting",
+    "sha256": "d819bebecd71a77054fa98d3044d09f2f08f2bb545e8c5a3595452073c5600f6"
   },
   "UI/ProcessDialogUapp.axaml.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Avalonia collection-binding initialization and completion-message fixes",

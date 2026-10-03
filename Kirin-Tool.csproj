@@ -10,7 +10,7 @@
     <Product>Kirin Tool for Linux</Product>
     <Version>2.4.2</Version>
     <FileVersion>2.4.2</FileVersion>
-    <InformationalVersion>2.4.2-usb-update.candidate.4</InformationalVersion>
+    <InformationalVersion>2.4.2-usb-update.candidate.5</InformationalVersion>
     <ApplicationIcon>logo.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -47,4 +47,10 @@
     <Using Include="Avalonia.Threading" />
   </ItemGroup>
 
+  <Target Name="BuildUsbUpdateBridge" BeforeTargets="PrepareForBuild" Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <Exec Command="make -C &quot;$(MSBuildProjectDirectory)/native/usb-update&quot;" />
+  </Target>
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <Content Include="native/usb-update/libkirin_usb_update.so" Link="libkirin_usb_update.so" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
