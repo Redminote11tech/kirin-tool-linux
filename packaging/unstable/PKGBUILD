@@ -1,6 +1,6 @@
 pkgname=kirin-tool-linux-unstable
 pkgver=2.4.2.usb5
-pkgrel=1
+pkgrel=2
 pkgdesc='Kirin Tool USB Update transport candidate (hardware validation pending)'
 arch=('x86_64')
 url='https://github.com/Redminote11tech/kirin-tool-linux'
@@ -9,7 +9,7 @@ depends=('glibc' 'gcc-libs' 'fontconfig' 'freetype2' 'libx11' 'libice' 'libsm' '
 options=('!strip' '!debug' '!lto')
 install=unstable.install
 source=('bundle.tar.gz')
-sha256sums=('92065979c2ab60b0619c6d35c7e987b956fd7ccc79b16e98413ae0a16b6bac02')
+sha256sums=('3ec471dd388265c0239b0f078d52abe59782481268d2d6aae210e5961ba7f37c')
 package() {
     local appdir="$pkgdir/usr/lib/$pkgname"
     install -dm755 "$appdir"

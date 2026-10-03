@@ -441,3 +441,5 @@ squashfs-root/
 # Hardware-free native regression artifacts
 fastboot-src/tests/vendor-upload-test
 fastboot-src/tests/output/
+
+fastboot-src/tests/cli-fastboot

@@ -1072,6 +1072,7 @@ int main(int argc, char **argv)
             skip(1);
             do_flashall(usb, erase_first);
             wants_reboot = 1;
+        } else if(!strcmp(*argv, "oem")) {
             argc = do_oem_command(argc, argv, usb);
         } else if(!strcmp(*argv, "flashing")) {
             if (argc == 2 && (!strcmp(*(argv+1), "unlock") ||

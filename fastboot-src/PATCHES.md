@@ -29,3 +29,10 @@ Build: `make -C fastboot-src`; hardware-free tests: `make -C fastboot-src test`.
 The test target links fake USB functions and never opens a device. Tests cover
 both vendor sequences, a 16-MiB boundary, short reads, malformed metadata,
 query/start/tail errors, early EOF, disk failure and prior-file preservation.
+
+Candidate 5 revision 2 restores the missing `oem` case in the top-level command
+loop. Its handler had accidentally been attached to `flashall`, so OEM requests
+printed usage without reaching either the vendor reader or the generic command
+queue. `make test-cli` now exercises the actual CLI with a fake USB backend:
+lock/build/version queries, both dump metadata requests, and the NVE SN request.
+It never opens real hardware. The upload protocol and payload bytes are unchanged.

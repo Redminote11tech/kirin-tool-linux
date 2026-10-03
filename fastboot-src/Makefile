@@ -47,3 +47,12 @@ tests/vendor-upload-test: tests/vendor_upload_test.c src/protocol.c src/fastboot
 	$(CC) $(CFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -o $@ tests/vendor_upload_test.c src/protocol.c
 
 .PHONY: test
+
+# Exercise the real argument dispatcher, with USB replaced by a mock.
+tests/cli_usb_stub.o: tests/cli_usb_stub.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+tests/cli-fastboot: $(filter-out src/usb_linux.o,$(OBJS)) tests/cli_usb_stub.o
+	$(CXX) -o $@ $^ $(LIBS) $(LDFLAGS)
+test-cli: tests/cli-fastboot
+	python3 tests/cli_dispatch_test.py
+.PHONY: test-cli
