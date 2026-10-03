@@ -45,11 +45,17 @@ namespace Kirin_Tool.Services
                 throw new IOException("No device in VCOM mode (HUAWEI USB COM 1.0) was found.");
             }
 
+            // Linux option maps DTR to CDC SET_CONTROL_LINE_STATE. The captured
+            // 12d1:3609 BootROM stalls that request (EPIPE), before any packet is
+            // sent. This USB bulk endpoint needs no UART modem-line signalling.
+            // Keep Windows and other drivers on their original settings.
+            bool bulkOnly = OperatingSystem.IsLinux() &&
+                LinuxSerialPortFinder.IsPortUsingDriver(portName, "option");
             _serialPort = new SerialPort(portName, 115200)
             {
-                Handshake = Handshake.RequestToSend,
+                Handshake = bulkOnly ? Handshake.None : Handshake.RequestToSend,
 
-                DtrEnable = true,
+                DtrEnable = !bulkOnly,
 
                 ReadTimeout = 10000,
                 WriteTimeout = 10000

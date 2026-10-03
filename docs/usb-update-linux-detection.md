@@ -59,3 +59,19 @@ With the user's adapter loaded, the corrected no-write probe identified
 /dev/ttyUSB0 and opened/closed it with the application's SerialPort settings.
 No handshake or payload was written. This validates discovery and opening,
 not firmware transfer, disconnect recovery, or software-testpoint success.
+
+## Candidate 3: COM 1.0 port-open failure
+
+After USB Update, 12d1:3609 exposes ff/ff/ff and bulk endpoints 81/01.
+The host already binds option and creates ttyUSB0. An isolated open with the
+old VCOM settings reproduced IOException: Broken pipe at
+SerialStream.set_DtrEnable(true), before any handshake or loader write.
+Opening with DTR disabled and Handshake.None succeeded on the same device.
+Linux option translates modem-line changes into CDC control requests.
+
+Only the Linux option-bound VCOM path now uses those bulk-only settings;
+Windows and other drivers retain their original configuration. FindIdtDevicePort
+still filters 12d1:3609. No ACK checks or loader packet routines changed.
+35 parity checks pass. The VcomOpenProbe calls only Connect and Dispose;
+it does not call SendStartFrame or any upload routine. Port opening success
+is not validation of loader transfer or unlock success.

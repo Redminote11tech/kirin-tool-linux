@@ -24,6 +24,11 @@ try {
     Directory.CreateSymbolicLink(Path.Combine(realTty, "device"), "../..");
     Check(LinuxSerialPortFinder.ResolveSerialDevice("/dev/ttyUSB0", classTty)?.FullName == realPort,
         "sysfs device link resolves relative to physical parent, not class alias");
+    string fakeDriver = Path.Combine(fakeSys, "bus", "usb", "drivers", "option");
+    Directory.CreateDirectory(fakeDriver);
+    Directory.CreateSymbolicLink(Path.Combine(realPort, "driver"), fakeDriver);
+    Check(LinuxSerialPortFinder.IsPortUsingDriver("/dev/ttyUSB0", "option", classTty), "option driver identified on physical tty ancestry");
+    Check(!LinuxSerialPortFinder.IsPortUsingDriver("/dev/ttyUSB0", "kirin_usb_update", classTty), "VCOM workaround does not match unrelated driver");
     string usbInterface = Path.Combine(dir, "usb-interface");
     string tty = Path.Combine(usbInterface, "ttyUSB0");
     Directory.CreateDirectory(tty);

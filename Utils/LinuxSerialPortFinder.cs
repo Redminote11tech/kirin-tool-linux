@@ -102,6 +102,17 @@ namespace Kirin_Tool.Utils
                 .ResolveLinkTarget(true) as DirectoryInfo;
         }
 
+        public static bool IsPortUsingDriver(string port, string driverName, string ttyClassRoot = "/sys/class/tty")
+        {
+            for (var directory = ResolveSerialDevice(port, ttyClassRoot); directory != null; directory = directory.Parent)
+            {
+                if (File.Exists(Path.Combine(directory.FullName, "idVendor"))) break;
+                var driver = new DirectoryInfo(Path.Combine(directory.FullName, "driver"));
+                if (driver.Exists && driver.ResolveLinkTarget(true)?.Name == driverName) return true;
+            }
+            return false;
+        }
+
         private static bool MatchesUsbIdentity(DirectoryInfo usbDevice, int vendorId, int? productId)
         {
             string? vendor = ReadAttribute(usbDevice, "idVendor");

@@ -1,5 +1,5 @@
 pkgname=kirin-tool-linux-unstable
-pkgver=2.4.2.usb2
+pkgver=2.4.2.usb3
 pkgrel=1
 pkgdesc='Kirin Tool USB Update transport candidate (hardware validation pending)'
 arch=('x86_64')
@@ -14,7 +14,7 @@ optdepends=('linux-cachyos-bore-lto-headers: headers for this CachyOS kernel'
 options=('!strip' '!debug' '!lto')
 install=unstable.install
 source=('bundle.tar.gz')
-sha256sums=('c2d7639385b4e1afe94f5786fa0e79ee3fc6fae66bfe31f4b9b93ecd4956732c')
+sha256sums=('c4d14bfc4e2dfbd262125ce9fc998ab6f2f9d5dfd000fe30e191b8f688fbdc7f')
 package() {
     local appdir="$pkgdir/usr/lib/$pkgname"
     install -dm755 "$appdir"
@@ -22,6 +22,7 @@ package() {
     install -dm755 "$pkgdir/usr/bin"
     ln -s "/usr/lib/$pkgname/Kirin-Tool" "$pkgdir/usr/bin/kirin-tool-unstable"
     ln -s "/usr/lib/$pkgname/UsbUpdateProbe" "$pkgdir/usr/bin/kirin-usb-update-probe"
+    ln -s "/usr/lib/$pkgname/VcomOpenProbe" "$pkgdir/usr/bin/kirin-vcom-open-probe"
     install -dm755 "$pkgdir/usr/src/kirin-usb-update-0.1.0"
     for f in kirin_usb_update.c match.h Makefile dkms.conf LICENSE; do
         install -m644 "$srcdir/bundle/driver/$f" "$pkgdir/usr/src/kirin-usb-update-0.1.0/$f"

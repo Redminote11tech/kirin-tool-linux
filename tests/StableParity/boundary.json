@@ -24,8 +24,8 @@
     "sha256": "cb3e363a7181270da41f376b365cdc3fb8c471d321f2d3654b3addcf43677262"
   },
   "Services/VcomFlasher.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
-    "sha256": "f6f17f1bd15bc6e71b3795c8bf3e4e8854e1dcede43a7a80fa6da3115be924a8"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + verified Linux option COM1 port-open DTR/RTS adaptation; packet protocol unchanged",
+    "sha256": "f4144cc817094d74e41276e4fabc694f3cc071c1d92852250ea8bafa4854d288"
   },
   "Services/FirmwareUnlocker.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
