@@ -19,7 +19,7 @@ if (args.Length != 1 || args[0] != "--open-close")
 // Only open our audited bulk-only adapter. Other drivers may issue control
 // requests on open, so this hardware probe will not open them.
 string ttyName = Path.GetFileName(port);
-var serial = new DirectoryInfo($"/sys/class/tty/{ttyName}/device").ResolveLinkTarget(true) as DirectoryInfo;
+var serial = LinuxSerialPortFinder.ResolveSerialDevice(port);
 bool owned = false;
 for (var d = serial; d != null; d = d.Parent)
 {

@@ -14,6 +14,16 @@ foreach (string absent in new[]{"Utils/FlashInputSet.cs","Utils/FastbootErrorHin
 string dir=Path.Combine(Path.GetTempPath(),"kirin-stable-parity-"+Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(dir);
 try {
+    string fakeSys = Path.Combine(dir, "sys");
+    string classTty = Path.Combine(fakeSys, "class", "tty");
+    string realPort = Path.Combine(fakeSys, "devices", "usb", "interface", "ttyUSB0");
+    string realTty = Path.Combine(realPort, "tty", "ttyUSB0");
+    Directory.CreateDirectory(classTty);
+    Directory.CreateDirectory(realTty);
+    Directory.CreateSymbolicLink(Path.Combine(classTty, "ttyUSB0"), "../../devices/usb/interface/ttyUSB0/tty/ttyUSB0");
+    Directory.CreateSymbolicLink(Path.Combine(realTty, "device"), "../..");
+    Check(LinuxSerialPortFinder.ResolveSerialDevice("/dev/ttyUSB0", classTty)?.FullName == realPort,
+        "sysfs device link resolves relative to physical parent, not class alias");
     string usbInterface = Path.Combine(dir, "usb-interface");
     string tty = Path.Combine(usbInterface, "ttyUSB0");
     Directory.CreateDirectory(tty);

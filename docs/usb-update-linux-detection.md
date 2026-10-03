@@ -40,3 +40,22 @@ It includes the adapter's DKMS source and ModemManager exclusion rule, and a
 self-contained `kirin-usb-update-probe` command for list/open-close verification.
 It does not replace kirin-tool-linux. Driver loading requires local sudo; the
 agent could not load it because sudo required the user's password.
+
+## Candidate 2 correction and live check
+
+Candidate 1's installed DLL reproduced the old empty-row UI failure. Source
+build checks had passed but were insufficient: comparing package contents with
+that stale publish directory also passed. Candidate 2 uses a clean Release
+build into a fresh publish directory and runs the UI harness against the
+actual published and extracted package DLLs.
+
+A live tty also exposed a separate discovery defect: resolving
+/sys/class/tty/ttyUSB0/device directly with .NET resolved its relative target
+against the class alias and produced /sys/ttyUSB0. Resolve the class entry
+first, then its device link. A synthetic sysfs topology regression test covers
+this; the stable parity harness now reports 33 checks.
+
+With the user's adapter loaded, the corrected no-write probe identified
+/dev/ttyUSB0 and opened/closed it with the application's SerialPort settings.
+No handshake or payload was written. This validates discovery and opening,
+not firmware transfer, disconnect recovery, or software-testpoint success.
