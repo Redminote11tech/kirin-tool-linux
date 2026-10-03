@@ -32,8 +32,8 @@
     "sha256": "292e8ac29ac92da632b8ffe3e261d5ea97fe5da01c54159512e37aa7d851d4f2"
   },
   "Services/USBUpdate/UsbDownloadService.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
-    "sha256": "76161fae500de362966d20540be14f46836b9e75c1d2ba2cb666316fef712668"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Linux DBAdapter ff/13/23 discovery adaptation (Huawei hw_cdcacm.inf; no transport changes)",
+    "sha256": "9c94aa745306b1fcc8ddd409e7b132487a5bd4510bfa8777a73b524992ca1d73"
   },
   "Services/USBUpdate/USBUpdateApp.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",

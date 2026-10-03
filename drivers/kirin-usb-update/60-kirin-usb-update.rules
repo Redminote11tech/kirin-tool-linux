@@ -1,0 +1,2 @@
+# Prevent modem probing from sending AT commands to the firmware transport.
+SUBSYSTEM=="tty", DRIVERS=="kirin_usb_update", ENV{ID_MM_PORT_IGNORE}="1", ENV{ID_MM_DEVICE_IGNORE}="1", GROUP="uucp", MODE="0660", TAG+="uaccess"

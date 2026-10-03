@@ -129,7 +129,8 @@ namespace Kirin_Tool.Services.USBUpdate
                     vendorId: 0x12D1,
                     descriptorMatches: descriptor =>
                         descriptor.Contains("DBAdapter", StringComparison.OrdinalIgnoreCase) ||
-                        descriptor.Contains("Reserved Interface", StringComparison.OrdinalIgnoreCase));
+                        descriptor.Contains("Reserved Interface", StringComparison.OrdinalIgnoreCase),
+                    interfaceMatches: LinuxSerialPortFinder.IsHuaweiUsbUpdateInterface);
             }
 
             if (OperatingSystem.IsWindows())

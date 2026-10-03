@@ -14,6 +14,23 @@ foreach (string absent in new[]{"Utils/FlashInputSet.cs","Utils/FastbootErrorHin
 string dir=Path.Combine(Path.GetTempPath(),"kirin-stable-parity-"+Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(dir);
 try {
+    string usbInterface = Path.Combine(dir, "usb-interface");
+    string tty = Path.Combine(usbInterface, "ttyUSB0");
+    Directory.CreateDirectory(tty);
+    foreach (var identity in new[] {
+        ("ff", "13", "23", true), // DBAdapter, even without an interface string
+        ("ff", "13", "21", false), ("ff", "13", "22", false),
+        ("ff", "42", "01", false), ("ff", "48", "01", false),
+        ("08", "06", "50", false), ("ff", "12", "23", false) })
+    {
+        File.WriteAllText(Path.Combine(usbInterface, "bInterfaceClass"), identity.Item1);
+        File.WriteAllText(Path.Combine(usbInterface, "bInterfaceSubClass"), identity.Item2);
+        File.WriteAllText(Path.Combine(usbInterface, "bInterfaceProtocol"), identity.Item3);
+        Check(LinuxSerialPortFinder.IsHuaweiUsbUpdateInterface(new DirectoryInfo(tty)) == identity.Item4,
+            $"DBAdapter interface selection {identity.Item1}/{identity.Item2}/{identity.Item3}");
+    }
+    File.Delete(Path.Combine(usbInterface, "bInterfaceProtocol"));
+    Check(!LinuxSerialPortFinder.IsHuaweiUsbUpdateInterface(new DirectoryInfo(tty)), "missing interface protocol is not DBAdapter");
     byte[] Sparse(uint checksum, params (ushort Type,uint Blocks,byte[] Data)[] chunks) {
         using var stream=new MemoryStream();using var w=new BinaryWriter(stream);
         w.Write(0xed26ff3au);w.Write((ushort)1);w.Write((ushort)0);w.Write((ushort)28);w.Write((ushort)12);
