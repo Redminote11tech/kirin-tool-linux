@@ -9,7 +9,7 @@ depends=('glibc' 'gcc-libs' 'fontconfig' 'freetype2' 'libx11' 'libice' 'libsm' '
 options=('!strip' '!debug' '!lto')
 install=unstable.install
 source=('bundle.tar.gz')
-sha256sums=('2acecc43240880605e50c9b0a96faf9f2a811dd016ae9e53bd3095945a99eb1d')
+sha256sums=('85af4a918a9360c085d0e9015f415926d02581613f6b3a54a2a8597164aa6f85')
 package() {
     local appdir="$pkgdir/usr/lib/$pkgname"
     install -dm755 "$appdir"
