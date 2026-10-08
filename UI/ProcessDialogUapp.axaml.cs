@@ -130,6 +130,64 @@ namespace Kirin_Tool.UI
             DataContext = this;
         }
 
+        // Reuse the flashing row template for offline extraction, with operation-specific wording.
+        public void ConfigureExtraction()
+        {
+            Title = "Extracting UPDATE.APP Partitions";
+            OverallStatusText = $"Ready to extract {PartitionItems.Count} partitions";
+            CurrentOperationText = "Preparing extraction…";
+            Closing += (_, e) =>
+            {
+                if (!ShowCloseButton)
+                {
+                    e.Cancel = true;
+                    _cancellationTokenSource.Cancel();
+                    CanCancel = false;
+                    CurrentOperationText = "Cancelling extraction and cleaning up…";
+                }
+            };
+        }
+
+        // Called on the UI thread. Index identifies duplicate partition names correctly.
+        public void UpdateExtractionPartition(int index, string state, double progress, double overall)
+        {
+            if (index < 0 || index >= PartitionItems.Count) return;
+            var item = PartitionItems[index];
+            if (!item.IsCompleted)
+            {
+                if (state == "Extracting")
+                {
+                    item.BeginOperation();
+                    item.ProgressValue = progress;
+                    item.UpdateStatus($"Extracting {progress:F0}%");
+                    item.RefreshOperationBrushes();
+                }
+                else
+                {
+                    item.Complete(state == "Extracted", state);
+                    item.StatusText = state;
+                }
+            }
+            ScrollToPartition(item);
+            OverallProgress = overall;
+            OverallStatusText = $"Extracted {PartitionItems.Count(p => p.IsSuccess)}/{PartitionItems.Count} partitions";
+            CurrentOperationText = $"{state}: {item.Name}";
+        }
+
+        public void FinishExtraction(string message, bool success)
+        {
+            foreach (var item in PartitionItems)
+            {
+                item.StopTracking();
+                if (!item.IsCompleted) item.StatusText = "Not extracted";
+            }
+            CanCancel = false;
+            ShowCloseButton = true;
+            if (success) OverallProgress = 100;
+            OverallStatusText = $"Extracted {PartitionItems.Count(p => p.IsSuccess)}/{PartitionItems.Count} partitions";
+            CurrentOperationText = message;
+        }
+
         public void UpdateCurrentPartitionByIndex(int index, string status, double progress)
         {
             Dispatcher.UIThread.Post(() =>

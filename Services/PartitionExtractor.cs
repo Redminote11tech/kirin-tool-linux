@@ -12,7 +12,13 @@ public sealed record ExtractionEntry(PartitionInfo Partition, string FileName)
     public bool IsSelected { get => Partition.IsSelected; set => Partition.IsSelected = value; }
 }
 
-public sealed record ExtractionProgress(string Name, int Completed, int Total, long Bytes, long TotalBytes);
+public sealed record ExtractionProgress(string Name, int Completed, int Total, long Bytes, long TotalBytes)
+{
+    public int Index { get; init; }
+    public long PartitionBytes { get; init; }
+    public long PartitionSize { get; init; }
+    public string State { get; init; } = "Extracting";
+}
 
 public static class PartitionExtractor
 {
@@ -50,25 +56,36 @@ public static class PartitionExtractor
             throw new InvalidDataException("UPDATE.APP changed. Browse the file again before extracting.");
         destination = Path.GetFullPath(destination);
         Directory.CreateDirectory(destination);
-        foreach (var (_, index) in selected)
+        foreach (var (entry, index) in selected)
         {
             string target = Path.Combine(destination, current[index].FileName);
             if (Path.Exists(target) || new FileInfo(target).LinkTarget != null)
+            {
+                onProgress?.Invoke(new(entry.Name, 0, selected.Count, 0, 0)
+                    { Index = selected.FindIndex(x => x.index == index), State = "Failed" });
                 throw new IOException($"Output already exists: {current[index].FileName}. Choose another folder or remove the existing file.");
+            }
         }
         long totalBytes = selected.Sum(x => current[x.index].Partition.Size);
         long bytes = 0;
         int completed = 0;
-        foreach (var (_, index) in selected)
+        for (int i = 0; i < selected.Count; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var entry = current[index];
-            void Report() => onProgress?.Invoke(new(entry.Name, completed, selected.Count, bytes, totalBytes));
+            var entry = current[selected[i].index];
+            long partitionBytes = 0;
+            void Report(string state = "Extracting") => onProgress?.Invoke(new(entry.Name, completed, selected.Count, bytes, totalBytes)
+                { Index = i, PartitionBytes = partitionBytes, PartitionSize = entry.Partition.Size, State = state });
             Report();
-            await archive.ExtractPartitionSafelyAsync(entry.Partition, Path.Combine(destination, entry.FileName), cancellationToken,
-                count => { bytes += count; Report(); });
-            completed++;
-            Report();
+            try
+            {
+                await archive.ExtractPartitionSafelyAsync(entry.Partition, Path.Combine(destination, entry.FileName), cancellationToken,
+                    count => { bytes += count; partitionBytes += count; Report(); });
+                completed++;
+                Report("Extracted");
+            }
+            catch (OperationCanceledException) { Report("Cancelled"); throw; }
+            catch { Report("Failed"); throw; }
         }
         return completed;
     }

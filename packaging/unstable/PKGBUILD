@@ -1,6 +1,6 @@
 pkgname=kirin-tool-linux-unstable
 pkgver=2.4.2.usb6
-pkgrel=1
+pkgrel=2
 pkgdesc='Kirin Tool unstable candidate 6 with UPDATE.APP partition extractor'
 arch=('x86_64')
 url='https://github.com/Redminote11tech/kirin-tool-linux'

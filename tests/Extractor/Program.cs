@@ -8,6 +8,8 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Kirin_Tool;
 using Kirin_Tool.Services;
+using Kirin_Tool.UI;
+using Avalonia.Media;
 
 string root = Path.Combine(Path.GetTempPath(), "kirin-extractor-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(root);
@@ -75,9 +77,22 @@ try
     await Fails(() => PartitionExtractor.ExtractAsync(changed,Path.Combine(root,"changed"),previous), "changed source table refused");
     string large = Path.Combine(root,"large.app"); Fixture(large,("SYSTEM",new byte[3*1024*1024]));
     using var cancellation = new CancellationTokenSource();
+    var cancelledProgress = new List<ExtractionProgress>();
     await Fails(() => PartitionExtractor.ExtractAsync(large,Path.Combine(root,"cancel"),PartitionExtractor.Read(large),cancellation.Token,
-        p => { if (p.Bytes>0) cancellation.Cancel(); }), "mid-image cancellation stops extraction");
+        p => { cancelledProgress.Add(p); if (p.Bytes>0) cancellation.Cancel(); }), "mid-image cancellation stops extraction");
     Check(Directory.GetFiles(Path.Combine(root,"cancel")).Length == 0,"cancelled image and temporary file removed");
+    Check(cancelledProgress.Last().State == "Cancelled" && cancelledProgress.Last().Completed == 0, "cancelled extraction emits terminal row state");
+    string raceOutput = Path.Combine(root,"race");
+    var raceEntries = PartitionExtractor.Read(app); raceEntries[1].IsSelected=false; raceEntries[3].IsSelected=false;
+    var raceProgress = new List<ExtractionProgress>();
+    await Fails(() => PartitionExtractor.ExtractAsync(app,raceOutput,raceEntries,onProgress: p =>
+    {
+        raceProgress.Add(p);
+        if (p.State == "Extracted" && p.Index == 0) Directory.CreateDirectory(Path.Combine(raceOutput,"BOOT_2.img"));
+    }),"mid-run output conflict stops at failing duplicate partition");
+    Check(raceProgress.Last().State == "Failed" && raceProgress.Last().Index == 1 && raceProgress.Last().Completed == 1 &&
+        File.ReadAllBytes(Path.Combine(raceOutput,"BOOT.img")).SequenceEqual(boot) && !Directory.GetFiles(raceOutput).Any(f => f.EndsWith(".tmp")),
+        "completed image retained and failure row correctly indexed after partial success");
     using var scanCancellation = new CancellationTokenSource(); scanCancellation.Cancel();
     await Fails(() => Task.Run(() => PartitionExtractor.Read(app,scanCancellation.Token)),"archive scan cancellation");
 
@@ -133,6 +148,35 @@ try
     Dispatcher.UIThread.RunJobs();
     Check(window.FindControl<TextBlock>("ExtractorStatus")!.Text!.StartsWith("Extracted 2 partitions") &&
         Directory.GetFiles(Path.Combine(root,"ui")).Length==2 && File.ReadAllBytes(Path.Combine(root,"ui","BOOT.img")).SequenceEqual(boot),"UI extracts ticked partitions and reports completion");
+    var extractionDialog = window.OwnedWindows.OfType<ProcessDialogUapp>().Single();
+    Check(extractionDialog.Title == "Extracting UPDATE.APP Partitions" && extractionDialog.PartitionItems.Count == 2 &&
+        extractionDialog.PartitionItems.All(p => p.IsSuccess && p.StatusText == "Extracted" && p.StatusColor.Color == Colors.Green),
+        "reused flashing dialog shows every selected duplicate entry green after extraction");
+    Check(extractionDialog.ShowCloseButton && !extractionDialog.CanCancel && !extractionDialog.CurrentOperationText.Contains("flash",StringComparison.OrdinalIgnoreCase),
+        "extraction completion wording and Close action");
+    if(screenshot != null) { Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick(); extractionDialog.CaptureRenderedFrame()?.Save(screenshot+".progress.png"); }
+    extractionDialog.Close(); Dispatcher.UIThread.RunJobs();
+    start.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+    deadline = DateTime.UtcNow.AddSeconds(15);
+    while(window.FindControl<Button>("ExtractorCancelButton")!.IsEnabled && DateTime.UtcNow<deadline) { Dispatcher.UIThread.RunJobs(); Thread.Sleep(5); }
+    Dispatcher.UIThread.RunJobs();
+    extractionDialog = window.OwnedWindows.OfType<ProcessDialogUapp>().Single();
+    Check(extractionDialog.PartitionItems[0].StatusText == "Failed" && extractionDialog.PartitionItems[0].StatusColor.Color == Colors.Red &&
+        extractionDialog.PartitionItems[1].StatusText == "Not extracted" && !extractionDialog.PartitionItems[1].IsCompleted &&
+        extractionDialog.OverallProgress < 100, "existing-output failure is red; unattempted partitions stay neutral and progress is incomplete");
+    extractionDialog.Close(); Dispatcher.UIThread.RunJobs();
+    using var uiCancellation = new CancellationTokenSource();
+    var cancelDialog = new ProcessDialogUapp(entries.Take(2).Select(e => e.Partition).ToList(),uiCancellation);
+    cancelDialog.ConfigureExtraction(); cancelDialog.Show(window);
+    cancelDialog.UpdateExtractionPartition(0,"Extracting",20,10);
+    Check(cancelDialog.PartitionItems[0].StatusColor.Color == Colors.Orange,"active extraction uses flashing orange status");
+    cancelDialog.Close();
+    Check(uiCancellation.IsCancellationRequested && !cancelDialog.ShowCloseButton && cancelDialog.IsVisible,"closing active extraction requests cancellation and keeps cleanup visible");
+    cancelDialog.UpdateExtractionPartition(0,"Cancelled",20,10);
+    cancelDialog.FinishExtraction("Extraction cancelled.",false);
+    Check(cancelDialog.PartitionItems[0].StatusColor.Color == Colors.Red && cancelDialog.PartitionItems[0].StatusText == "Cancelled" &&
+        cancelDialog.PartitionItems[1].StatusText == "Not extracted", "cancelled unfinished image is red and remaining rows stay neutral");
+    cancelDialog.Close();
     window.Close();
     Console.WriteLine($"{checks} extractor checks passed.");
 }

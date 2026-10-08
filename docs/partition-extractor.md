@@ -42,3 +42,11 @@ checkboxes and extract handler. It also runs against the DLL extracted from the
 built package. These are offline fixtures, not validation against every Huawei
 firmware variant. The retained candidate-5 USB transport still needs its separate
 hardware validation.
+
+Candidate 6 revision 2 reuses the existing UPDATE.APP flashing progress dialog
+for extraction. Selected partitions appear as the familiar status rows: orange
+while copying, green with “Extracted” after the final image is saved, and red
+for a failed or cancelled image. Unattempted rows remain neutral. Duplicate names
+are tracked by selection index. Close is available after completion; closing an
+active dialog requests cancellation and waits for cleanup. The existing flashing
+UI and device operations retain their previous behavior.

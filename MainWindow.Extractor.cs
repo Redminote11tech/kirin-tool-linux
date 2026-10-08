@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Kirin_Tool.Services;
+using Kirin_Tool.UI;
 
 namespace Kirin_Tool;
 
@@ -100,6 +101,10 @@ public partial class MainWindow
         SetExtractorBusy(true);
         ExtractorProgress.Value = 0;
         int completed = 0;
+        var selected = _extractionEntries.Where(e => e.IsSelected).ToList();
+        var progressDialog = new ProcessDialogUapp(selected.Select(e => e.Partition).ToList(), _extractionCancellation);
+        progressDialog.ConfigureExtraction();
+        var dialogTask = progressDialog.ShowDialog(this);
         try
         {
             var token = _extractionCancellation.Token;
@@ -110,12 +115,15 @@ public partial class MainWindow
                 {
                     completed = progress.Completed;
                     long now = Environment.TickCount64;
-                    if (now - lastUpdate < 100 && progress.Completed != progress.Total) return;
+                    if (now - lastUpdate < 100 && progress.State == "Extracting" && progress.PartitionBytes > 0) return;
                     lastUpdate = now;
                     Dispatcher.UIThread.Post(() =>
                     {
                         ExtractorProgress.Value = progress.TotalBytes == 0 ? 0 : 100.0 * progress.Bytes / progress.TotalBytes;
                         ExtractorStatus.Text = $"Extracting {progress.Name} — {progress.Completed}/{progress.Total} complete";
+                        progressDialog.UpdateExtractionPartition(progress.Index, progress.State,
+                            progress.PartitionSize == 0 ? 0 : 100.0 * progress.PartitionBytes / progress.PartitionSize,
+                            ExtractorProgress.Value);
                     });
                 }));
             // Drain previously posted progress before showing the final result.
@@ -123,15 +131,24 @@ public partial class MainWindow
             {
                 ExtractorProgress.Value = 100;
                 ExtractorStatus.Text = $"Extracted {count} partitions to {_extractionDestination}.";
+                progressDialog.FinishExtraction(ExtractorStatus.Text, true);
             });
         }
         catch (OperationCanceledException)
         {
-            await Dispatcher.UIThread.InvokeAsync(() => ExtractorStatus.Text = $"Extraction cancelled. {completed} complete images kept; unfinished image removed.");
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                ExtractorStatus.Text = $"Extraction cancelled. {completed} complete images kept; unfinished image removed.";
+                progressDialog.FinishExtraction(ExtractorStatus.Text, false);
+            });
         }
         catch (Exception ex)
         {
-            await Dispatcher.UIThread.InvokeAsync(() => ExtractorStatus.Text = $"Extraction stopped: {ex.Message} ({completed} complete images kept)." );
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                ExtractorStatus.Text = $"Extraction stopped: {ex.Message} ({completed} complete images kept).";
+                progressDialog.FinishExtraction(ExtractorStatus.Text, false);
+            });
         }
         finally
         {
@@ -139,5 +156,6 @@ public partial class MainWindow
             _extractionCancellation = null;
             SetExtractorBusy(false);
         }
+        await dialogTask;
     }
 }
