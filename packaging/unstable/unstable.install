@@ -1,6 +1,7 @@
 post_install() {
     cat <<'MESSAGE'
-Candidate 5 uses userspace libusb for USB Update. No DKMS build is required.
+Candidate 6 adds offline UPDATE.APP partition extraction.
+USB Update uses userspace libusb for USB Update. No DKMS build is required.
 If upgrading from candidates 1-4, close Kirin Tool and other serial apps, then:
   sudo modprobe -r kirin_usb_update
 Reconnect the phone to refresh USB permissions. Launch: kirin-tool-unstable

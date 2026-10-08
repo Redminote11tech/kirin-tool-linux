@@ -1,7 +1,7 @@
 pkgname=kirin-tool-linux-unstable
-pkgver=2.4.2.usb5
-pkgrel=2
-pkgdesc='Kirin Tool USB Update transport candidate (hardware validation pending)'
+pkgver=2.4.2.usb6
+pkgrel=1
+pkgdesc='Kirin Tool unstable candidate 6 with UPDATE.APP partition extractor'
 arch=('x86_64')
 url='https://github.com/Redminote11tech/kirin-tool-linux'
 license=('custom:BSL-1.1' 'MIT')
@@ -9,7 +9,7 @@ depends=('glibc' 'gcc-libs' 'fontconfig' 'freetype2' 'libx11' 'libice' 'libsm' '
 options=('!strip' '!debug' '!lto')
 install=unstable.install
 source=('bundle.tar.gz')
-sha256sums=('3ec471dd388265c0239b0f078d52abe59782481268d2d6aae210e5961ba7f37c')
+sha256sums=('4c8c1d19bf9f8021e922a815f10010d72f284b3255c8fe5b0ff073b91ac2d3da')
 package() {
     local appdir="$pkgdir/usr/lib/$pkgname"
     install -dm755 "$appdir"
@@ -20,6 +20,7 @@ package() {
     ln -s "/usr/lib/$pkgname/VcomOpenProbe" "$pkgdir/usr/bin/kirin-vcom-open-probe"
     install -Dm644 "$srcdir/bundle/61-kirin-userspace.rules" "$pkgdir/usr/lib/udev/rules.d/61-kirin-userspace.rules"
     install -Dm644 "$srcdir/bundle/usb-update-userspace.md" "$pkgdir/usr/share/doc/$pkgname/usb-update-userspace.md"
+    install -Dm644 "$srcdir/bundle/partition-extractor.md" "$pkgdir/usr/share/doc/$pkgname/partition-extractor.md"
     install -Dm644 "$srcdir/bundle/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
     install -Dm644 "$srcdir/bundle/LICENSE.usb-bridge" "$pkgdir/usr/share/licenses/$pkgname/LICENSE.usb-bridge"
     install -Dm644 "$srcdir/bundle/NOTICE.fastboot-src" "$pkgdir/usr/share/licenses/$pkgname/NOTICE.fastboot-src"
@@ -28,7 +29,7 @@ package() {
     cat > "$pkgdir/usr/share/applications/kirin-tool-unstable.desktop" <<DESKTOP
 [Desktop Entry]
 Type=Application
-Name=Kirin Tool — USB Update UNSTABLE
+Name=Kirin Tool — UNSTABLE candidate 6
 Exec=kirin-tool-unstable
 Icon=kirin-tool-unstable
 Categories=Development;Utility;

@@ -21,7 +21,7 @@
 <Window x:Class="Kirin_Tool.MainWindow"
                  xmlns="https://github.com/avaloniaui"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                 Title="Kirin Tool USB Update — UNSTABLE candidate 5" Height="700" Width="1000"
+                 Title="Kirin Tool — UNSTABLE candidate 6" Height="700" Width="1000"
                  WindowStartupLocation="CenterScreen">
 
     <Grid x:Name="RootGrid">
@@ -30,7 +30,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Kirin Tool USB Update — UNSTABLE candidate 5" Margin="16,8" FontSize="18" FontWeight="Bold"/>
+        <TextBlock Grid.Row="0" Text="Kirin Tool — UNSTABLE candidate 6" Margin="16,8" FontSize="18" FontWeight="Bold"/>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -89,6 +89,7 @@
                                       x:Name="OEMInfoItem"/>
                                 <ListBoxItem Content="NVMe Tools"
                                       x:Name="NVMeItem"/>
+                                <ListBoxItem Content="Extractor Tools" x:Name="ExtractorItem"/>
                                 <ListBoxItem Content="About"
                                                   x:Name="AboutItem"/>
                         </ListBox>
@@ -939,6 +940,56 @@
                             </Expander>
                         </StackPanel>
 
+                        <StackPanel x:Name="ExtractorPage" Margin="40,32,40,32" IsVisible="False">
+                            <TextBlock Text="Extractor Tools" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Text="Extract partitions from a Base, Cust or Preload UPDATE.APP" FontSize="14" Opacity="0.7" Margin="0,0,0,16" TextWrapping="Wrap"/>
+                            <Expander Header="UPDATE.APP Partition Extractor" IsExpanded="True">
+                                <StackPanel Spacing="8" Margin="0,8,0,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button x:Name="ExtractorStartButton" Content="Extract Selected" Click="StartExtraction_Click" IsEnabled="False"/>
+                                        <Button x:Name="ExtractorCancelButton" Content="Cancel" Click="CancelExtraction_Click" IsEnabled="False"/>
+                                    </StackPanel>
+                                    <ProgressBar x:Name="ExtractorProgress" Minimum="0" Maximum="100" Value="0"/>
+                                    <TextBlock x:Name="ExtractorStatus" Text="Select an UPDATE.APP file to list its partitions." TextWrapping="Wrap" FontSize="12"/>
+                                    <StackPanel x:Name="ExtractorInputs" Spacing="8">
+                                        <TextBlock Text="UPDATE.APP file" FontWeight="SemiBold"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBox x:Name="ExtractorSourcePath" IsReadOnly="True" Watermark="Select an UPDATE.APP file" Margin="0,0,8,0"/>
+                                            <Button Grid.Column="1" Content="Browse…" Click="BrowseExtractionSource_Click"/>
+                                        </Grid>
+                                        <TextBlock Text="Output folder" FontWeight="SemiBold"/>
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBox x:Name="ExtractorDestinationPath" IsReadOnly="True" Watermark="Choose where to save the images" Margin="0,0,8,0"/>
+                                            <Button Grid.Column="1" Content="Browse…" Click="BrowseExtractionDestination_Click"/>
+                                        </Grid>
+                                        <TextBlock Text="Saves each selected partition as an .img file. Existing files are kept; use another folder if a filename already exists." FontSize="12" Opacity="0.7" TextWrapping="Wrap"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Button x:Name="ExtractorSelectAllButton" Content="Select All" Click="SelectExtractionAll_Click"/>
+                                            <Button x:Name="ExtractorSelectNoneButton" Content="Select None" Click="SelectExtractionNone_Click"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="ExtractorSelectionText" Text="0/0 partitions selected"/>
+                                        <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="1" CornerRadius="4" Padding="8">
+                                            <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+                                                <ItemsControl x:Name="ExtractorPartitions">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid ColumnDefinitions="*,100" Margin="0,4">
+                                                                <StackPanel>
+                                                                    <CheckBox Content="{Binding Name}" IsChecked="{Binding Partition.IsSelected, Mode=TwoWay}"/>
+                                                                    <TextBlock Text="{Binding FileName}" FontSize="11" Opacity="0.7" Margin="28,0,0,0"/>
+                                                                </StackPanel>
+                                                                <TextBlock Grid.Column="1" Text="{Binding FormattedSize}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </ScrollViewer>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Expander>
+                        </StackPanel>
+
                         <StackPanel x:Name="OEMInfoPage" Margin="40,32,40,32" IsVisible="False">
                             <TextBlock Text="OEMInfo Tools" 
                                   FontSize="28" 
@@ -1103,7 +1154,7 @@
                                         Margin="0,0,0,4"
                                         IsExpanded="True">
                                 <StackPanel>
-                                    <TextBlock Text="Kirin Tool USB Update — UNSTABLE candidate 5" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                    <TextBlock Text="Kirin Tool — UNSTABLE candidate 6" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,8"/>
                                     <TextBlock Text="© Kethily Daniel and NDXCode" 
                                           FontSize="14" 
                                           Opacity="0.7"

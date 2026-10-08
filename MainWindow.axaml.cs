@@ -159,6 +159,7 @@ namespace Kirin_Tool
                 async (title, message) => await ShowGlobalInteractionPromptAsync($"{title}: {message}")
             );
 
+            Closed += (_, _) => _extractionCancellation?.Cancel();
             SetupNavigationItemHandlers();
             SetupEventHandlers();
             InitializeFullOta();
@@ -717,6 +718,7 @@ namespace Kirin_Tool
                         "Security Tools" => "Security",
                         "OEMInfo Tools" => "OEMInfo",
                         "NVMe Tools" => "NVMe",
+                        "Extractor Tools" => "Extractor",
                         "About" => "About",
                         _ => "Welcome"
                     });
@@ -745,6 +747,7 @@ namespace Kirin_Tool
                 case "Security": ShowSecurityPage(); break;
                 case "OEMInfo": ShowOEMInfoPage(); break;
                 case "NVMe": ShowNVMePage(); break;
+                case "Extractor": ExtractorPage.IsVisible = true; break;
                 case "About": ShowAboutPage(); break;
             }
         }
@@ -774,6 +777,7 @@ namespace Kirin_Tool
             OEMInfoPage.IsVisible = false;
             NVMePage.IsVisible = false;
             AboutPage.IsVisible = false;
+            ExtractorPage.IsVisible = false;
         }
 
         private async void BrowseOtaFile_Click(object sender, RoutedEventArgs e)
