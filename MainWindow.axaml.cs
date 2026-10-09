@@ -709,19 +709,7 @@ namespace Kirin_Tool
             {
                 if (NavigationListBox.SelectedItem is ListBoxItem item)
                 {
-                    HandleNavigation(item.Content?.ToString() switch
-                    {
-                        "Welcome" => "Welcome",
-                        "Device Information" => "DeviceInfo",
-                        "VCOM Operations" => "Vcom",
-                        "Flash Operations" => "Flash",
-                        "Security Tools" => "Security",
-                        "OEMInfo Tools" => "OEMInfo",
-                        "NVMe Tools" => "NVMe",
-                        "Extractor Tools" => "Extractor",
-                        "About" => "About",
-                        _ => "Welcome"
-                    });
+                    HandleNavigation(item.Tag?.ToString() ?? "Welcome");
                 }
             };
         }

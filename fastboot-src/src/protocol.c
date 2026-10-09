@@ -226,30 +226,16 @@ static int parse_hex16(const char *s, uint64_t *value)
     return 0;
 }
 
-int fb_dump_partition(usb_handle *usb, const char *kind, const char *partition, const char *filename)
+int fb_upload_range(usb_handle *usb, const char *kind, uint64_t address, uint64_t length, const char *filename)
 {
-    char command[65], response[65];
-    uint64_t address, length;
+    char command[65];
     int result = -1;
     FILE *fp = NULL;
     char *temporary = NULL;
     unsigned char *buffer = NULL;
-    if (strcmp(kind, "emmc") && strcmp(kind, "storage")) {
-        snprintf(ERROR, sizeof(ERROR), "unsupported upload kind"); return -1;
-    }
-    size_t pn = strlen(partition);
-    if (!pn || pn > 32 || strspn(partition, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-") != pn) {
-        snprintf(ERROR, sizeof(ERROR), "invalid partition name"); return -1;
-    }
-    snprintf(command, sizeof(command), "getvar:%s:%s", kind, partition);
-    if (fb_command_response(usb, command, response) < 0) {
-        fprintf(stderr, "KIRIN_DUMP_QUERY_FAILED\n");
-        return -1;
-    }
-    if (strlen(response) != 33 || (response[16] != ':' && response[16] != ' ') ||
-        parse_hex16(response, &address) || parse_hex16(response + 17, &length) ||
-        !length || length > UINT64_MAX - address) {
-        snprintf(ERROR, sizeof(ERROR), "invalid vendor partition offset/length"); return -1;
+    if (!length || length > UINT64_MAX - address || !filename || !*filename ||
+        (strcmp(kind,"emmc") && strcmp(kind,"storage") && strcmp(kind,"memory") && strcmp(kind,"ufseye"))) {
+        snprintf(ERROR,sizeof(ERROR),"invalid vendor upload range"); return -1;
     }
     if (strlen(filename) > SIZE_MAX - 16) return -1;
     temporary = calloc(strlen(filename) + 16, 1);
@@ -300,6 +286,31 @@ out:
     free(buffer);
     return result;
 }
+
+int fb_dump_partition(usb_handle *usb, const char *kind, const char *partition, const char *filename)
+{
+    char command[65], response[65];
+    uint64_t address, length;
+    if (strcmp(kind, "emmc") && strcmp(kind, "storage") && strcmp(kind,"memory")) {
+        snprintf(ERROR, sizeof(ERROR), "unsupported upload kind"); return -1;
+    }
+    size_t pn = strlen(partition);
+    if (!pn || pn > 32 || strspn(partition, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.-") != pn) {
+        snprintf(ERROR, sizeof(ERROR), "invalid partition name"); return -1;
+    }
+    snprintf(command, sizeof(command), "getvar:%s:%s", kind, partition);
+    if (fb_command_response(usb, command, response) < 0) {
+        fprintf(stderr, "KIRIN_DUMP_QUERY_FAILED\n");
+        return -1;
+    }
+    if (strlen(response) != 33 || (response[16] != ':' && response[16] != ' ') ||
+        parse_hex16(response, &address) || parse_hex16(response + 17, &length) ||
+        !length || length > UINT64_MAX - address) {
+        snprintf(ERROR, sizeof(ERROR), "invalid vendor partition offset/length"); return -1;
+    }
+    return fb_upload_range(usb, kind, address, length, filename);
+}
+
 
 int fb_download_data(usb_handle *usb, const void *data, unsigned size)
 {

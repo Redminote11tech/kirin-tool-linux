@@ -22,7 +22,7 @@
                  xmlns="https://github.com/avaloniaui"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  Title="Kirin Tool — UNSTABLE candidate 6" Height="700" Width="1000"
-                 WindowStartupLocation="CenterScreen">
+                 WindowStartupLocation="CenterScreen" Background="#FAFAFA">
 
     <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
@@ -30,7 +30,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Kirin Tool — UNSTABLE candidate 6" Margin="16,8" FontSize="18" FontWeight="Bold"/>
+        <Border Grid.Row="0" Height="48"><TextBlock Text="Kirin Tool — UNSTABLE candidate 6" Margin="32,0" VerticalAlignment="Center" FontSize="12" FontWeight="Normal"/></Border>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -38,7 +38,7 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-                <Border Grid.Column="0" Background="{DynamicResource SystemRegionBrush}">
+                <Border Grid.Column="0" Background="#F4F4F4">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -75,23 +75,60 @@
                               Width="320"
                               Margin="0,8,0,0">
 
-                                <ListBoxItem Content="Welcome"
-                                      x:Name="WelcomeItem"/>
-                                <ListBoxItem Content="Device Information"
-                                      x:Name="DeviceInfoItem"/>
-                                <ListBoxItem Content="VCOM Operations"
-                                      x:Name="VcomItem"/>
-                                <ListBoxItem Content="Flash Operations"
-                                      x:Name="FlashItem"/>
-                                <ListBoxItem Content="Security Tools"
-                                      x:Name="SecurityItem"/>
-                                <ListBoxItem Content="OEMInfo Tools"
-                                      x:Name="OEMInfoItem"/>
-                                <ListBoxItem Content="NVMe Tools"
-                                      x:Name="NVMeItem"/>
-                                <ListBoxItem Content="Extractor Tools" x:Name="ExtractorItem"/>
-                                <ListBoxItem Content="About"
-                                                  x:Name="AboutItem"/>
+                                <ListBoxItem x:Name="WelcomeItem" Tag="Welcome" Classes="navigation" AutomationProperties.Name="Welcome">
+                                    <Grid ColumnDefinitions="24,*">
+                                        <Path Data="M3,10 L12,3 L21,10 M5,9 L5,21 L10,21 L10,14 L14,14 L14,21 L19,21 L19,9" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="Welcome" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                    </Grid>
+                                </ListBoxItem>
+                                <ListBoxItem x:Name="DeviceInfoItem" Tag="DeviceInfo" Classes="navigation" AutomationProperties.Name="Device Information">
+                                    <Grid ColumnDefinitions="24,*">
+                                        <Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,10 L12,17 M12,6 L12,7" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="Device Information" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                    </Grid>
+                                </ListBoxItem>
+                                <ListBoxItem x:Name="VcomItem" Tag="Vcom" Classes="navigation" AutomationProperties.Name="VCOM Operations">
+                                    <Grid ColumnDefinitions="24,*">
+                                        <Path Data="M9,2 L9,7 M15,2 L15,7 M7,7 L17,7 L17,13 L14,16 L14,19 L10,19 L10,16 L7,13 Z M12,19 L12,23" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="VCOM Operations" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                    </Grid>
+                                </ListBoxItem>
+                                <ListBoxItem x:Name="FlashItem" Tag="Flash" Classes="navigation" AutomationProperties.Name="Flash Operations">
+                                    <Grid ColumnDefinitions="24,*">
+                                        <Path Data="M4,8 L20,8 Q22,8 22,10 L22,14 Q22,16 20,16 L4,16 Q2,16 2,14 L2,10 Q2,8 4,8 Z M16,12 L17,12 M19,12 L20,12" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="Flash Operations" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                    </Grid>
+                                </ListBoxItem>
+                                <ListBoxItem x:Name="SecurityItem" Tag="Security" Classes="navigation" AutomationProperties.Name="Security Tools">
+                                    <Grid ColumnDefinitions="24,*">
+                                        <Path Data="M12,2 L21,6 L20,14 Q18,20 12,22 Q6,20 4,14 L3,6 Z" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="Security Tools" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                    </Grid>
+                                </ListBoxItem>
+                                <ListBoxItem x:Name="OEMInfoItem" Tag="OEMInfo" Classes="navigation" AutomationProperties.Name="OEMInfo Tools">
+                                    <Grid ColumnDefinitions="24,*">
+                                        <Path Data="M12,2 L21,7 L21,17 L12,22 L3,17 L3,7 Z M12,8 L12,16 M8,12 L16,12" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="OEMInfo Tools" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                    </Grid>
+                                </ListBoxItem>
+                                <ListBoxItem x:Name="NVMeItem" Tag="NVMe" Classes="navigation" AutomationProperties.Name="NVMe Tools">
+                                    <Grid ColumnDefinitions="24,*">
+                                        <Path Data="M3,3 L13,3 L22,12 L12,22 L3,13 Z M7,7 A1,1 0 1 1 6.99,7" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="NVMe Tools" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                    </Grid>
+                                </ListBoxItem>
+                                <ListBoxItem x:Name="ExtractorItem" Tag="Extractor" Classes="navigation" AutomationProperties.Name="Extractor Tools">
+                                    <Grid ColumnDefinitions="24,*">
+                                        <Path Data="M3,8 L3,20 L21,20 L21,8 M12,2 L12,15 M7,10 L12,15 L17,10" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="Extractor Tools" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                    </Grid>
+                                </ListBoxItem>
+                                <ListBoxItem x:Name="AboutItem" Tag="About" Classes="navigation" AutomationProperties.Name="About">
+                                    <Grid ColumnDefinitions="24,*">
+                                        <Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,10 L12,17 M12,6 L12,7" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="1" Text="About" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                                    </Grid>
+                                </ListBoxItem>
                         </ListBox>
                     </Grid>
                 </Border>
@@ -113,43 +150,38 @@
                                   Opacity="0.7"
                                   Margin="0,0,0,32"/>
 
-                            <Expander Header="Quick Start Guide"
-                                        
-                                        Margin="0,0,0,16"
-                                        IsExpanded="True">
-                                <StackPanel>
-                                    <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="0,0,0,1" Padding="0,8,0,8" Margin="0,0,0,4">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Step 1: Select CPU Model" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock Text="Choose your device's CPU model from the dropdown above" 
-                                              FontSize="12" 
-                                              Opacity="0.7"/>
-                    </StackPanel>
-                </Border>
-                                    <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="0,0,0,1" Padding="0,8,0,8" Margin="0,0,0,4">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Step 2: Connect Device" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock 
-                                              FontSize="12" 
-                                              Opacity="0.7">
-                                    Connect your device in VCOM (USB COM 1.0) mode <LineBreak /> Make sure that the drivers are installed ;)
-                                        </TextBlock>
-                    </StackPanel>
-                </Border>
-                                    <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="0,0,0,1" Padding="0,8,0,8" Margin="0,0,0,4">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Step 3: Choose Operation" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock Text="Navigate to the appropriate section for your desired operation" 
-                                              FontSize="12" 
-                                              Opacity="0.7"/>
-                    </StackPanel>
-                </Border>
+                            <Expander IsExpanded="True" HorizontalAlignment="Stretch" Margin="0,0,0,32">
+                                <Expander.Header>
+                                    <StackPanel Orientation="Horizontal" Spacing="12" Height="32">
+                                        <Path Data="M3,10 L12,3 L21,10 M5,9 L5,21 L10,21 L10,14 L14,14 L14,21 L19,21 L19,9" Stroke="#404040" StrokeThickness="1.5" Width="20" Height="20" Stretch="Uniform"/>
+                                        <TextBlock Text="Quick Start Guide" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Expander.Header>
+                                <StackPanel Spacing="0">
+                                    <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="14,12" MinHeight="56">
+                                        <Grid ColumnDefinitions="210,*">
+                                            <TextBlock Text="Step 1: Select CPU Model" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="Choose your device’s CPU model from the dropdown above" TextWrapping="Wrap" FontSize="12" Foreground="#666666" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                    <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="14,12" MinHeight="56">
+                                        <Grid ColumnDefinitions="210,*">
+                                            <TextBlock Text="Step 2: Connect Device" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="Connect your device in VCOM (USB COM 1.0) mode. Make sure that the drivers are installed." TextWrapping="Wrap" FontSize="12" Foreground="#666666" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                    <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="14,12" MinHeight="56">
+                                        <Grid ColumnDefinitions="210,*">
+                                            <TextBlock Text="Step 3: Choose Operation" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="Navigate to the appropriate section for your desired operation" TextWrapping="Wrap" FontSize="12" Foreground="#666666" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
                                 </StackPanel>
                             </Expander>
 
-                            <Border Background="#FFF3CD" BorderBrush="#FFE69C" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,16"><StackPanel><TextBlock Text="Important Notice" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="We are not responsible for any kind of damage you do with this tool. Use it at your own risk." TextWrapping="Wrap" Foreground="Black"/></StackPanel></Border>
+                            <Border Background="#FFF3CD" BorderBrush="#FFE69C" BorderThickness="1" CornerRadius="4" Padding="16,12" Margin="0,0,0,16"><Grid ColumnDefinitions="20,*"><Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,6 L12,13 M12,16 L12,17" Stroke="#A56500" StrokeThickness="1.6" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Top" Margin="0,4,0,0"/><StackPanel Grid.Column="1" Margin="10,0,0,0"><TextBlock Text="Important Notice" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="We are not responsible for any kind of damage you do with this tool. Use it at your own risk." TextWrapping="Wrap" Foreground="Black"/></StackPanel></Grid></Border>
 
-                            <Border Background="#FFF3CD" BorderBrush="#FFE69C" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,16"><StackPanel><TextBlock Text="Beware!" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="Kirin Tool for Linux is free software. If you have paid for this tool, you have been scammed - please ask for a refund immediately!" TextWrapping="Wrap" Foreground="Black"/></StackPanel></Border>
+                            <Border Background="#FFF3CD" BorderBrush="#FFE69C" BorderThickness="1" CornerRadius="4" Padding="16,12" Margin="0,0,0,16"><Grid ColumnDefinitions="20,*"><Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,6 L12,13 M12,16 L12,17" Stroke="#A56500" StrokeThickness="1.6" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Top" Margin="0,4,0,0"/><StackPanel Grid.Column="1" Margin="10,0,0,0"><TextBlock Text="Beware!" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="Kirin Tool for Linux is free software. If you have paid for this tool, you have been scammed - please ask for a refund immediately!" TextWrapping="Wrap" Foreground="Black"/></StackPanel></Grid></Border>
 
                         </StackPanel>
 

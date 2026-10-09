@@ -114,6 +114,17 @@ try
     // Run the actual UI entry points, render the bound rows, tick choices and start extraction.
     AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
     var window = new MainWindow(); window.Show();
+    Dispatcher.UIThread.RunJobs();
+    var navigation=window.FindControl<ListBox>("NavigationListBox")!;
+    Check(navigation.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Count()==9,"all nine navigation outline icons rendered");
+    foreach(var pair in new[]{("WelcomeItem","WelcomePage"),("DeviceInfoItem","DeviceInfoPage"),("VcomItem","VcomPage"),("FlashItem","FlashPage"),("SecurityItem","SecurityPage"),("OEMInfoItem","OEMInfoPage"),("NVMeItem","NVMePage"),("AboutItem","AboutPage")})
+    {
+        navigation.SelectedItem=window.FindControl<ListBoxItem>(pair.Item1);Dispatcher.UIThread.RunJobs();
+        Check(window.FindControl<StackPanel>(pair.Item2)!.IsVisible,"icon navigation routes "+pair.Item1);
+    }
+    navigation.SelectedItem=window.FindControl<ListBoxItem>("WelcomeItem");Dispatcher.UIThread.RunJobs();
+    string? welcomeScreenshot=Environment.GetEnvironmentVariable("KIRIN_WELCOME_SCREENSHOT");
+    if(welcomeScreenshot!=null){Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();window.CaptureRenderedFrame()?.Save(welcomeScreenshot);}
     window.FindControl<ListBox>("NavigationListBox")!.SelectedItem = window.FindControl<ListBoxItem>("ExtractorItem");
     Dispatcher.UIThread.RunJobs();
     Check(window.FindControl<StackPanel>("ExtractorPage")!.IsVisible && !window.FindControl<StackPanel>("WelcomePage")!.IsVisible,"Extractor Tools navigation");

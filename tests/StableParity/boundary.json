@@ -40,8 +40,8 @@
     "sha256": "a591aaa27091f76e125a95e61c0ecc69f9e7a29759bb0705a05e06ecd702540e"
   },
   "MainWindow.axaml.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug + candidate5 read-only query error reporting + candidate6 offline extractor navigation and cancellation on window close",
-    "sha256": "b610d20d0e174e572c144afd20dbf4d04a37f826184c4ade76390044da39c324"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug + candidate5 read-only query error reporting + candidate6 offline extractor navigation and cancellation on window close + candidate6 r3 navigation uses stable page Tags alongside icons (no device handlers changed)",
+    "sha256": "6377a6ef8474059e1cbfffa18e4e2df49e7f72f76f54d187def6c016ef66d238"
   },
   "UI/ProcessDialogUapp.axaml.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Avalonia collection-binding initialization and completion-message fixes + candidate6 r2 additive offline extraction configuration/progress/finalization; legacy flashing methods unchanged",

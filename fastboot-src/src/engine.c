@@ -56,6 +56,8 @@
 #define OP_NOTICE     4
 #define OP_DOWNLOAD_SPARSE 5
 #define OP_WAIT_FOR_DISCONNECT 6
+#define OP_ULTRA_BEGIN 7
+#define OP_ULTRA_END 8
 
 typedef struct Action Action;
 
@@ -164,6 +166,19 @@ void fb_queue_erase(const char *ptn)
     Action *a;
     a = queue_action(OP_COMMAND, "erase:%s", ptn);
     a->msg = mkmsg("erasing '%s'", ptn);
+}
+
+/* HiSilicon 3.3.5: ultraflash:<partition>, ordinary download/flash,
+ * then ultraflash:. Keep this queued so multi-partition CLI commands cannot
+ * enter another partition's mode before the earlier partition has been sent. */
+void fb_queue_ultraflash_begin(const char *partition)
+{
+    Action *a=queue_action(OP_ULTRA_BEGIN,"ultraflash:%s",partition);
+    a->msg=mkmsg("negotiating Huawei UltraFlash for '%s'",partition);
+}
+void fb_queue_ultraflash_end(void)
+{
+    queue_action(OP_ULTRA_END,"ultraflash:");
 }
 
 void fb_queue_flash(const char *ptn, void *data, unsigned sz)
@@ -369,6 +384,9 @@ int fb_execute_queue(usb_handle *usb)
         return status;
     resp[FB_RESPONSE_SZ] = 0;
 
+    const char *ultra_env=getenv("HUAWEI_ULTRAFLASH");
+    int ultra_disabled=ultra_env && (!strcmp(ultra_env,"0") || !strcmp(ultra_env,"off"));
+    int ultra_active=0;
     double start = -1;
     for (a = action_list; a; a = a->next) {
         a->start = now();
@@ -377,7 +395,24 @@ int fb_execute_queue(usb_handle *usb)
             // fprintf(stderr,"%30s... ",a->msg);
             fprintf(stderr,"%s...\n",a->msg);
         }
-        if (a->op == OP_DOWNLOAD) {
+        if (a->op == OP_ULTRA_BEGIN) {
+            ultra_active=0;
+            if (!ultra_disabled) {
+                status=fb_command(usb,a->cmd);
+                if (!status) ultra_active=1;
+                else if (!strncmp(fb_get_error(),"remote",6)) {
+                    /* A rejected capability probe permits the Windows standard-flash fallback.
+                     * Transport/malformed-response errors abort, never replay a write. */
+                    fprintf(stderr,"UltraFlash refused; using standard flashing\n");
+                    ultra_disabled=1; status=0;
+                } else break;
+            }
+        } else if (a->op == OP_ULTRA_END) {
+            if (ultra_active) {
+                status=fb_command(usb,a->cmd); ultra_active=0;
+                if (status) { fprintf(stderr,"FAILED UltraFlash end (%s)\n",fb_get_error()); break; }
+            }
+        } else if (a->op == OP_DOWNLOAD) {
             status = fb_download_data(usb, a->data, a->size);
             status = a->func(a, status, status ? fb_get_error() : "");
             if (status) break;

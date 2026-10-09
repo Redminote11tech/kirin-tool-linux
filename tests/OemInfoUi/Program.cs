@@ -6,7 +6,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Kirin_Tool;
 
-AppBuilder.Configure<App>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
+AppBuilder.Configure<App>().WithInterFont().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
 Exception? unhandled = null;
 Dispatcher.UIThread.UnhandledException += (_, e) => { unhandled=e.Exception; e.Handled=true; };
 var owner=new MainWindow();owner.Show();

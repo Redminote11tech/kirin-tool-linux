@@ -6,7 +6,7 @@ using Avalonia.VisualTree;
 using Kirin_Tool;
 using Kirin_Tool.Models;
 using Kirin_Tool.UI;
-AppBuilder.Configure<App>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
+AppBuilder.Configure<App>().WithInterFont().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
 var names = new[]{"ERECOVERY_KERNEL","ERECOVERY_RAMDISK","ERECOVERY_VENDOR"};
 var parts=names.Select(n=>new PartitionInfo{Name=n,Size=1024,FormattedSize="1 KB"}).ToList();
 foreach(bool sources in new[]{false,true}) {

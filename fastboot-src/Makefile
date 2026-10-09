@@ -9,7 +9,7 @@ CC      ?= gcc
 CXX     ?= g++
 CFLAGS  ?= -O2 -Wall
 CFLAGS  += -I libsparse/include -I src
-CFLAGS  += '-DFASTBOOT_REVISION="kirin-tool-linux-2.0-stable vendor-storage-upload-v1 (AOSP android-6.0.1_r1)"'
+CFLAGS  += '-DFASTBOOT_REVISION="kirin-tool-linux-2.1-unstable vendor-upload-ultraflash-v2 (AOSP android-6.0.1_r1)"'
 LIBS    := -lz -lpthread
 
 SRCS_CXX := src/fastboot.cpp src/bootimg_utils.cpp
@@ -55,4 +55,5 @@ tests/cli-fastboot: $(filter-out src/usb_linux.o,$(OBJS)) tests/cli_usb_stub.o
 	$(CXX) -o $@ $^ $(LIBS) $(LDFLAGS)
 test-cli: tests/cli-fastboot
 	python3 tests/cli_dispatch_test.py
+	python3 tests/vendor_features_test.py
 .PHONY: test-cli

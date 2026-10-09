@@ -36,3 +36,9 @@ printed usage without reaching either the vendor reader or the generic command
 queue. `make test-cli` now exercises the actual CLI with a fake USB backend:
 lock/build/version queries, both dump metadata requests, and the NVE SN request.
 It never opens real hardware. The upload protocol and payload bytes are unchanged.
+
+Candidate 6 revision 3 supersedes the above unsupported memory/UltraFlash notes
+for unstable only. Targeted Windows XML binary decompilation establishes native
+memory, memupload, dump-ufseye and UltraFlash negotiation. See
+[the port documentation](../docs/native-windows-port.md) for commands, error
+semantics and remaining differences. Fake USB CLI tests cover the wire sequences.

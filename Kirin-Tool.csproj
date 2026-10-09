@@ -10,7 +10,7 @@
     <Product>Kirin Tool for Linux</Product>
     <Version>2.4.2</Version>
     <FileVersion>2.4.2</FileVersion>
-    <InformationalVersion>2.4.2-unstable.candidate.6.r2</InformationalVersion>
+    <InformationalVersion>2.4.2-unstable.candidate.6.r3</InformationalVersion>
     <ApplicationIcon>logo.ico</ApplicationIcon>
   </PropertyGroup>
 

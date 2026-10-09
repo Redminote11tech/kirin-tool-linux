@@ -309,6 +309,10 @@ void usage(void)
             "Huawei OEM dump commands (Kirin Tool Linux port):\n"
             "  oem dump-emmc <partition> <filename>     upload emmc data by partition\n"
             "  oem dump-storage <partition> <filename>  upload storage data by partition\n"
+            "  oem memory <name> <filename>              upload named DDR memory\n"
+            "  oem memupload <hex-address> <hex-size> <filename> upload DDR range\n"
+            "  oem dump-ufseye <hex-index> <hex-size> <hex-lane> <filename> upload UFS eye data\n"
+            "  HUAWEI_ULTRAFLASH=0 or off disables native UltraFlash negotiation\n"
             "\n"
             "options:\n"
             "  -w                                       erase userdata and cache (and format\n"
@@ -675,7 +679,9 @@ void do_flash(usb_handle *usb, const char *pname, const char *fname)
     if (load_buf(usb, fname, &buf)) {
         die("cannot load '%s'", fname);
     }
+    fb_queue_ultraflash_begin(pname);
     flash_buf(pname, &buf);
+    fb_queue_ultraflash_end();
 }
 
 
@@ -753,6 +759,16 @@ int do_bypass_unlock_command(int argc, char **argv)
     return 0;
 }
 
+// Windows HiSilicon 3.3.5 parses these operands as hexadecimal.
+static uint64_t vendor_hex(const char *value)
+{
+    if (!value || !*value || *value == '-' || *value == '+') die("invalid hexadecimal operand");
+    char *end = NULL; errno = 0;
+    uint64_t n = strtoull(value, &end, 16);
+    if (errno || !end || *end) die("invalid hexadecimal operand: %s",value);
+    return n;
+}
+
 int do_oem_command(int argc, char **argv, usb_handle *usb)
 {
     if (argc <= 1) return 0;
@@ -765,8 +781,25 @@ int do_oem_command(int argc, char **argv, usb_handle *usb)
         }
         return 0;
     }
-    if (!strcmp(argv[1], "memory") || !strcmp(argv[1], "memupload"))
-        die("Memory upload is not implemented; refusing to send an assumed protocol");
+    if (!strcmp(argv[1], "memory")) {
+        if (argc != 4 || !*argv[2] || strlen(argv[2]) > 15) die("memory requires a name (1-15 bytes) and local filename");
+        if (fb_dump_partition(usb,"memory",argv[2],argv[3]) < 0) die("memory upload failed: %s",fb_get_error());
+        return 0;
+    }
+    if (!strcmp(argv[1], "memupload")) {
+        if (argc != 5) die("memupload requires hex address, hex length and local filename");
+        if (fb_upload_range(usb,"memory",vendor_hex(argv[2]),vendor_hex(argv[3]),argv[4]) < 0)
+            die("memory upload failed: %s",fb_get_error());
+        return 0;
+    }
+    if (!strcmp(argv[1], "dump-ufseye")) {
+        if (argc != 6) die("dump-ufseye requires hex index, hex size, hex lane and local filename");
+        uint64_t index=vendor_hex(argv[2]), size=vendor_hex(argv[3]), lane=vendor_hex(argv[4]);
+        if (!index || !size || size > 16*1024*1024 || lane > 1) die("invalid UFS-eye index, size or lane");
+        if (fb_upload_range(usb,"ufseye",index | (lane << 8),size,argv[5]) < 0)
+            die("UFS-eye upload failed: %s",fb_get_error());
+        return 0;
+    }
     char command[65] = {0};
     for (int i = 0; i < argc; ++i) {
         if (strlen(command) + strlen(argv[i]) + (i ? 1 : 0) >= sizeof(command))
