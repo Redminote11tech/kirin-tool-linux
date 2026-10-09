@@ -1,7 +1,7 @@
 pkgname=kirin-tool-linux-unstable
 pkgver=2.4.2.usb6
-pkgrel=2
-pkgdesc='Kirin Tool unstable candidate 6 with UPDATE.APP partition extractor'
+pkgrel=3
+pkgdesc='Kirin Tool unstable candidate 6 with native HiSilicon features and Fluent-style UI'
 arch=('x86_64')
 url='https://github.com/Redminote11tech/kirin-tool-linux'
 license=('custom:BSL-1.1' 'MIT')
@@ -9,7 +9,7 @@ depends=('glibc' 'gcc-libs' 'fontconfig' 'freetype2' 'libx11' 'libice' 'libsm' '
 options=('!strip' '!debug' '!lto')
 install=unstable.install
 source=('bundle.tar.gz')
-sha256sums=('85af4a918a9360c085d0e9015f415926d02581613f6b3a54a2a8597164aa6f85')
+sha256sums=('cad157cfd962a2fd03ca28c90f2d30cd5717845b246469f018c825959114482b')
 package() {
     local appdir="$pkgdir/usr/lib/$pkgname"
     install -dm755 "$appdir"
@@ -20,6 +20,7 @@ package() {
     ln -s "/usr/lib/$pkgname/VcomOpenProbe" "$pkgdir/usr/bin/kirin-vcom-open-probe"
     install -Dm644 "$srcdir/bundle/61-kirin-userspace.rules" "$pkgdir/usr/lib/udev/rules.d/61-kirin-userspace.rules"
     install -Dm644 "$srcdir/bundle/usb-update-userspace.md" "$pkgdir/usr/share/doc/$pkgname/usb-update-userspace.md"
+    install -Dm644 "$srcdir/bundle/native-windows-port.md" "$pkgdir/usr/share/doc/$pkgname/native-windows-port.md"
     install -Dm644 "$srcdir/bundle/partition-extractor.md" "$pkgdir/usr/share/doc/$pkgname/partition-extractor.md"
     install -Dm644 "$srcdir/bundle/LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
     install -Dm644 "$srcdir/bundle/LICENSE.usb-bridge" "$pkgdir/usr/share/licenses/$pkgname/LICENSE.usb-bridge"
