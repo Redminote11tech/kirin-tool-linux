@@ -24,6 +24,8 @@ if [[ ! -f "$TOOL" ]]; then
 fi
 chmod +x "$TOOL"
 OUT="${KIRIN_APPIMAGE_OUT:-$ROOT/kirin-tool-linux-$VERSION-x86_64.AppImage}"
-ARCH=x86_64 "$TOOL" --appimage-extract-and-run "$APPDIR" "$OUT"
+RUNTIME_ARGS=()
+if [[ -n "${APPIMAGE_RUNTIME:-}" ]]; then RUNTIME_ARGS=(--runtime-file "$APPIMAGE_RUNTIME"); fi
+ARCH=x86_64 "$TOOL" --appimage-extract-and-run "${RUNTIME_ARGS[@]}" "$APPDIR" "$OUT"
 chmod +x "$OUT"
 echo "AppImage: $OUT"
