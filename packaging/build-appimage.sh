@@ -43,7 +43,7 @@ TOOL="$(realpath -m "${APPIMAGETOOL:-$ROOT/appimagetool-x86_64.AppImage}")"
 if [[ ! -f "$TOOL" ]]; then
     curl -fsSLo "$TOOL" https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
 fi
-chmod +x "$TOOL"
+if [[ ! -x "$TOOL" ]]; then chmod +x "$TOOL"; fi
 OUT="${KIRIN_APPIMAGE_OUT:-$ROOT/kirin-tool-linux-$VERSION-x86_64.AppImage}"
 RUNTIME_ARGS=()
 if [[ -n "${APPIMAGE_RUNTIME:-}" ]]; then RUNTIME_ARGS=(--runtime-file "$APPIMAGE_RUNTIME"); fi
