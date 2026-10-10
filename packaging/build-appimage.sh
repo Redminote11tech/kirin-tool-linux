@@ -23,7 +23,7 @@ if [[ ! -f "$LIBUSB_SOURCE" ]]; then
     curl -fsSLo "$LIBUSB_SOURCE" https://github.com/libusb/libusb/releases/download/v1.0.30/libusb-1.0.30.tar.bz2
 fi
 printf '%s  %s\n' fea36f34f9156400209595e300840767ab1a385ede1dc7ee893015aea9c6dbaf "$LIBUSB_SOURCE" | sha256sum -c -
-tar -xf "$LIBUSB_SOURCE" -C "$STAGE"
+tar --no-same-owner -xf "$LIBUSB_SOURCE" -C "$STAGE"
 # Netlink backend avoids carrying libudev/systemd ABI requirements into the bundle.
 (cd "$STAGE/libusb-1.0.30" && CFLAGS="$KIRIN_NATIVE_CFLAGS" LDFLAGS='' ./configure --disable-static --disable-udev && make -j2)
 cp -L "$STAGE/libusb-1.0.30/libusb/.libs/libusb-1.0.so.0" "$PUBLISH_DIR/libusb-1.0.so.0"
