@@ -9,6 +9,8 @@ COMMIT="${KIRIN_BUILD_COMMIT:-}"
 if [[ -z "$COMMIT" && -f BUILD-COMMIT ]]; then COMMIT="$(cat BUILD-COMMIT)"; fi
 if [[ -z "$COMMIT" ]]; then COMMIT="$(git rev-parse HEAD)"; fi
 export DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
+# Avoid makepkg host-specific CPU flags; both formats use the same native inputs.
+export CFLAGS="${KIRIN_NATIVE_CFLAGS:--O2 -Wall}" LDFLAGS="${KIRIN_NATIVE_LDFLAGS:-}"
 dotnet publish Kirin-Tool.csproj -c Release -r linux-x64 --self-contained true \
   -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false -p:NuGetAudit=false \
   -p:SourceRevisionId="$COMMIT" -o "$OUT"
