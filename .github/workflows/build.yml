@@ -32,22 +32,24 @@ jobs:
           path: publish-out/
 
   appimage:
-    name: AppImage
+    name: Portable AppImage (glibc 2.31)
     runs-on: ubuntu-latest
+    container:
+      image: ubuntu:20.04
     steps:
+      - name: Install build dependencies
+        run: apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential pkg-config libusb-1.0-0-dev zlib1g-dev python3 curl binutils ca-certificates git libicu66 libssl1.1
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Install native dependencies
-        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev pkg-config
-
       - name: Build AppImage
         run: |
           V="${GITHUB_REF_NAME#v}"
-          case "$V" in *"/"*) V="2.4.2" ;; esac
+          case "$V" in main|*"/"*) V="2.4.2-stable.3-portable.1" ;; esac
           ./packaging/build-appimage.sh publish-out "$V"
 
       - name: Upload AppImage

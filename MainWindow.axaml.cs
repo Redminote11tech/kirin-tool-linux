@@ -160,6 +160,8 @@ namespace Kirin_Tool
             );
 
             Closed += (_, _) => _extractionCancellation?.Cancel();
+            Opened += async (_, _) => await RefreshUdevNoticeAsync();
+            Activated += async (_, _) => await RefreshUdevNoticeAsync();
             SetupNavigationItemHandlers();
             SetupEventHandlers();
             InitializeFullOta();

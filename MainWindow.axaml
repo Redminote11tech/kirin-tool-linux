@@ -24,6 +24,17 @@
                  Title="Kirin Tool for Linux" Height="700" Width="1000"
                  WindowStartupLocation="CenterScreen" Background="#FAFAFA">
 
+    <Window.Styles>
+        <Style Selector="Border.notice">
+            <Setter Property="Background" Value="#FFF3CD"/>
+            <Setter Property="BorderBrush" Value="#FFE69C"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="Margin" Value="0,0,0,16"/>
+        </Style>
+    </Window.Styles>
+
     <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -150,6 +161,22 @@
                                   Opacity="0.7"
                                   Margin="0,0,0,32"/>
 
+                            <Border x:Name="UdevNotice" Classes="notice" IsVisible="False">
+                                <Grid ColumnDefinitions="20,*">
+                                    <Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,6 L12,13 M12,16 L12,17" Stroke="#A56500" StrokeThickness="1.6" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Top" Margin="0,4,0,0"/>
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="8">
+                                        <TextBlock Text="Apply udev rules" FontWeight="SemiBold" Foreground="Black"/>
+                                        <TextBlock x:Name="UdevNoticeDescription" TextWrapping="Wrap" Foreground="Black"/>
+                                        <TextBox x:Name="UdevCommands" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap" FontFamily="monospace" FontSize="12"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <Button x:Name="CopyUdevCommandsButton" Content="Copy commands" Click="CopyUdevCommands_Click"/>
+                                            <Button Content="Check again" Click="CheckUdevRules_Click"/>
+                                        </StackPanel>
+                                        <TextBlock x:Name="UdevCopyStatus" TextWrapping="Wrap" FontSize="12" Foreground="Black"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
                             <Expander IsExpanded="True" HorizontalAlignment="Stretch" Margin="0,0,0,32">
                                 <Expander.Header>
                                     <StackPanel Orientation="Horizontal" Spacing="12" Height="32">
@@ -179,9 +206,9 @@
                                 </StackPanel>
                             </Expander>
 
-                            <Border Background="#FFF3CD" BorderBrush="#FFE69C" BorderThickness="1" CornerRadius="4" Padding="16,12" Margin="0,0,0,16"><Grid ColumnDefinitions="20,*"><Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,6 L12,13 M12,16 L12,17" Stroke="#A56500" StrokeThickness="1.6" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Top" Margin="0,4,0,0"/><StackPanel Grid.Column="1" Margin="10,0,0,0"><TextBlock Text="Important Notice" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="We are not responsible for any kind of damage you do with this tool. Use it at your own risk." TextWrapping="Wrap" Foreground="Black"/></StackPanel></Grid></Border>
+                            <Border Classes="notice"><Grid ColumnDefinitions="20,*"><Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,6 L12,13 M12,16 L12,17" Stroke="#A56500" StrokeThickness="1.6" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Top" Margin="0,4,0,0"/><StackPanel Grid.Column="1" Margin="10,0,0,0"><TextBlock Text="Important Notice" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="We are not responsible for any kind of damage you do with this tool. Use it at your own risk." TextWrapping="Wrap" Foreground="Black"/></StackPanel></Grid></Border>
 
-                            <Border Background="#FFF3CD" BorderBrush="#FFE69C" BorderThickness="1" CornerRadius="4" Padding="16,12" Margin="0,0,0,16"><Grid ColumnDefinitions="20,*"><Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,6 L12,13 M12,16 L12,17" Stroke="#A56500" StrokeThickness="1.6" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Top" Margin="0,4,0,0"/><StackPanel Grid.Column="1" Margin="10,0,0,0"><TextBlock Text="Beware!" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="Kirin Tool for Linux is free software. If you have paid for this tool, you have been scammed - please ask for a refund immediately!" TextWrapping="Wrap" Foreground="Black"/></StackPanel></Grid></Border>
+                            <Border Classes="notice"><Grid ColumnDefinitions="20,*"><Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,6 L12,13 M12,16 L12,17" Stroke="#A56500" StrokeThickness="1.6" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Top" Margin="0,4,0,0"/><StackPanel Grid.Column="1" Margin="10,0,0,0"><TextBlock Text="Beware!" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="Kirin Tool for Linux is free software. If you have paid for this tool, you have been scammed - please ask for a refund immediately!" TextWrapping="Wrap" Foreground="Black"/></StackPanel></Grid></Border>
 
                         </StackPanel>
 

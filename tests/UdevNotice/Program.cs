@@ -1,0 +1,78 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Headless;
+using Avalonia.Interactivity;
+using Avalonia.Threading;
+using Kirin_Tool;
+using Kirin_Tool.Services;
+using System.Reflection;
+
+int checks=0;
+void Check(bool value,string name) { if(!value)throw new Exception(name);Console.WriteLine("PASS "+name);checks++; }
+string root=Path.Combine(Path.GetTempPath(),"kirin-udev-test-"+Guid.NewGuid().ToString("N"));
+string? oldFlag=Environment.GetEnvironmentVariable("KIRIN_APPIMAGE");
+Directory.CreateDirectory(root);
+try {
+ string high=Path.Combine(root,"etc"),low=Path.Combine(root,"lib");Directory.CreateDirectory(high);Directory.CreateDirectory(low);
+ string[] directories=[high,low];
+ void Rule(string text)=>File.WriteAllText(Path.Combine(low,"51-kirin.rules"),text);
+ Check(!UdevRuleNotice.Inspect(directories).Complete,"missing rules need notice");
+ Rule(UdevRuleNotice.DesktopRules);
+ Check(UdevRuleNotice.Inspect(directories).Complete,"both Huawei desktop rules recognized");
+ Rule("# "+UdevRuleNotice.DesktopRules.Replace("\n","\n# "));
+ Check(!UdevRuleNotice.Inspect(directories).Complete,"commented rules do not hide notice");
+ Rule(UdevRuleNotice.DesktopRules.Split('\n')[0]);
+ Check(UdevRuleNotice.Inspect(directories) is {Usb:true,Serial:false},"USB alone does not cover VCOM");
+ Rule(UdevRuleNotice.DesktopRules.Split('\n')[1]);
+ Check(UdevRuleNotice.Inspect(directories) is {Usb:false,Serial:true},"VCOM alone does not cover USB");
+ Rule(UdevRuleNotice.DesktopRules.Replace("12d1","18d1"));
+ Check(!UdevRuleNotice.Inspect(directories).Complete,"other vendors do not cover Huawei");
+ Rule(UdevRuleNotice.DesktopRules.Replace(", TAG+=\"uaccess\"",""));
+ Check(!UdevRuleNotice.Inspect(directories).Complete,"selectors without permission grant do not hide notice");
+ Rule(UdevRuleNotice.DesktopRules.Replace("0660","0666").Replace(", TAG+=\"uaccess\"",""));
+ Check(UdevRuleNotice.Inspect(directories).Complete,"equivalent world read/write rules recognized");
+ Rule(UdevRuleNotice.DesktopRules.Replace("TAG+=\"uaccess\"","TAG+=\"uaccess\", TAG-=\"uaccess\""));
+ Check(!UdevRuleNotice.Inspect(directories).Complete,"removed access tag does not hide notice");
+ Rule(UdevRuleNotice.DesktopRules.Replace("0660","0666").Replace("TAG+=\"uaccess\"","MODE=\"0000\""));
+ Check(!UdevRuleNotice.Inspect(directories).Complete,"later mode override does not hide notice");
+ Rule(UdevRuleNotice.DesktopRules.Replace("MODE=","ATTR{idProduct}==\"107e\", MODE="));
+ Check(!UdevRuleNotice.Inspect(directories).Complete,"restricted product does not establish all mode permissions");
+ Rule(UdevRuleNotice.DesktopRules.Replace(", MODE=",", \\\nMODE="));
+ Check(UdevRuleNotice.Inspect(directories).Complete,"continued rules recognized");
+ Rule(UdevRuleNotice.DesktopRules);File.WriteAllText(Path.Combine(high,"51-kirin.rules"),"# overridden");
+ Check(!UdevRuleNotice.Inspect(directories).Complete,"etc filename override prevents stale lower match");
+ File.Delete(Path.Combine(high,"51-kirin.rules"));File.CreateSymbolicLink(Path.Combine(high,"51-kirin.rules"),"/dev/null");
+ Check(!UdevRuleNotice.Inspect(directories).Complete,"dev null mask disables lower rule");
+ File.Delete(Path.Combine(high,"51-kirin.rules"));
+ File.Delete(Path.Combine(low,"51-kirin.rules"));
+ File.WriteAllText(Path.Combine(low,"usb.rules"),UdevRuleNotice.DesktopRules.Split('\n')[0]);
+ File.WriteAllText(Path.Combine(high,"tty.rules"),UdevRuleNotice.DesktopRules.Split('\n')[1]);
+ Check(UdevRuleNotice.Inspect(directories).Complete,"coverage combines files without requiring a fixed filename");
+ File.CreateSymbolicLink(Path.Combine(high,"broken.rules"),Path.Combine(root,"absent"));
+ Check(UdevRuleNotice.Inspect(directories) is {ReadError:true,Complete:false},"unreadable effective rule cannot silently hide notice");
+ Check(UdevRuleNotice.ApplyCommands.Contains(UdevRuleNotice.DesktopRules) && !UdevRuleNotice.ApplyCommands.Contains("/tmp/"),"copy script includes rules and survives closing AppImage");
+ File.WriteAllText(Path.Combine(root,"commands.sh"),UdevRuleNotice.ApplyCommands);
+ using(var syntax=System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("bash"){ArgumentList={"-n",Path.Combine(root,"commands.sh")}})!) {syntax.WaitForExit();Check(syntax.ExitCode==0,"copyable heredoc shell syntax valid; never executed");}
+ Environment.SetEnvironmentVariable("KIRIN_APPIMAGE",null);
+ AppBuilder.Configure<App>().WithInterFont().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions{UseHeadlessDrawing=false}).SetupWithoutStarting();
+ var window=new MainWindow();window.Show();Dispatcher.UIThread.RunJobs();
+ var render=typeof(MainWindow).GetMethod("RenderUdevNotice",BindingFlags.Instance|BindingFlags.NonPublic)!;
+ var notice=window.FindControl<Border>("UdevNotice")!;
+ render.Invoke(window,[new UdevRuleCoverage(false,false,false)]);
+ Check(!notice.IsVisible,"installed app does not show AppImage notice");
+ Environment.SetEnvironmentVariable("KIRIN_APPIMAGE","1");
+ render.Invoke(window,[new UdevRuleCoverage(false,false,false)]);Dispatcher.UIThread.RunJobs();
+ Check(notice.IsVisible && window.FindControl<TextBox>("UdevCommands")!.Text==UdevRuleNotice.ApplyCommands,"AppImage missing rules shows readable command box");
+ window.FindControl<Button>("CopyUdevCommandsButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+ Dispatcher.UIThread.RunJobs();
+ Check(window.FindControl<TextBlock>("UdevCopyStatus")!.Text=="Commands copied","actual copy button updates status");
+ Check(window.Clipboard!.GetTextAsync().GetAwaiter().GetResult()==UdevRuleNotice.ApplyCommands,"clipboard receives complete commands");
+ render.Invoke(window,[new UdevRuleCoverage(true,true,false)]);
+ Check(!notice.IsVisible,"existing complete rules hide AppImage notice");
+ render.Invoke(window,[new UdevRuleCoverage(true,true,true)]);
+ Check(notice.IsVisible && window.FindControl<TextBlock>("UdevNoticeDescription")!.Text!.Contains("could not be read"),"read failure explains notice");
+ string? screenshot=Environment.GetEnvironmentVariable("KIRIN_UDEV_SCREENSHOT");
+ if(screenshot!=null){render.Invoke(window,[new UdevRuleCoverage(false,false,false)]);Dispatcher.UIThread.RunJobs();Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();window.CaptureRenderedFrame()?.Save(screenshot);}
+ window.Close();
+ Console.WriteLine($"{checks} udev notice checks passed; no host rule writes or USB operations.");
+} finally {Environment.SetEnvironmentVariable("KIRIN_APPIMAGE",oldFlag);Directory.Delete(root,true);}

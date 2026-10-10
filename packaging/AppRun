@@ -5,4 +5,5 @@
 # publish tree under usr/bin/ preserves all resource lookups.
 HERE=$(dirname "$(readlink -f "$0")")
 export APPDIR="$HERE"
+export KIRIN_APPIMAGE=1
 exec "$HERE/usr/bin/Kirin-Tool" "$@"
