@@ -64,8 +64,7 @@ jobs:
     steps:
       - name: Install toolchain
         run: |
-          pacman -Syu --noconfirm git
-          pacman -Syu --noconfirm dotnet-sdk libusb pkgconf
+          pacman -Syu --noconfirm git dotnet-sdk libusb pkgconf fontconfig freetype2 libx11 libice libsm openssl zlib icu
 
       - uses: actions/checkout@v4
 
