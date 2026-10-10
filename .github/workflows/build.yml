@@ -47,6 +47,8 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Build AppImage
+        env:
+          KIRIN_BUILD_COMMIT: ${{ github.sha }}
         run: |
           V="${GITHUB_REF_NAME#v}"
           case "$V" in main|*"/"*) V="2.4.2-stable.3-portable.1" ;; esac
