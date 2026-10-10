@@ -42,30 +42,9 @@ namespace Kirin_Tool.Services
 
         public async Task<List<FastbootPartition>> GetPartitionTableAsync()
         {
-            var result = await _fastbootClient.GetVarAsync("ptable");
-
-            if (string.IsNullOrEmpty(result))
-            {
-                throw new InvalidOperationException("Failed to get partition table from device");
-            }
-
-            var partitions = new List<FastbootPartition>();
-            var lines = result.Split(new char[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (var line in lines)
-            {
-                var match = Regex.Match(line.Trim(), @"\(bootloader\)\s*:(.+)");
-                if (match.Success)
-                {
-                    var partitionName = match.Groups[1].Value.Trim();
-                    if (!string.IsNullOrEmpty(partitionName))
-                    {
-                        partitions.Add(new FastbootPartition(partitionName));
-                    }
-                }
-            }
-
-            return partitions;
+            var result = await _fastbootClient.QueryVariableAsync("ptable");
+            return FastbootReadResponses.Partitions(result)
+                .Select(name => new FastbootPartition(name)).ToList();
         }
 
         public async Task<(bool IsSuccess, string Message)> DumpPartitionAsync(string partitionName, string savePath)

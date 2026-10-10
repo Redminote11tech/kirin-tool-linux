@@ -186,6 +186,22 @@ namespace Kirin_Tool.UI
             _stopwatch?.Stop();
         }
 
+        // Used by offline extraction; legacy flashing timing remains unchanged.
+        public void BeginOperation()
+        {
+            _stopwatch.Start();
+            StartTimer();
+        }
+
+        public void StopTracking() => StopTimer();
+
+        public void RefreshOperationBrushes()
+        {
+            OnPropertyChanged(nameof(StatusColor));
+            OnPropertyChanged(nameof(BackgroundBrush));
+            OnPropertyChanged(nameof(BorderBrush));
+        }
+
         public void UpdateStatus(string status)
         {
             if (ProgressValue > 0 && !_isCompleted)

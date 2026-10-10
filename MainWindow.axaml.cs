@@ -159,6 +159,7 @@ namespace Kirin_Tool
                 async (title, message) => await ShowGlobalInteractionPromptAsync($"{title}: {message}")
             );
 
+            Closed += (_, _) => _extractionCancellation?.Cancel();
             SetupNavigationItemHandlers();
             SetupEventHandlers();
             InitializeFullOta();
@@ -708,18 +709,7 @@ namespace Kirin_Tool
             {
                 if (NavigationListBox.SelectedItem is ListBoxItem item)
                 {
-                    HandleNavigation(item.Content?.ToString() switch
-                    {
-                        "Welcome" => "Welcome",
-                        "Device Information" => "DeviceInfo",
-                        "VCOM Operations" => "Vcom",
-                        "Flash Operations" => "Flash",
-                        "Security Tools" => "Security",
-                        "OEMInfo Tools" => "OEMInfo",
-                        "NVMe Tools" => "NVMe",
-                        "About" => "About",
-                        _ => "Welcome"
-                    });
+                    HandleNavigation(item.Tag?.ToString() ?? "Welcome");
                 }
             };
         }
@@ -745,6 +735,7 @@ namespace Kirin_Tool
                 case "Security": ShowSecurityPage(); break;
                 case "OEMInfo": ShowOEMInfoPage(); break;
                 case "NVMe": ShowNVMePage(); break;
+                case "Extractor": ExtractorPage.IsVisible = true; break;
                 case "About": ShowAboutPage(); break;
             }
         }
@@ -774,6 +765,7 @@ namespace Kirin_Tool
             OEMInfoPage.IsVisible = false;
             NVMePage.IsVisible = false;
             AboutPage.IsVisible = false;
+            ExtractorPage.IsVisible = false;
         }
 
         private async void BrowseOtaFile_Click(object sender, RoutedEventArgs e)
@@ -1924,8 +1916,15 @@ namespace Kirin_Tool
 
         private async Task HandleReadSerialNumber()
         {
-            var sn = await _fastbootClient.ReadNveVariable("SN");
-            CurrentSerialDisplay.Text = string.IsNullOrEmpty(sn) ? "Could not read Serial Number." : sn;
+            try
+            {
+                CurrentSerialDisplay.Text = await _fastbootClient.ReadNveVariable("SN");
+            }
+            catch (Exception ex)
+            {
+                CurrentSerialDisplay.Text = "Serial number unavailable.";
+                await ShowMessageBox("Read Serial Number", ex.Message);
+            }
         }
 
         private async Task HandleWriteSerialNumber()

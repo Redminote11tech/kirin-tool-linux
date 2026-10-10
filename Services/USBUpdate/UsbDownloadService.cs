@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
+using Kirin_Tool.Services.USBUpdate.Transport;
 using System.Linq;
 using System.Management;
 using System.Threading;
@@ -50,7 +51,7 @@ namespace Kirin_Tool.Services.USBUpdate
 
         public bool FlashImages()
         {
-            SerialPort port = null;
+            IUpdateTransport port = null;
             
             while (port == null)
             {
@@ -100,25 +101,28 @@ namespace Kirin_Tool.Services.USBUpdate
             return success;
         }
 
-        private SerialPort BuildConnection()
+        private IUpdateTransport BuildConnection()
         {
+            SerialPort? serial = null;
             try
             {
+                if (OperatingSystem.IsLinux()) return BufferedUsbTransport.Open();
                 string portName = FindHiSiliconUsbUpdatePort();
                 if (portName == null) return null;
-
-                SerialPort port = new SerialPort(portName, 9600)
+                serial = new SerialPort(portName, 9600)
                 {
-                    ReadTimeout = 5000,
-                    WriteTimeout = 5000,
-                    WriteBufferSize = 8 * 1024 * 1024,
-                    ReadBufferSize = 1024 * 1024
+                    ReadTimeout = 5000, WriteTimeout = 5000,
+                    WriteBufferSize = 8 * 1024 * 1024, ReadBufferSize = 1024 * 1024
                 };
-
-                port.Open();
-                return port;
+                serial.Open();
+                return new SerialUpdateTransport(serial);
             }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                serial?.Dispose();
+                _log("USB Update connection: " + ex.Message);
+                return null;
+            }
         }
 
         private static string FindHiSiliconUsbUpdatePort()
@@ -129,7 +133,8 @@ namespace Kirin_Tool.Services.USBUpdate
                     vendorId: 0x12D1,
                     descriptorMatches: descriptor =>
                         descriptor.Contains("DBAdapter", StringComparison.OrdinalIgnoreCase) ||
-                        descriptor.Contains("Reserved Interface", StringComparison.OrdinalIgnoreCase));
+                        descriptor.Contains("Reserved Interface", StringComparison.OrdinalIgnoreCase),
+                    interfaceMatches: LinuxSerialPortFinder.IsHuaweiUsbUpdateInterface);
             }
 
             if (OperatingSystem.IsWindows())
@@ -159,7 +164,7 @@ namespace Kirin_Tool.Services.USBUpdate
             return null;
         }
 
-        private void DoHandshake(SerialPort port)
+        private void DoHandshake(IUpdateTransport port)
         {
             const int maxRetries = 3;
             byte[] expectedPrefix = new byte[] { 0x7E, 0x26, 0x00, 0x00, 0x25, 0xA7 };
@@ -185,7 +190,7 @@ namespace Kirin_Tool.Services.USBUpdate
 
         }
 
-        private void SendUnlockCommand(SerialPort port)
+        private void SendUnlockCommand(IUpdateTransport port)
         {
             string unlockPath = Path.Combine(_dloadDirectory, "unlockcode");
             if (!File.Exists(unlockPath))
@@ -210,7 +215,7 @@ namespace Kirin_Tool.Services.USBUpdate
             if (!SendCommand(port, finalCmd.ToArray(), 0.1)) {}
         }
 
-        private bool FlashPartitions(SerialPort port)
+        private bool FlashPartitions(IUpdateTransport port)
         {
             string listPath = Path.Combine(_dloadDirectory, "list.txt");
             if (!File.Exists(listPath))
@@ -337,7 +342,7 @@ namespace Kirin_Tool.Services.USBUpdate
             return true;
         }
 
-        private string? SendImage(SerialPort port, int lineIndex, string name, int blockSize)
+        private string? SendImage(IUpdateTransport port, int lineIndex, string name, int blockSize)
         {
             string imgPath = Path.Combine(_dloadDirectory, $"{name}.img");
             long fileSize = new FileInfo(imgPath).Length;
@@ -414,7 +419,7 @@ namespace Kirin_Tool.Services.USBUpdate
             return result;
         }
 
-        private bool SendCommand(SerialPort port, byte[] cmd, double timeout)
+        private bool SendCommand(IUpdateTransport port, byte[] cmd, double timeout)
         {
             string? error = SendCommandInternal(port, cmd, timeout);
             if (error != null)
@@ -424,7 +429,7 @@ namespace Kirin_Tool.Services.USBUpdate
             return true;
         }
 
-        private string? SendCommandInternal(SerialPort port, byte[] cmd, double timeout)
+        private string? SendCommandInternal(IUpdateTransport port, byte[] cmd, double timeout)
         {
             int timeoutMs = (int)(timeout * 1000);
 
@@ -496,7 +501,7 @@ namespace Kirin_Tool.Services.USBUpdate
             return null;
         }
 
-        private byte[] ReadResponse(SerialPort port)
+        private byte[] ReadResponse(IUpdateTransport port)
         {
             int bytesToRead = port.BytesToRead;
             if (bytesToRead > 0)
@@ -665,7 +670,7 @@ namespace Kirin_Tool.Services.USBUpdate
         public void SendRebootCommands()
         {
 
-            SerialPort port = null;
+            IUpdateTransport port = null;
             
             while (port == null)
             {

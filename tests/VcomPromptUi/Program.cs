@@ -7,7 +7,7 @@ using Avalonia.VisualTree;
 using Kirin_Tool;
 using Kirin_Tool.UI;
 using System.Reflection;
-AppBuilder.Configure<App>().UseHeadless(new AvaloniaHeadlessPlatformOptions()).SetupWithoutStarting();
+AppBuilder.Configure<App>().WithInterFont().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).SetupWithoutStarting();
 var owner=new MainWindow();owner.Show();
 var progress=new ProgressDialog(new());var progressTask=progress.ShowDialog(owner);
 Dispatcher.UIThread.RunJobs();

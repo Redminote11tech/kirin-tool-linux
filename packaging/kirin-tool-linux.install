@@ -5,10 +5,14 @@ Kirin Tool for Linux setup notes:
   - udev rules installed to /usr/lib/udev/rules.d/51-kirin-tool-fastboot.rules
   - reload them with:  sudo udevadm control --reload-rules && sudo udevadm trigger
   - make sure your user is in the 'adbusers' group (fastboot) and the 'uucp'
-    group (VCOM/DBAdapter serial), e.g.:  sudo usermod -aG adbusers,uucp $USER
+    group (VCOM serial), e.g.:  sudo usermod -aG adbusers,uucp $USER
     (log out and back in afterwards)
   - a Huawei-capable fastboot is bundled at /usr/lib/kirin-tool-linux/fastboot/fastboot
     and is used automatically; system android-tools fastboot remains as fallback
+  - USB Update now uses userspace libusb; no DKMS module is required
+  - close legacy serial apps and unload kirin_usb_update if upgrading from old
+    driver candidates; reconnect after changing permissions
+  - candidate 6 is merged into stable; launch kirin-tool
 
 EOF
 }

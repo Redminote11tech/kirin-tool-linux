@@ -97,7 +97,6 @@ namespace Kirin_Tool.UI
         public ProcessDialogUapp(List<PartitionInfo> selectedPartitions, CancellationTokenSource cancellationTokenSource)
         {
             InitializeComponent();
-            this.DataContext = this;
 
             _cancellationTokenSource = cancellationTokenSource;
 
@@ -110,12 +109,12 @@ namespace Kirin_Tool.UI
 
             OverallStatusText = $"Ready to flash {PartitionItems.Count} partitions";
             CurrentOperationText = "Waiting to start...";
+            DataContext = this;
         }
 
         public ProcessDialogUapp(List<(PartitionInfo Partition, string Source)> partitionsWithSources, CancellationTokenSource cancellationTokenSource)
         {
             InitializeComponent();
-            this.DataContext = this;
 
             _cancellationTokenSource = cancellationTokenSource;
 
@@ -128,6 +127,65 @@ namespace Kirin_Tool.UI
 
             OverallStatusText = $"Ready to flash {PartitionItems.Count} partitions";
             CurrentOperationText = "Waiting to start...";
+            DataContext = this;
+        }
+
+        // Reuse the flashing row template for offline extraction, with operation-specific wording.
+        public void ConfigureExtraction()
+        {
+            Title = "Extracting UPDATE.APP Partitions";
+            OverallStatusText = $"Ready to extract {PartitionItems.Count} partitions";
+            CurrentOperationText = "Preparing extraction…";
+            Closing += (_, e) =>
+            {
+                if (!ShowCloseButton)
+                {
+                    e.Cancel = true;
+                    _cancellationTokenSource.Cancel();
+                    CanCancel = false;
+                    CurrentOperationText = "Cancelling extraction and cleaning up…";
+                }
+            };
+        }
+
+        // Called on the UI thread. Index identifies duplicate partition names correctly.
+        public void UpdateExtractionPartition(int index, string state, double progress, double overall)
+        {
+            if (index < 0 || index >= PartitionItems.Count) return;
+            var item = PartitionItems[index];
+            if (!item.IsCompleted)
+            {
+                if (state == "Extracting")
+                {
+                    item.BeginOperation();
+                    item.ProgressValue = progress;
+                    item.UpdateStatus($"Extracting {progress:F0}%");
+                    item.RefreshOperationBrushes();
+                }
+                else
+                {
+                    item.Complete(state == "Extracted", state);
+                    item.StatusText = state;
+                }
+            }
+            ScrollToPartition(item);
+            OverallProgress = overall;
+            OverallStatusText = $"Extracted {PartitionItems.Count(p => p.IsSuccess)}/{PartitionItems.Count} partitions";
+            CurrentOperationText = $"{state}: {item.Name}";
+        }
+
+        public void FinishExtraction(string message, bool success)
+        {
+            foreach (var item in PartitionItems)
+            {
+                item.StopTracking();
+                if (!item.IsCompleted) item.StatusText = "Not extracted";
+            }
+            CanCancel = false;
+            ShowCloseButton = true;
+            if (success) OverallProgress = 100;
+            OverallStatusText = $"Extracted {PartitionItems.Count(p => p.IsSuccess)}/{PartitionItems.Count} partitions";
+            CurrentOperationText = message;
         }
 
         public void UpdateCurrentPartitionByIndex(int index, string status, double progress)
@@ -270,7 +328,7 @@ namespace Kirin_Tool.UI
                 if (success && successCount == totalCount)
                 {
                     OverallStatusText = $"Successfully flashed all {totalCount} partitions!";
-                    CurrentOperationText = "Flashing completed successfully.";
+                    CurrentOperationText = message ?? "Flashing completed successfully.";
                 }
                 else
                 {

@@ -17,7 +17,8 @@ namespace Kirin_Tool.Utils
     /// </summary>
     public static class LinuxSerialPortFinder
     {
-        public static string? FindPort(int vendorId, int? productId = null, Func<string, bool>? descriptorMatches = null)
+        public static string? FindPort(int vendorId, int? productId = null, Func<string, bool>? descriptorMatches = null,
+            Func<DirectoryInfo, bool>? interfaceMatches = null)
         {
             if (!OperatingSystem.IsLinux())
             {
@@ -37,13 +38,34 @@ namespace Kirin_Tool.Utils
                 }
 
                 string descriptor = GetUsbDescriptor(serialDevice);
-                if (descriptorMatches == null || descriptorMatches(descriptor))
+                if ((descriptorMatches == null && interfaceMatches == null) ||
+                    (descriptorMatches?.Invoke(descriptor) ?? false) ||
+                    (interfaceMatches?.Invoke(serialDevice!) ?? false))
                 {
                     return port;
                 }
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Huawei hw_cdcacm.inf maps subclass 13/protocol 23 to DBAdapter
+        /// Reserved Interface. Read the nearest USB interface, never a sibling.
+        /// This only recognizes a port already provided by a kernel driver.
+        /// </summary>
+        public static bool IsHuaweiUsbUpdateInterface(DirectoryInfo serialDevice)
+        {
+            for (DirectoryInfo? directory = serialDevice; directory != null; directory = directory.Parent)
+            {
+                if (File.Exists(Path.Combine(directory.FullName, "idVendor")))
+                    return false;
+                if (File.Exists(Path.Combine(directory.FullName, "bInterfaceClass")))
+                    return string.Equals(ReadAttribute(directory, "bInterfaceClass"), "ff", StringComparison.OrdinalIgnoreCase) &&
+                           string.Equals(ReadAttribute(directory, "bInterfaceSubClass"), "13", StringComparison.OrdinalIgnoreCase) &&
+                           string.Equals(ReadAttribute(directory, "bInterfaceProtocol"), "23", StringComparison.OrdinalIgnoreCase);
+            }
+            return false;
         }
 
         private static bool IsUsbSerialPort(string port)

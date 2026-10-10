@@ -43,18 +43,18 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 ```bash
 makepkg -f
-sudo pacman -U kirin-tool-linux-2.4.2-4-x86_64.pkg.tar.zst
+sudo pacman -U kirin-tool-linux-2.4.2-9-x86_64.pkg.tar.zst
 ```
 
 Then launch `kirin-tool` from your application menu or a terminal.
 
-### AppImage (any distro)
+### AppImage (Linux x86_64)
 
 Build it from this repo (needs `dotnet-sdk` 8 + `gcc`/`make`, no root/FUSE):
 
 ```bash
-./packaging/build-appimage.sh publish-out 2.4.2
-./kirin-tool-linux-2.4.2-x86_64.AppImage
+./packaging/build-appimage.sh publish-out 2.4.2-stable.3
+./kirin-tool-linux-2.4.2-stable.3-x86_64.AppImage
 ```
 
 CI also produces AppImage artifacts on every tag. Fastboot invocation logs
@@ -67,7 +67,7 @@ Arch/CachyOS install it once with `sudo pacman -S fuse2`, or skip the
 install entirely by running:
 
 ```bash
-./kirin-tool-linux-2.4.2-x86_64.AppImage --appimage-extract-and-run
+./kirin-tool-linux-2.4.2-stable.3-x86_64.AppImage --appimage-extract-and-run
 ```
 
 ### From source
@@ -137,9 +137,15 @@ USDT Tether (TRC20): `TD2sJbEmYa93sJhDBmTrvqmScqQSVTCfCK`
 
 *NOTICE: This tool is an independent software product and has not been authorized, sponsored, or otherwise approved by Huawei Technologies Co., Ltd. HiSilicon and Kirin are trademarks of Huawei Technologies Co., Ltd. All product and company names are trademarks™ or registered® trademarks of their respective holders. Use of them does not imply any affiliation with or endorsement by them.*
 
-## Stable 2.4.2-stable.2
+## Stable 2.4.2-stable.3
 
 Stable and beta are separate tracks. See [release scope and known limitations](docs/stable-release.md)
 and the [hardware test checklist](docs/testing-checklist.md). Stable preserves frozen
 Windows behavior, including inherited defects; it is not a hardware safety certification.
 The independent merger, stricter validation and changed failure policies remain on beta.
+
+Candidate 6 is now merged into stable: offline Base/Cust/Preload partition
+extraction, native icons/Inter, userspace USB Update, OEM dispatch repair and
+HiSilicon memory/UFS-eye/UltraFlash commands share one release/build path.
+See the release scope for hardware validation limits. No Kirin 990 4G or Kirin
+9000 loader was added. Archived candidate branches retain rollback history.

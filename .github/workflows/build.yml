@@ -16,19 +16,11 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      - name: Publish self-contained app
-        run: >
-          dotnet publish Kirin-Tool.csproj
-          -c Release -r linux-x64 --self-contained true
-          -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false
-          -o publish-out
+      - name: Install native dependencies
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev pkg-config
 
-      - name: Build bundled Huawei-capable fastboot
-        run: |
-          make -C fastboot-src
-          mkdir -p publish-out/fastboot
-          cp fastboot-src/fastboot publish-out/fastboot/fastboot
-          ./publish-out/fastboot/fastboot --version
+      - name: Publish app and native components
+        run: ./packaging/publish.sh publish-out
 
       - name: Smoke test
         run: test -x publish-out/Kirin-Tool && test -f publish-out/fastboot/payload
@@ -48,6 +40,9 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
+
+      - name: Install native dependencies
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev pkg-config
 
       - name: Build AppImage
         run: |
@@ -70,7 +65,7 @@ jobs:
       - name: Install toolchain
         run: |
           pacman -Syu --noconfirm git
-          pacman -Syu --noconfirm dotnet-sdk
+          pacman -Syu --noconfirm dotnet-sdk libusb pkgconf
 
       - uses: actions/checkout@v4
 
@@ -79,6 +74,7 @@ jobs:
           useradd -m builder
           build=$(mktemp -d /home/builder/pkg-XXXX)
           cp packaging/PKGBUILD packaging/kirin-tool-linux.install "$build/"
+          git rev-parse HEAD > BUILD-COMMIT
           tar czf "$build/kirin-tool-linux-2.4.2.tar.gz" \
             --exclude .git --exclude bin --exclude obj --exclude .github \
             --transform 's,^\.,kirin-tool-linux-2.4.2,' .

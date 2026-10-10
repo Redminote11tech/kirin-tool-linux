@@ -30,6 +30,7 @@
 #define _FASTBOOT_H_
 
 #include "usb.h"
+#include <stdint.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -48,6 +49,10 @@ char *fb_get_error(void);
 
 #define FB_COMMAND_SZ 64
 #define FB_RESPONSE_SZ 64
+
+int fb_upload_range(usb_handle *usb, const char *kind, uint64_t address, uint64_t length, const char *filename);
+void fb_queue_ultraflash_begin(const char *partition);
+void fb_queue_ultraflash_end(void);
 
 /* engine.c - high level command queue engine */
 int fb_getvar(struct usb_handle *usb, char *response, const char *fmt, ...);

@@ -29,3 +29,20 @@ Build: `make -C fastboot-src`; hardware-free tests: `make -C fastboot-src test`.
 The test target links fake USB functions and never opens a device. Tests cover
 both vendor sequences, a 16-MiB boundary, short reads, malformed metadata,
 query/start/tail errors, early EOF, disk failure and prior-file preservation.
+
+Candidate 5 revision 2 restores the missing `oem` case in the top-level command
+loop. Its handler had accidentally been attached to `flashall`, so OEM requests
+printed usage without reaching either the vendor reader or the generic command
+queue. `make test-cli` now exercises the actual CLI with a fake USB backend:
+lock/build/version queries, both dump metadata requests, and the NVE SN request.
+It never opens real hardware. The upload protocol and payload bytes are unchanged.
+
+Candidate 6 revision 3 supersedes the above unsupported memory/UltraFlash notes
+for unstable only. Targeted Windows XML binary decompilation establishes native
+memory, memupload, dump-ufseye and UltraFlash negotiation. See
+[the port documentation](../docs/native-windows-port.md) for commands, error
+semantics and remaining differences. Fake USB CLI tests cover the wire sequences.
+
+On October 10, candidate 6 revision 3 was merged into stable at the user’s request.
+The native memory/UFS-eye/UltraFlash and OEM dispatch additions now ship on stable.
+Earlier unsupported/absent notes describe historical stable releases.

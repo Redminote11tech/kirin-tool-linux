@@ -9,7 +9,7 @@ CC      ?= gcc
 CXX     ?= g++
 CFLAGS  ?= -O2 -Wall
 CFLAGS  += -I libsparse/include -I src
-CFLAGS  += '-DFASTBOOT_REVISION="kirin-tool-linux-2.0-stable vendor-storage-upload-v1 (AOSP android-6.0.1_r1)"'
+CFLAGS  += '-DFASTBOOT_REVISION="kirin-tool-linux-2.1-stable vendor-upload-ultraflash-v2 (AOSP android-6.0.1_r1)"'
 LIBS    := -lz -lpthread
 
 SRCS_CXX := src/fastboot.cpp src/bootimg_utils.cpp
@@ -47,3 +47,13 @@ tests/vendor-upload-test: tests/vendor_upload_test.c src/protocol.c src/fastboot
 	$(CC) $(CFLAGS) -ffunction-sections -fdata-sections -Wl,--gc-sections -o $@ tests/vendor_upload_test.c src/protocol.c
 
 .PHONY: test
+
+# Exercise the real argument dispatcher, with USB replaced by a mock.
+tests/cli_usb_stub.o: tests/cli_usb_stub.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+tests/cli-fastboot: $(filter-out src/usb_linux.o,$(OBJS)) tests/cli_usb_stub.o
+	$(CXX) -o $@ $^ $(LIBS) $(LDFLAGS)
+test-cli: tests/cli-fastboot
+	python3 tests/cli_dispatch_test.py
+	python3 tests/vendor_features_test.py
+.PHONY: test-cli

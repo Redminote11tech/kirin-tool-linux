@@ -59,6 +59,13 @@ int main(int argc,char **argv)
         struct stat st;CHECK(!stat(path,&st));CHECK(st.st_size==total);
         FILE *f=fopen(path,"rb");CHECK(f);for(uint64_t i=0;i<total;i++)CHECK(fgetc(f)==(unsigned char)i);fclose(f);
     }
+    reset(0,16777216+257,"memory");state=2;
+    CHECK(!fb_upload_range(NULL,kind,address,total,path));CHECK(requests==2);
+    reset(0,8192,"ufseye");state=2;
+    CHECK(!fb_upload_range(NULL,kind,address,total,path));CHECK(requests==1);
+    keep(path);reset(5,8192,"memory");state=2;
+    CHECK(fb_upload_range(NULL,kind,address,total,path)<0);unchanged(path);
+    reset(0,1,"memory");CHECK(fb_upload_range(NULL,kind,UINT64_MAX,2,path)<0);CHECK(state==0);
     reset(0,10,"emmc");CHECK(fb_dump_partition(NULL,kind,"oeminfo bad",path)<0);CHECK(state==0);
     printf("PASS native vendor upload: emmc/storage sequence, 16-MiB boundary, short reads, invalid metadata, query/start/tail failures, EOF, disk-write failure and prior-file preservation\n");
     unlink(path);return 0;

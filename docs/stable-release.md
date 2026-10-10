@@ -1,98 +1,66 @@
-# Kirin Tool Linux 2.4.2-stable.2
+# Kirin Tool Linux 2.4.2-stable.3
 
-Local stable compatibility package, 2026-09-30. This release is not a claim of
-hardware validation. It preserves the frozen v2.4.2 Windows behavior where ported;
-known gaps below remain. No newer upstream read-only source was imported.
+October 10, 2026. Candidate 6 revision 3 is merged into stable at the maintainer’s
+request to reduce maintenance. Stable and main publish one source tree and build
+path; beta remains separate. Archived candidates and old packages retain rollback
+history. No newer upstream source was imported: the frozen BSL reference remains
+45440d47296ef4c250fc03730259dbeebb245ebc. Preserve LICENSE and notices.
 
-## UI hotfix since stable.1
+## Changes since the public stable.1 release
 
-Untouched Avalonia TextBox.Text values can be null, unlike the empty-string
-assumption inherited from WPF. Clicking OEMInfo Convert on an empty form could
-throw before validation and terminate the application. Model, vendor and file-path
-inputs now normalize null to empty and show the existing input-error dialogs.
-Five headless tests exercise the actual click handler; the first reproduced the
-old NullReferenceException. This changes no OEMInfo bytes or device commands.
+- OEMInfo Convert validates untouched fields without crashing.
+- Linux COM1 option-driver modem-control adaptation, modal cable prompt ownership
+  and bounded tty rediscovery/reopen. The user validated this VCOM sequence on a
+  Mate 20 Pro / Kirin 980 using candidate 4; packet acceptance remains unchanged.
+- Offline UPDATE.APP extraction from Base, Cust and Preload with partition
+  selection and destination folder. Shared progress rows show saved images green,
+  failure/cancellation red and unattempted images neutral. Partial files are removed.
+- Vector navigation icons, bundled Inter and layout closer to the Windows UI.
+- Native OEM dispatch repair, named memory, memory ranges, UFS-eye uploads and
+  UltraFlash negotiation. Rejected capability probes fall back to standard flash;
+  transport errors abort without replay. HUAWEI_ULTRAFLASH=0 or off disables it.
+  See [native-windows-port.md](native-windows-port.md) for commands and limitations.
+- USB Update uses a small userspace libusb bridge for Huawei DBAdapter ff/13/23;
+  VCOM remains serial. No DKMS module is installed. See
+  [usb-update-userspace.md](usb-update-userspace.md) for protocol/transport scope.
+- Arch and AppImage use a shared fresh-publish script and ship native binaries,
+  licenses, docs and BUILD-COMMIT. AppImage includes libusb and its license;
+  host udev permissions must still be installed manually.
 
-Run the UI regression: `dotnet run --project tests/OemInfoUi/OemInfoUi.csproj`.
+## Validation and limits
 
-## Included on stable
+Hardware-free tests cover extraction/byte integrity/>4-GiB offsets, navigation,
+progress/modal dialogs, USB stream behavior, discovery mocks, fastboot parsing,
+actual CLI dispatch and vendor wire sequencing. Verify the extracted artifacts
+against the fresh source build; release manifests identify each binary and hash.
 
-* Restore the frozen BSL Windows SuperMerger, XloaderPatcher list restoration,
-  SoftwareTestpointService cleanup and OEMInfoEditor behavior. These undo earlier
-  Linux-only behavior changes; they do not repair inherited Windows defects.
-* Keep the existing Windows-compatible VCOM response handling: no strict ACK-byte
-  check. USB-update handshake, failure sequencing and cancellation stay at the
-  pre-audit stable implementation.
-* Fix Linux filesystem differences: use the actual extracted SUPER filename,
-  normalize Windows XML path separators, and read USB interface descriptors from
-  the serial interface ancestor. Keep first-match discovery behavior.
-* Preserve flash argument boundaries through ProcessStartInfo.ArgumentList,
-  without beta's new partition-name/file validators or batch policies.
-* Replace Linux's incorrect guessed DATA upload backend with the vendor
-  getvar/emmc-or-storage/upload sequence observed in the frozen Windows clients.
-  This is a native read-path parity repair; no UltraFlash write implementation is
-  added. Existing managed fallback/selection behavior is retained. Local disk
-  writes must finish before the native reader reports a successful backup.
-* Rebuild app and fastboot during packaging. Ship license/notices, source commit,
-  release notes and testing checklist. Stop tracking generated bin/ files.
+No new physical USB test was performed for stable.3. Userspace USB Update timing,
+new memory/UFS-eye/UltraFlash operations and real partition dumps remain
+hardware-unvalidated. An empty/rejected NVE SN response remains unresolved.
+No new loader or Kirin 990 4G/9000 support is claimed. Linux implements selected
+vendor features, not all modern HiSilicon fastboot functionality. No Wine needed.
 
-## Kept separate on beta
+Stable retains the Windows positional SUPER merger, including potential block
+placement and stale-checksum defects on unsuitable inputs. Byte parity tests do
+not prove output geometry/checksum validity. Windows-style permissive response
+handling remains; strict AA ACK enforcement is not introduced. Managed partition
+dumps may delete an existing output before native invocation; use a new folder.
 
-The extent-based merger and checksum rejection, whole-batch preflight, fail-stop
-partition loops, stricter header/image/name checks, backup capability/receipt
-requirements, no-retry-after-transfer-failure policy, multiple-device refusal,
-loader preflight and altered serial/cancellation handling belong to beta.
-Native exact-DATA-size enforcement is beta-only. The strict AA ACK proposal was
-withdrawn entirely. Beta serial changes remain unvalidated candidates under the
-existing hardware-test gate; beta is not certified safe either.
+Beta’s extent merger, stricter batch validation and changed write/failure policies
+are not merged. The stable label is a release channel, not universal device safety
+or hardware-validation certification. Do not perform phone operations as automated
+release tests. See [testing-checklist.md](testing-checklist.md).
 
-The beta checkout preserves its existing UI features and error hints. No beta
-branch has been merged into stable. Candidate history is retained on
-`audit/hardening-candidates-20260930` and integrated into `beta`.
+## Install
 
-## Known limitations retained or unresolved
+Arch/CachyOS: install the attached kirin-tool-linux-2.4.2-9-x86_64.pkg.tar.zst
+with pacman -U, close/reopen, then launch kirin-tool. This updates the stable package;
+the old unstable package is separate and can be removed after migration if desired.
 
-**SUPER:** stable uses the exact Windows positional algorithm. It can misplace
-blocks and carry stale checksums on unsuitable input layouts. The tests establish
-Windows byte parity, including CRC-containing inputs, not correct output geometry
-or valid checksums. Use the offline corpus checks before any device write. Restoring
-Windows behavior is not a safety fix for an inherited upstream defect.
-
-**Fastboot:** Linux's native client is not the Windows modern XML client. Windows
-can use UltraFlash inside normal flash; Linux cannot. Some vendor memory/UFS-eye
-operations are not implemented. No universal device/firmware equivalence is claimed.
-The vendor backup sequence is verified with fake USB and binary inspection, not a
-real-device trace. Managed stable fallback may retry another read command after a
-failure, as before; beta changes that policy.
-
-**Serial and security writes:** Windows-style response acceptance and continuation
-behavior are retained. They can report incomplete/partial results poorly; FRP,
-downgrade and flash operations remain destructive. Stable does not include beta's
-new preflight/fail-stop guarantees. The merged USB-update header scheme remains
-hardware-unverified. Device enumeration is not persistent identity binding.
-
-## Validation and provenance
-
-Frozen Windows source: `45440d47296ef4c250fc03730259dbeebb245ebc`.
-Pre-separation Linux stable: `8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b`.
-The installed package's BUILD-COMMIT identifies its exact source. External release
-checksums and manifest identify the package and shipped components.
-
-Run hardware-free checks from the source root:
-
-```sh
-dotnet run --project tests/StableParity/StableParity.csproj -- .
-make -C fastboot-src test
-```
-
-StableParity checks protected-source hashes against explicit frozen/pre-audit
-references, absence of beta-only classes, Windows merger output bytes and argument
-and XML path handling. Native tests exercise the vendor reader without usb_linux.
-See [testing-checklist.md](testing-checklist.md) before hardware validation.
-
-## COM 1.0 compatibility update
-
-Promoted candidate-4 VCOM fixes only: physical tty resolution, Linux option
-DTR/RTS compatibility, progress-owned cable prompt and tty reopen after replug.
-User validated on Mate 20 Pro/Kirin 980, not all devices. No USB Update
-transport or DKMS candidate imported. Packets/ACKs/Windows settings unchanged.
+AppImage: chmod +x, then run kirin-tool-linux-2.4.2-stable.3-x86_64.AppImage.
+FUSE2 is required for mounting, or pass --appimage-extract-and-run. It was built
+and verified on CachyOS x86_64; compatibility with older distribution ABIs is not
+established. The host needs graphics libraries, libudev and appropriate USB rules.
+The image includes docs/51-kirin-tool-fastboot.rules; install it into
+/etc/udev/rules.d, reload rules and reconnect the phone. Neither artifact installs
+legacy kirin_usb_update kernel modules.

@@ -32,14 +32,22 @@ namespace Kirin_Tool.Utils
         private BinaryReader _binaryReader;
         private FileStream _fileStream;
         private bool _isUsbMode;
+        private readonly bool _strict;
+        private readonly CancellationToken _scanCancellation;
         private bool _disposed = false;
 
         public List<PartitionInfo> Partitions { get; private set; }
 
         public UpdateApp(string filePath, bool isUsbMode = false)
+            : this(filePath, isUsbMode, strict: false) { }
+
+        // Strict validation is opt-in for offline extraction; firmware paths retain their behavior.
+        public UpdateApp(string filePath, bool isUsbMode, bool strict, CancellationToken cancellationToken = default)
         {
             _filePath = filePath ?? throw new ArgumentNullException(nameof(filePath));
             _isUsbMode = isUsbMode;
+            _strict = strict;
+            _scanCancellation = cancellationToken;
 
             if (!File.Exists(_filePath))
                 throw new FileNotFoundException($"File not found: {_filePath}");
@@ -51,6 +59,12 @@ namespace Kirin_Tool.Utils
                 _fileStream = new FileStream(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1024 * 1024);
                 _binaryReader = new BinaryReader(_fileStream);
                 ParseFile();
+            }
+            catch (OperationCanceledException)
+            {
+                _binaryReader?.Dispose();
+                _fileStream?.Dispose();
+                throw;
             }
             catch (Exception ex)
             {
@@ -76,6 +90,7 @@ namespace Kirin_Tool.Utils
 
             while (currentPosition < fileLength)
             {
+                _scanCancellation.ThrowIfCancellationRequested();
                 if (fileLength - currentPosition < 4) break;
 
                 _fileStream.Seek(currentPosition, SeekOrigin.Begin);
@@ -107,6 +122,8 @@ namespace Kirin_Tool.Utils
                     currentPosition += Math.Max(1, bytesRead - 3);
                 }
             }
+            if (_strict && Partitions.Count == 0)
+                throw new InvalidDataException("No partitions found in UPDATE.APP.");
 
         }
 
@@ -117,9 +134,11 @@ namespace Kirin_Tool.Utils
                 _fileStream.Seek(startPosition + 4, SeekOrigin.Begin);
 
                 if (_fileStream.Length - _fileStream.Position < (4 + 4 + 8 + 4 + 4 + 16 + 16 + 16))
-                    return null;
+                    return InvalidEntry("Truncated partition header.");
 
                 var headerSize = _binaryReader.ReadUInt32();
+                if (_strict && (headerSize < 98 || headerSize > FileLengthRemaining(startPosition)))
+                    throw new InvalidDataException("Invalid partition header length.");
                 var unknown1 = _binaryReader.ReadUInt32();
                 var hardwareId = _binaryReader.ReadUInt64();
                 var sequence = _binaryReader.ReadUInt32();
@@ -133,10 +152,10 @@ namespace Kirin_Tool.Utils
                 long currentPosRelative = _fileStream.Position - startPosition;
                 long remainingHeaderBytesToSkip = (long)headerSize - currentPosRelative;
 
-                if (remainingHeaderBytesToSkip < 0) return null;
+                if (remainingHeaderBytesToSkip < 0) return InvalidEntry("Invalid partition header length.");
 
                 if (_fileStream.Length - _fileStream.Position < remainingHeaderBytesToSkip + size)
-                    return null;
+                    return InvalidEntry("Truncated partition data.");
 
                 _fileStream.Seek(remainingHeaderBytesToSkip, SeekOrigin.Current);
 
@@ -146,10 +165,14 @@ namespace Kirin_Tool.Utils
 
                 var alignment = (4 - _fileStream.Position % 4) % 4;
                 if (_fileStream.Length - _fileStream.Position < alignment)
-                    return null;
+                {
+                    if (!_strict || _fileStream.Position != _fileStream.Length)
+                        return InvalidEntry("Truncated partition alignment.");
+                }
+                else _fileStream.Seek(alignment, SeekOrigin.Current);
 
-                _fileStream.Seek(alignment, SeekOrigin.Current);
-
+                if (_strict && (string.IsNullOrWhiteSpace(type) || type.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '_' && c != '-' && c != '.') || type == "." || type == ".."))
+                    throw new InvalidDataException("Invalid partition name in UPDATE.APP.");
                 string partitionName = _isUsbMode ? type : GetPartitionName(type);
                 if (string.IsNullOrWhiteSpace(partitionName)) partitionName = "UNKNOWN";
 
@@ -167,12 +190,20 @@ namespace Kirin_Tool.Utils
             }
             catch (EndOfStreamException)
             {
-                return null;
+                return InvalidEntry("Truncated partition header.");
             }
-            catch (Exception ex)
+            catch (Exception) when (!_strict)
             {
                 return null;
             }
+        }
+
+        private long FileLengthRemaining(long offset) => _fileStream.Length - offset;
+
+        private PartitionInfo InvalidEntry(string message)
+        {
+            if (_strict) throw new InvalidDataException(message);
+            return null;
         }
 
         private string ReadNullTerminatedString(int maxLength)
@@ -236,6 +267,40 @@ namespace Kirin_Tool.Utils
                     await outputStream.WriteAsync(buffer, 0, read);
                     remaining -= read;
                 }
+            }
+        }
+
+        public async Task ExtractPartitionSafelyAsync(PartitionInfo partition, string outputPath,
+            CancellationToken cancellationToken, Action<long>? onBytes = null)
+        {
+            if (!Partitions.Contains(partition)) throw new ArgumentException("Partition is not in this archive.");
+            if (partition.DataOffset < 0 || partition.Size < 0 || partition.Size > _fileStream.Length - partition.DataOffset)
+                throw new InvalidDataException("Partition extends beyond UPDATE.APP.");
+            string temporaryPath = outputPath + ".partial." + Guid.NewGuid().ToString("N");
+            try
+            {
+                _fileStream.Position = partition.DataOffset;
+                await using (var output = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1024 * 1024, true))
+                {
+                    var buffer = new byte[1024 * 1024];
+                    long remaining = partition.Size;
+                    while (remaining > 0)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        int read = await _fileStream.ReadAsync(buffer.AsMemory(0, (int)Math.Min(buffer.Length, remaining)), cancellationToken);
+                        if (read == 0) throw new EndOfStreamException("UPDATE.APP ended before the partition was complete.");
+                        await output.WriteAsync(buffer.AsMemory(0, read), cancellationToken);
+                        remaining -= read;
+                        onBytes?.Invoke(read);
+                    }
+                    await output.FlushAsync(cancellationToken);
+                }
+                cancellationToken.ThrowIfCancellationRequested();
+                File.Move(temporaryPath, outputPath, overwrite: false);
+            }
+            finally
+            {
+                if (File.Exists(temporaryPath)) File.Delete(temporaryPath);
             }
         }
 
