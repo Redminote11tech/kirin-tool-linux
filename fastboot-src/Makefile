@@ -9,7 +9,7 @@ CC      ?= gcc
 CXX     ?= g++
 CFLAGS  ?= -O2 -Wall
 CFLAGS  += -I libsparse/include -I src
-CFLAGS  += '-DFASTBOOT_REVISION="kirin-tool-linux-2.1-stable vendor-upload-ultraflash-v2 (AOSP android-6.0.1_r1)"'
+CFLAGS  += '-DFASTBOOT_REVISION="kirin-tool-linux-2.1-stable vendor-upload-ultraflash-v3 (AOSP android-6.0.1_r1)"'
 LIBS    := -lz -lpthread
 
 SRCS_CXX := src/fastboot.cpp src/bootimg_utils.cpp

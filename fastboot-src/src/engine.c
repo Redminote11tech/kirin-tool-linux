@@ -403,7 +403,7 @@ int fb_execute_queue(usb_handle *usb)
                 else if (!strncmp(fb_get_error(),"remote",6)) {
                     /* A rejected capability probe permits the Windows standard-flash fallback.
                      * Transport/malformed-response errors abort, never replay a write. */
-                    fprintf(stderr,"UltraFlash refused; using standard flashing\n");
+                    fprintf(stderr,"UltraFlash refused (%s); using standard flashing\n",fb_get_error());
                     ultra_disabled=1; status=0;
                 } else break;
             }

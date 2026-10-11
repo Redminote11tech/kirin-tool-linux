@@ -17,7 +17,11 @@ with tempfile.TemporaryDirectory() as folder:
         return [('W','ultraflash:'+part),('R','OKAY')]+standard(part)+[('W','ultraflash:'),('R','OKAY')]
     args=['-S','0','flash','boot',str(image)]
     run(args,ultra())
-    run(args,[('W','ultraflash:boot'),('R','FAILunknown command')]+standard())
+    for reason in ['unknown command','Command not allowed','partition length get error']:
+        result=run(args,[('W','ultraflash:boot'),('R','FAIL'+reason)]+standard())
+        assert ('UltraFlash refused (remote: '+reason+'); using standard flashing').encode() in result.stderr,result.stderr
+    result=run(args,[('W','ultraflash:boot'),('R','FAIL')]+standard())
+    assert b'UltraFlash refused (remote failure); using standard flashing' in result.stderr,result.stderr
     for mode in ['0','off']:run(args,standard(),env={'HUAWEI_ULTRAFLASH':mode})
     # No automatic write retry after lost/malformed handshake or failed data/end.
     run(args,[('W','ultraflash:boot'),('E',b'')],1)

@@ -1,6 +1,6 @@
 # Maintainer: Redminote11tech
 pkgname=kirin-tool-linux
-pkgver=2.4.3
+pkgver=2.4.4
 pkgrel=1
 pkgdesc='Kirin Tool for Linux - experimental Kirin 9000 and native HiSilicon tools'
 arch=('x86_64')

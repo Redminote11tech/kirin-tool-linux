@@ -1,10 +1,17 @@
-# Kirin Tool Linux 2.4.3
+# Kirin Tool Linux 2.4.4
 
 October 11, 2026. Stable and main share one source tree; beta remains separate.
 The frozen Windows source reference remains 45440d47296ef4c250fc03730259dbeebb245ebc.
 No newer upstream source or new loader was imported. Preserve LICENSE and notices.
 
 ## Changes
+
+- 2.4.4 diagnostic correction: UltraFlash refusal now includes the exact remote
+  failure reason before existing standard-flash fallback. Hardware-free CLI tests
+  cover unsupported commands, policy refusal, partition lookup refusal and empty FAIL.
+  [Mate 40 Pro analysis](mate40-bootloader-analysis.md) records inspection of the
+  provided FASTBOOT/BL2/XLOADER containers and recovery GPT geometry. It does not
+  claim a decrypted bootloader or a validated new rescue map.
 
 - Kirin 9000 appears as Experimental in the chipset selector. Read Info, NVE SN,
   SN / PSID and experimental Reboot to USB Update remain available. Other device
@@ -51,7 +58,7 @@ AOSP features are catalogued, not claimed as newly ported.
 Arch/CachyOS:
 
 ```sh
-sudo pacman -U ./kirin-tool-linux-2.4.3-1-x86_64.pkg.tar.zst
+sudo pacman -U ./kirin-tool-linux-2.4.4-1-x86_64.pkg.tar.zst
 kirin-tool
 ```
 
@@ -61,8 +68,8 @@ same transaction. It includes Huawei udev rules and uses distribution libraries.
 Portable AppImage:
 
 ```sh
-chmod +x ./kirin-tool-linux-2.4.3-x86_64.AppImage
-./kirin-tool-linux-2.4.3-x86_64.AppImage
+chmod +x ./kirin-tool-linux-2.4.4-x86_64.AppImage
+./kirin-tool-linux-2.4.4-x86_64.AppImage
 ```
 
 Baseline x86-64 and glibc 2.31+, with .NET and libusb bundled. Host desktop/font,
