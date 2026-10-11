@@ -44,7 +44,7 @@ public class DialogService
     /// <summary>
     /// Show a simple message box with an OK button.
     /// </summary>
-    public async Task ShowMessageBox(string title, string message)
+    public async Task ShowMessageBox(string title, string message, bool showHeading = false)
     {
         var dialog = new Window
         {
@@ -80,6 +80,7 @@ public class DialogService
         // Wire the OK button
         var stack = (StackPanel)dialog.Content;
         ((Button)stack.Children[1]).Click += (_, _) => dialog.Close();
+        if (showHeading) stack.Children.Insert(0, new TextBlock { Text = title, FontSize = 18, FontWeight = FontWeight.SemiBold });
 
         await dialog.ShowDialog<bool?>(_owner);
     }

@@ -40,8 +40,8 @@
     "sha256": "a591aaa27091f76e125a95e61c0ecc69f9e7a29759bb0705a05e06ecd702540e"
   },
   "MainWindow.axaml.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug + candidate5 read-only query error reporting + candidate6 offline extractor navigation and cancellation on window close + candidate6 r3 navigation uses stable page Tags alongside icons (no device handlers changed) + portable AppImage read-only udev notice on Opened/Activated; device handlers unchanged",
-    "sha256": "c7a31f4fbadbb14d4b912b2cd3d97f1557d67f790b1236a4f5f04268689d1016"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug + candidate5 read-only query error reporting + candidate6 offline extractor navigation and cancellation on window close + candidate6 r3 navigation uses stable page Tags alongside icons (no device handlers changed) + portable AppImage read-only udev notice on Opened/Activated; device handlers unchanged + v2.4.3 reviewed Kirin9000 operation gates, experimental rescue image mapping/preflight, OEM version format parsing and flash failure details",
+    "sha256": "f8528a5460e140ef4dec70f48978348780ec8d6dbd8d8410e61864f6717d01bb"
   },
   "UI/ProcessDialogUapp.axaml.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Avalonia collection-binding initialization and completion-message fixes + candidate6 r2 additive offline extraction configuration/progress/finalization; legacy flashing methods unchanged",

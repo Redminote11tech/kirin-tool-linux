@@ -51,7 +51,7 @@ jobs:
           KIRIN_BUILD_COMMIT: ${{ github.sha }}
         run: |
           V="${GITHUB_REF_NAME#v}"
-          case "$V" in main|*"/"*) V="2.4.2-stable.3-portable.1" ;; esac
+          case "$V" in main|*"/"*) V="2.4.3" ;; esac
           ./packaging/build-appimage.sh publish-out "$V"
 
       - name: Upload AppImage
@@ -78,9 +78,9 @@ jobs:
           build=$(mktemp -d /home/builder/pkg-XXXX)
           cp packaging/PKGBUILD packaging/kirin-tool-linux.install "$build/"
           printf '%s\n' "$GITHUB_SHA" > BUILD-COMMIT
-          tar czf "$build/kirin-tool-linux-2.4.2.tar.gz" \
+          tar czf "$build/kirin-tool-linux-2.4.3.tar.gz" \
             --exclude .git --exclude bin --exclude obj --exclude .github \
-            --transform 's,^\.,kirin-tool-linux-2.4.2,' .
+            --transform 's,^\.,kirin-tool-linux-2.4.3,' .
           chown -R builder:builder "$build"
           su builder -c "cd $build && makepkg -f --noconfirm"
 

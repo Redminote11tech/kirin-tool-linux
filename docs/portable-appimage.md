@@ -1,6 +1,6 @@
 # Portable AppImage
 
-The portable.1 artifact replaces the CachyOS-specific stable.3 AppImage. Build in
+Version 2.4.3 retains the portable.1 build baseline. Build in
 Ubuntu 20.04 / glibc 2.31 with baseline x86-64 flags, not on the rolling-release
 host. No x86-64-v3/AVX2 requirement is introduced by the native client/USB bridge.
 .NET/Skia may select optional CPU optimizations at runtime. The self-contained
@@ -12,7 +12,7 @@ Build example inside a Ubuntu 20.04 container with .NET 8 SDK installed:
 ```sh
 apt-get update
 apt-get install -y build-essential pkg-config libusb-1.0-0-dev zlib1g-dev python3 curl binutils
-./packaging/build-appimage.sh /work/new-publish 2.4.2-stable.3-portable.1
+./packaging/build-appimage.sh /work/new-publish 2.4.3
 ```
 
 Supply APPIMAGETOOL and APPIMAGE_RUNTIME paths for offline assembly. The shared

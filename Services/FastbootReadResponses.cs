@@ -27,6 +27,34 @@ public static class FastbootReadResponses
         }
     }
 
+    public static string OemVersion(string output)
+    {
+        if (Lines(output).Any(line => line.Contains("FAILED", StringComparison.OrdinalIgnoreCase))) return "Unknown";
+        foreach (var line in Lines(output).Where(line => line.StartsWith("(bootloader)", StringComparison.Ordinal)))
+        {
+            var value = WithoutPrefix(line).Trim().TrimStart(':').Trim();
+            if (value.Length > 0 && !value.StartsWith("Error", StringComparison.OrdinalIgnoreCase)) return value;
+        }
+        return "Unknown";
+    }
+
+    public static IReadOnlyDictionary<string, string> Psid(ProcessResult result)
+    {
+        EnsureSuccess(result, "get-psid");
+        var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in Lines(result.Output).Select(WithoutPrefix))
+        {
+            var match = Regex.Match(line, @"^(SN|IMEI|IMEI1|MEID|PSID)\s*:\s*(\S+)\s*$", RegexOptions.IgnoreCase);
+            if (!match.Success) continue;
+            string key = match.Groups[1].Value.ToUpperInvariant(), value = match.Groups[2].Value;
+            if (values.TryGetValue(key, out string? existing) && existing != value)
+                throw new InvalidOperationException("Conflicting identifiers in get-psid response.");
+            values[key] = value;
+        }
+        if (values.Count == 0) throw new InvalidOperationException("The phone returned no recognised identifiers for get-psid.");
+        return values;
+    }
+
     public static string Variable(ProcessResult result, string variable)
     {
         EnsureSuccess(result, variable);

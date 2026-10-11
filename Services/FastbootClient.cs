@@ -93,6 +93,12 @@ namespace Kirin_Tool.Services
             return FastbootReadResponses.Variable(result, $"nve:{variable}");
         }
 
+        public async Task<IReadOnlyDictionary<string, string>> ReadPsidAsync()
+        {
+            var result = await ProcessRunner.RunAsync(_fastbootPath, new[] { "oem", "get-psid" }, timeoutSeconds: 10);
+            return FastbootReadResponses.Psid(result);
+        }
+
         public Task<ProcessResult> QueryVariableAsync(string variable) =>
             ProcessRunner.RunAsync(_fastbootPath, new[] { "getvar", variable }, timeoutSeconds: 10);
 

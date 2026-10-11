@@ -73,6 +73,7 @@
                                 <ComboBoxItem Content="Kirin 980 (hisi980)"/>
                                 <ComboBoxItem Content="Kirin 985 (hisi985)"/>
                                 <ComboBoxItem Content="Kirin 990 5G (hisi990)"/>
+                                <ComboBoxItem Content="Kirin 9000 (hisi9000) — Experimental"/>
                                 <ComboBoxItem Content="Kirin 710 (hisi710)"/>
                                 <ComboBoxItem Content="Kirin 710a (hisi710a)"/>
                                 <ComboBoxItem Content="Kirin 810 (hisi810)"/>
@@ -175,6 +176,13 @@
                                         <TextBlock x:Name="UdevCopyStatus" TextWrapping="Wrap" FontSize="12" Foreground="Black"/>
                                     </StackPanel>
                                 </Grid>
+                            </Border>
+
+                            <Border x:Name="Kirin9000Notice" Classes="notice" IsVisible="False">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Kirin 9000 — Experimental" FontWeight="SemiBold"/>
+                                    <TextBlock Text="Read-only information and experimental reboot to USB Update are available. Other device operations are unsupported. No Kirin 9000 VCOM loader is included." TextWrapping="Wrap"/>
+                                </StackPanel>
                             </Border>
 
                             <Expander IsExpanded="True" HorizontalAlignment="Stretch" Margin="0,0,0,32">
@@ -318,6 +326,7 @@
                                            Height="40"
                                            Margin="0,0,16,0"
                                            Click="ReadDeviceInfo_Click"/>
+                                    <Button Content="Read SN / PSID" Click="ReadPsid_Click" Width="140" Height="40" Margin="0,0,16,0"/>
                                 
                                 <Button Content="Reboot"
                                            
@@ -863,6 +872,8 @@
                                          Margin="0,0,0,16"
                                          IsExpanded="False">
                                 <StackPanel>
+                                    <TextBlock x:Name="Kirin9000RescueHint" IsVisible="False" Text="Experimental Kirin 9000: uses ERECOVERY, ERECOVERY_RAMDISK and ERECOVERY_VENDOR. Rescue destination mapping and successful writes remain unverified." TextWrapping="Wrap" Margin="0,8,0,12"/>
+
                                     <TextBlock Text="Dump partitions from device or flash images (requires unlocked fastboot)"
                                        FontSize="12"
                                        Opacity="0.7"
@@ -1153,7 +1164,7 @@
                                         </StackPanel>
 
                                         <Button Grid.Column="1"
-                                               Content="Read SN"
+                                               Content="Read NVE SN"
                                                
                                                Width="100"
                                                Height="40"

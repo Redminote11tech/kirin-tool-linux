@@ -1,66 +1,72 @@
-# Kirin Tool Linux 2.4.2-stable.3
+# Kirin Tool Linux 2.4.3
 
-October 10, 2026. Candidate 6 revision 3 is merged into stable at the maintainer’s
-request to reduce maintenance. Stable and main publish one source tree and build
-path; beta remains separate. Archived candidates and old packages retain rollback
-history. No newer upstream source was imported: the frozen BSL reference remains
-45440d47296ef4c250fc03730259dbeebb245ebc. Preserve LICENSE and notices.
+October 11, 2026. Stable and main share one source tree; beta remains separate.
+The frozen Windows source reference remains 45440d47296ef4c250fc03730259dbeebb245ebc.
+No newer upstream source or new loader was imported. Preserve LICENSE and notices.
 
-## Changes since the public stable.1 release
+## Changes
 
-- OEMInfo Convert validates untouched fields without crashing.
-- Linux COM1 option-driver modem-control adaptation, modal cable prompt ownership
-  and bounded tty rediscovery/reopen. The user validated this VCOM sequence on a
-  Mate 20 Pro / Kirin 980 using candidate 4; packet acceptance remains unchanged.
-- Offline UPDATE.APP extraction from Base, Cust and Preload with partition
-  selection and destination folder. Shared progress rows show saved images green,
-  failure/cancellation red and unattempted images neutral. Partial files are removed.
-- Vector navigation icons, bundled Inter and layout closer to the Windows UI.
-- Native OEM dispatch repair, named memory, memory ranges, UFS-eye uploads and
-  UltraFlash negotiation. Rejected capability probes fall back to standard flash;
-  transport errors abort without replay. HUAWEI_ULTRAFLASH=0 or off disables it.
-  See [native-windows-port.md](native-windows-port.md) for commands and limitations.
-- USB Update uses a small userspace libusb bridge for Huawei DBAdapter ff/13/23;
-  VCOM remains serial. No DKMS module is installed. See
-  [usb-update-userspace.md](usb-update-userspace.md) for protocol/transport scope.
-- Arch and AppImage use a shared fresh-publish script and ship native binaries,
-  licenses, docs and BUILD-COMMIT. AppImage includes libusb and its license;
-  host udev permissions must still be installed manually.
+- Kirin 9000 appears as Experimental in the chipset selector. Read Info, NVE SN,
+  SN / PSID and experimental Reboot to USB Update remain available. Other device
+  operations show a popup with heading **Notice** and **Unsupported for kirin 9000**.
+  Offline extraction and file tools remain available.
+- Kirin 9000 rescue preparation expects ERECOVERY, ERECOVERY_RAMDISK and
+  ERECOVERY_VENDOR. Missing required images prevent all image writes. The combined
+  ERECOVERY destination `rescue_recovery` is an experimental inference, not verified
+  on hardware or recovered from the signed device bootloader. Existing chips retain
+  their ERECOVERY_KERNEL mapping. There is no Kirin 9000 VCOM/factory loader.
+- Read SN / PSID sends `fastboot oem get-psid` and displays explicit returned fields.
+  NVE SN is a separate read. A device can reject either command; USB serial and IMEI
+  are never silently substituted for SN. This does not bypass firmware restrictions.
+- OEM version parsing accepts Qualcomm Huawei's colonless replies and Kirin's
+  leading-colon replies. Rescue progress displays the actual fastboot FAILED line,
+  including lock-state and partition-length errors.
+- A whole-binary static audit of both frozen Windows fastboot clients identifies
+  remaining host features. See [windows-fastboot-audit-v2.4.3.md](windows-fastboot-audit-v2.4.3.md).
+
+Retained: selected UPDATE.APP extraction with green/red progress rows, vector icons
+and Inter, native vendor memory/storage/UFS-eye uploads and UltraFlash negotiation,
+userspace USB Update transport and portable AppImage udev onboarding.
 
 ## Validation and limits
 
-Hardware-free tests cover extraction/byte integrity/>4-GiB offsets, navigation,
-progress/modal dialogs, USB stream behavior, discovery mocks, fastboot parsing,
-actual CLI dispatch and vendor wire sequencing. Verify the extracted artifacts
-against the fresh source build; release manifests identify each binary and hash.
+47 Kirin9000/PSID checks cover actual blocked UI handlers, popup heading/body,
+synthetic rescue archives, process argument dispatch, missing-image preflight and
+bootloader error presentation. Existing extractor, read parser, stable boundary,
+udev, USB Update, OEMInfo and VCOM dialog regression checks pass. Test clients are
+local stubs; no phone operations or host udev changes are part of release validation.
 
-No new physical USB test was performed for stable.3. Userspace USB Update timing,
-new memory/UFS-eye/UltraFlash operations and real partition dumps remain
-hardware-unvalidated. An empty/rejected NVE SN response remains unresolved.
-No new loader or Kirin 990 4G/9000 support is claimed. Linux implements selected
-vendor features, not all modern HiSilicon fastboot functionality. No Wine needed.
+Successful Kirin 9000 rescue writes and USB Update entry remain unverified. Local
+NOH logs showed rejected writes (`partition length get error`), not successful
+support. Host changes cannot make a locked/restricted phone accept a command.
+The release does not add Kirin 990 4G support or reuse a 5G loader for it.
 
-Stable retains the Windows positional SUPER merger, including potential block
-placement and stale-checksum defects on unsuitable inputs. Byte parity tests do
-not prove output geometry/checksum validity. Windows-style permissive response
-handling remains; strict AA ACK enforcement is not introduced. Managed partition
-dumps may delete an existing output before native invocation; use a new folder.
-
-Beta’s extent merger, stricter batch validation and changed write/failure policies
-are not merged. The stable label is a release channel, not universal device safety
-or hardware-validation certification. Do not perform phone operations as automated
-release tests. See [testing-checklist.md](testing-checklist.md).
+Stable retains the Windows positional SUPER merger and existing transport response
+policies; beta's extent merger and stricter batch policies are not merged.
+The modern Windows host SUPER generator, A/B/dynamic partitions and other audited
+AOSP features are catalogued, not claimed as newly ported.
 
 ## Install
 
-Arch/CachyOS: install the attached kirin-tool-linux-2.4.2-9-x86_64.pkg.tar.zst
-with pacman -U, close/reopen, then launch kirin-tool. This updates the stable package;
-the old unstable package is separate and can be removed after migration if desired.
+Arch/CachyOS:
 
-AppImage: chmod +x, then run kirin-tool-linux-2.4.2-stable.3-x86_64.AppImage.
-FUSE2 is required for mounting, or pass --appimage-extract-and-run. It was built
-and verified on CachyOS x86_64; compatibility with older distribution ABIs is not
-established. The host needs graphics libraries, libudev and appropriate USB rules.
-The image includes docs/51-kirin-tool-fastboot.rules; install it into
-/etc/udev/rules.d, reload rules and reconnect the phone. Neither artifact installs
-legacy kirin_usb_update kernel modules.
+```sh
+sudo pacman -U ./kirin-tool-linux-2.4.3-1-x86_64.pkg.tar.zst
+kirin-tool
+```
+
+The package conflicts/replaces kirin-tool-linux-unstable, allowing removal in the
+same transaction. It includes Huawei udev rules and uses distribution libraries.
+
+Portable AppImage:
+
+```sh
+chmod +x ./kirin-tool-linux-2.4.3-x86_64.AppImage
+./kirin-tool-linux-2.4.3-x86_64.AppImage
+```
+
+Baseline x86-64 and glibc 2.31+, with .NET and libusb bundled. Host desktop/font,
+ICU/OpenSSL requirements still apply. FUSE2 or `--appimage-extract-and-run` is needed.
+An **Apply udev rules** notice offers copyable commands when matching usable rules
+are missing; the app does not run sudo or install rules itself. See
+[portable-appimage.md](portable-appimage.md) for compatibility and checks.

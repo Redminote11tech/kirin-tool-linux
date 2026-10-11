@@ -238,6 +238,7 @@ namespace Kirin_Tool
 
         private async void DumpPartitions_Click(object sender, RoutedEventArgs e)
         {
+            if (!await AllowChipOperationAsync("dump-partitions")) return;
             if (!await _xmlFastbootClient.IsDeviceConnected())
             {
                 await ShowMessageBox("Device Not Found", "No device detected in fastboot mode. Please connect your device and try again.");
@@ -312,6 +313,7 @@ namespace Kirin_Tool
 
         private async void FlashFromXml_Click(object sender, RoutedEventArgs e)
         {
+            if (!await AllowChipOperationAsync("flash-xml")) return;
             if (!await _xmlFastbootClient.IsDeviceConnected())
             {
                 await ShowMessageBox("Device Not Found", "No device detected in fastboot mode. Please connect your device and try again.");
@@ -838,6 +840,7 @@ namespace Kirin_Tool
 
         private async void StartFullOtaButton_Click(object sender, RoutedEventArgs e)
         {
+            if (!await AllowChipOperationAsync("full-ota")) return;
             var otaFileSet = IsUsbUpdateSelected
                 ? new[] { BasePtableFile, CustPtableFile, PreloadPtableFile, BaseUpdateFile, CustUpdateFile, PreloadUpdateFile }
                 : new[] { BasePtableFile, BaseUpdateFile, CustUpdateFile, PreloadUpdateFile };
@@ -1298,6 +1301,7 @@ namespace Kirin_Tool
 
         private async Task ExecuteCommand(string command)
         {
+            if (!await AllowChipOperationAsync(command)) return;
             if (command != "unlock-fastboot" && command != "sw-testpoint-enter")
             {
                 if (!await _fastbootClient.IsDeviceConnected())
@@ -1783,7 +1787,8 @@ namespace Kirin_Tool
             string lockOutput = await _fastbootClient.OemCommandAsync("lock-state info");
             string fbLockState = ParseOemLine(lockOutput, "FB LockState:", "Unknown");
 
-            var rescuePartitions = new List<string> { "ERECOVERY_KERNEL", "ERECOVERY_RAMDISK", "ERECOVERY_VENDOR" };
+            var rescuePlan = RescuePartitionPlan.ForChip(GetSelectedCpu());
+            var rescuePartitions = rescuePlan.Select(entry => entry.Image).ToList();
             var partitionInfos = rescuePartitions.Select(p => new PartitionInfo { Name = p, Size = 0, FormattedSize = "" }).ToList();
             var progressDialog = new ProcessDialogUapp(partitionInfos, cancellationTokenSource);
             progressDialog.Title = "Reboot to USB Update Progress";
@@ -1834,6 +1839,18 @@ namespace Kirin_Tool
 
                 using (var updateApp = new UpdateApp(baseUpdatePath))
                 {
+                    if (GetSelectedCpu() == ChipCapabilities.Kirin9000)
+                    {
+                        var missing = rescuePartitions.Where(name => !updateApp.Partitions.Any(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase))).ToHashSet();
+                        if (missing.Count > 0)
+                        {
+                            for (int i = 0; i < rescuePartitions.Count; i++)
+                                if (missing.Contains(rescuePartitions[i])) progressDialog.CompletePartitionByIndex(i, false, "Not found in UPDATE.APP");
+                            progressDialog.SetOverallComplete(false, "Experimental Kirin 9000: required recovery images missing; no images flashed.");
+                            await dialogTask;
+                            return;
+                        }
+                    }
                     for (int i = 0; i < rescuePartitions.Count; i++)
                     {
                         string pName = rescuePartitions[i];
@@ -1851,13 +1868,7 @@ namespace Kirin_Tool
                         await updateApp.ExtractPartition(pInfo, imgPath);
 
                         progressDialog.UpdateCurrentPartitionByIndex(i, "Flashing...", 70);
-                        string flashCmd = (pName.ToLower()) switch
-                        {
-                            "erecovery_kernel" => "rescue_recovery_kernel",
-                            "erecovery_ramdisk" => "rescue_recovery_ramdisk",
-                            "erecovery_vendor" => "rescue_recovery_vendor",
-                            _ => pName.ToLower()
-                        };
+                        string flashCmd = rescuePlan[i].Target;
 
                         var flashResult = await _fastbootClient.FlashPartition(flashCmd, imgPath);
                         if (flashResult.IsSuccess)
@@ -1866,7 +1877,7 @@ namespace Kirin_Tool
                         }
                         else
                         {
-                            progressDialog.CompletePartitionByIndex(i, false, "Flash failed");
+                            progressDialog.CompletePartitionByIndex(i, false, FlashFailureDescription(flashResult.Output));
                             allSuccess = false;
                         }
                     }
@@ -2054,6 +2065,7 @@ namespace Kirin_Tool
 
         private async void BtnConvertOem_Click(object sender, RoutedEventArgs e)
         {
+            if (!await AllowChipOperationAsync("convert-oem")) return;
             string model = TxtDeviceModel.Text?.Trim() ?? string.Empty;
             string vendor = TxtVendor.Text?.Trim() ?? string.Empty;
             string selectedCpu = GetSelectedCpu();
@@ -2288,6 +2300,8 @@ namespace Kirin_Tool
         {
             UpdateOemInfoUI();
             UpdateSecurityUI();
+            Kirin9000Notice.IsVisible = GetSelectedCpu() == ChipCapabilities.Kirin9000;
+            Kirin9000RescueHint.IsVisible = GetSelectedCpu() == ChipCapabilities.Kirin9000;
             
             if (UseFastFlashLoaderSwitch != null)
             {
@@ -2318,7 +2332,7 @@ namespace Kirin_Tool
         private void UpdateSecurityUI()
         {
             string selectedCpu = GetSelectedCpu();
-            bool isSupported = selectedCpu == "hisi710" || selectedCpu == "hisi970" || selectedCpu == "hisi980" || selectedCpu == "hisi990";
+            bool isSupported = selectedCpu == "hisi710" || selectedCpu == "hisi970" || selectedCpu == "hisi980" || selectedCpu == "hisi990" || selectedCpu == ChipCapabilities.Kirin9000;
 
             if (UnlockBootloaderPanel != null)
             {
@@ -2545,29 +2559,11 @@ namespace Kirin_Tool
             return fallback;
         }
 
-        private string ParseOemVersion(string output)
-        {
-            if (string.IsNullOrEmpty(output)) return "Unknown";
-
-            var line = output.Split('\n', '\r')
-                             .Select(l => l.Trim())
-                             .FirstOrDefault(l => l.Contains("(bootloader)") && l.Contains(":") && !l.EndsWith("s") && !l.Contains("total time") && !l.Contains("Error"));
-            
-            if (line != null)
-            {
-                int colonIndex = line.LastIndexOf(':');
-                if (colonIndex != -1)
-                {
-                    string value = line.Substring(colonIndex + 1).Trim();
-                    return string.IsNullOrEmpty(value) ? "Unknown" : value;
-                }
-            }
-            
-            return "Unknown";
-        }
+        private string ParseOemVersion(string output) => FastbootReadResponses.OemVersion(output);
 
         private async void RebootDevice_Click(object sender, RoutedEventArgs e)
         {
+            if (!await AllowChipOperationAsync("reboot")) return;
             if (!await _fastbootClient.IsDeviceConnected())
             {
                 await ShowMessageBox("Device Not Found", "No device detected in fastboot mode. Please connect your device and try again.");
