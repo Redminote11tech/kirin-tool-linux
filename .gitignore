@@ -443,3 +443,5 @@ fastboot-src/tests/vendor-upload-test
 fastboot-src/tests/output/
 
 fastboot-src/tests/cli-fastboot
+
+fastboot-modern/.build/

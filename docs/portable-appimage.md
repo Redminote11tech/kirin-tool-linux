@@ -1,6 +1,6 @@
 # Portable AppImage
 
-Version 2.4.3 retains the portable.1 build baseline. Build in
+Version 2.4.5 retains the portable.1 build baseline. Build in
 Ubuntu 20.04 / glibc 2.31 with baseline x86-64 flags, not on the rolling-release
 host. No x86-64-v3/AVX2 requirement is introduced by the native client/USB bridge.
 .NET/Skia may select optional CPU optimizations at runtime. The self-contained
@@ -11,8 +11,8 @@ Build example inside a Ubuntu 20.04 container with .NET 8 SDK installed:
 
 ```sh
 apt-get update
-apt-get install -y build-essential pkg-config libusb-1.0-0-dev zlib1g-dev python3 curl binutils
-./packaging/build-appimage.sh /work/new-publish 2.4.3
+apt-get install -y build-essential gcc-10 g++-10 cmake ninja-build libprotobuf-dev protobuf-compiler libbrotli-dev liblz4-dev libpcre2-dev libzstd-dev pkg-config libusb-1.0-0-dev zlib1g-dev python3 curl binutils
+./packaging/build-appimage.sh /work/new-publish 2.4.5
 ```
 
 Supply APPIMAGETOOL and APPIMAGE_RUNTIME paths for offline assembly. The shared
@@ -45,3 +45,10 @@ Validation includes the actual copied clipboard text, shell syntax without
 execution, rule precedence/masking, visible/hidden UI states, old-glibc/limited-CPU
 launch checks and packaged UI regression tests. No new phone protocol validation
 is implied. Stable's existing flashing/USB validation limitations remain.
+
+The native fastboot engine uses pinned android-tools 35.0.2 AOSP sources plus
+our Huawei extensions, built with GCC 10 in this same glibc 2.31 container.
+C++/GCC runtime support is linked statically. Formatting helpers and their
+configuration sit beside fastboot. The complete original source archive,
+modifications, build instructions and dependency notices accompany the bundle
+in sources/ and licenses/, including GPL filesystem-helper sources.

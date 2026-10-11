@@ -1,6 +1,6 @@
 # Maintainer: Redminote11tech
 pkgname=kirin-tool-linux
-pkgver=2.4.4
+pkgver=2.4.5
 pkgrel=1
 pkgdesc='Kirin Tool for Linux - experimental Kirin 9000 and native HiSilicon tools'
 arch=('x86_64')
@@ -8,9 +8,9 @@ arch=('x86_64')
 conflicts=('kirin-tool-linux-unstable')
 replaces=('kirin-tool-linux-unstable')
 url='https://github.com/Redminote11tech/kirin-tool-linux'
-license=('custom:BSL-1.1' 'MIT' 'Apache-2.0')
+license=('custom:BSL-1.1' 'MIT' 'Apache-2.0' 'GPL-2.0-or-later' 'BSD-3-Clause')
 depends=('glibc' 'gcc-libs' 'fontconfig' 'freetype2' 'libx11' 'libice' 'libsm' 'openssl' 'zlib' 'icu' 'libusb')
-makedepends=('dotnet-sdk' 'gcc' 'make' 'pkgconf')
+makedepends=('dotnet-sdk' 'gcc' 'make' 'pkgconf' 'cmake' 'ninja' 'python' 'curl' 'protobuf' 'brotli' 'lz4' 'pcre2' 'zstd')
 options=('!strip' '!debug' '!lto')
 install=kirin-tool-linux.install
 optdepends=('android-tools: fallback fastboot if the bundled binary is removed')

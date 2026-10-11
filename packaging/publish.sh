@@ -14,8 +14,7 @@ export CFLAGS="${KIRIN_NATIVE_CFLAGS:--O2 -Wall}" LDFLAGS="${KIRIN_NATIVE_LDFLAG
 dotnet publish Kirin-Tool.csproj -c Release -r linux-x64 --self-contained true \
   -p:PublishTrimmed=false -p:DebugType=none -p:DebugSymbols=false -p:NuGetAudit=false \
   -p:SourceRevisionId="$COMMIT" -o "$OUT"
-make -C fastboot-src
-install -Dm755 fastboot-src/fastboot "$OUT/fastboot/fastboot"
+"$ROOT/fastboot-modern/build.sh" "$OUT"
 for probe in UsbUpdateProbe VcomOpenProbe; do
   TEMP="$(mktemp -d)"
   dotnet publish "tests/$probe/$probe.csproj" -c Release -r linux-x64 --self-contained false \
@@ -27,6 +26,6 @@ mkdir -p "$OUT/licenses" "$OUT/docs"
 cp LICENSE "$OUT/licenses/LICENSE"
 cp native/usb-update/LICENSE "$OUT/licenses/LICENSE.usb-bridge"
 cp fastboot-src/NOTICE "$OUT/licenses/NOTICE.fastboot-src"
-cp docs/{stable-release,testing-checklist,usb-update-userspace,partition-extractor,native-windows-port,portable-appimage,windows-fastboot-audit-v2.4.3,mate40-bootloader-analysis}.md "$OUT/docs/"
+cp docs/{stable-release,testing-checklist,usb-update-userspace,partition-extractor,native-windows-port,portable-appimage,windows-fastboot-audit-v2.4.3,native-fastboot-parity-v2.4.5,mate40-bootloader-analysis}.md "$OUT/docs/"
 cp packaging/51-kirin-tool-fastboot.rules "$OUT/docs/"
 printf '%s\n' "$COMMIT" > "$OUT/BUILD-COMMIT"

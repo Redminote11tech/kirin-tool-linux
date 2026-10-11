@@ -67,9 +67,8 @@ namespace Kirin_Tool.Services
                 return Path.Combine(AppContext.BaseDirectory, "fastboot", "fastboot.exe");
             }
 
-            // Linux releases use the distro-provided android-tools package. Prefer a
-            // bundled binary when one is intentionally shipped, but do not point at a
-            // nonexistent app-local path in packages that do not include one.
+            // Linux releases bundle the native Huawei client. Keep the system
+            // fallback for manually built app directories without that binary.
             string bundledPath = Path.Combine(AppContext.BaseDirectory, "fastboot", "fastboot");
             if (File.Exists(bundledPath))
             {

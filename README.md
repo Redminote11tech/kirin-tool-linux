@@ -24,7 +24,7 @@ Original loader support covers Kirin 620–990 5G (excluding 990 4G). Version 2.
 
 - Linux x86_64
 - **No `android-tools` needed** — a Huawei-capable `fastboot` is bundled with the package
-  (built from AOSP with OEM dump/upload-to-file support; see `fastboot-src/PATCHES.md`).
+  (modern AOSP engine with Huawei dump/upload and UltraFlash; see `fastboot-modern/README.md`).
   The system `fastboot` from `android-tools` is used only as a fallback if the bundled
   binary is removed.
 - udev permissions to access USB devices. The pacman package installs the rules
@@ -43,18 +43,18 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 
 ```bash
 makepkg -f
-sudo pacman -U kirin-tool-linux-2.4.4-1-x86_64.pkg.tar.zst
+sudo pacman -U kirin-tool-linux-2.4.5-1-x86_64.pkg.tar.zst
 ```
 
 Then launch `kirin-tool` from your application menu or a terminal.
 
 ### AppImage (Linux x86_64)
 
-Build it from this repo (needs `dotnet-sdk` 8 + `gcc`/`make`, no root/FUSE):
+Build it from this repo (needs `dotnet-sdk` 8, GCC 10+, CMake/Ninja and native development dependencies, no root/FUSE):
 
 ```bash
-./packaging/build-appimage.sh publish-out 2.4.4
-./kirin-tool-linux-2.4.4-x86_64.AppImage
+./packaging/build-appimage.sh publish-out 2.4.5
+./kirin-tool-linux-2.4.5-x86_64.AppImage
 ```
 
 CI also produces AppImage artifacts on every tag. Fastboot invocation logs
@@ -67,7 +67,7 @@ Arch/CachyOS install it once with `sudo pacman -S fuse2`, or skip the
 install entirely by running:
 
 ```bash
-./kirin-tool-linux-2.4.4-x86_64.AppImage --appimage-extract-and-run
+./kirin-tool-linux-2.4.5-x86_64.AppImage --appimage-extract-and-run
 ```
 
 ### From source
@@ -155,3 +155,6 @@ See the release scope for hardware validation limits. No Kirin 990 4G or Kirin
 Kirin 9000 experimental capabilities, explicit `oem get-psid` reads, Huawei OEM version parsing and actual rescue flash error details. See [release notes](docs/stable-release.md) and the [whole-binary Windows fastboot audit](docs/windows-fastboot-audit-v2.4.3.md).
 
 Version 2.4.4 preserves the exact UltraFlash rejection before standard-flash fallback. See [Mate 40 Pro bootloader inspection](docs/mate40-bootloader-analysis.md).
+
+Version 2.4.5 bundles the modern native fastboot engine and filesystem helpers.
+See [host functionality and validation](docs/native-fastboot-parity-v2.4.5.md).

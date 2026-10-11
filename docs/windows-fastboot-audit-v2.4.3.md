@@ -31,6 +31,9 @@ static coverage, not correctness or tested behavior. Decompiled function boundar
 C++ types can be imperfect, especially across no-return error paths. Assembly and
 COFF entries were used to distinguish adjacent OEM and wipe-super routines.
 
+The feature table below records 2.4.3. For the modern packaged engine added in
+2.4.5, see [current parity and validation](native-fastboot-parity-v2.4.5.md).
+
 ## Feature comparison
 
 | Recovered behavior | Current Linux behavior |

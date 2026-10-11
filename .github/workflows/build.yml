@@ -17,10 +17,13 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Install native dependencies
-        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev pkg-config
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev pkg-config cmake ninja-build libprotobuf-dev protobuf-compiler libbrotli-dev liblz4-dev libpcre2-dev libzstd-dev libgtest-dev libgmock-dev
 
       - name: Publish app and native components
         run: ./packaging/publish.sh publish-out
+
+      - name: Native fastboot hardware-free parity tests
+        run: ./fastboot-modern/test.sh
 
       - name: Smoke test
         run: test -x publish-out/Kirin-Tool && test -f publish-out/fastboot/payload
@@ -38,7 +41,7 @@ jobs:
       image: ubuntu:20.04
     steps:
       - name: Install build dependencies
-        run: apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential pkg-config libusb-1.0-0-dev zlib1g-dev python3 curl binutils ca-certificates git libicu66 libssl1.1
+        run: apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential gcc-10 g++-10 pkg-config cmake ninja-build libprotobuf-dev protobuf-compiler libbrotli-dev liblz4-dev libpcre2-dev libzstd-dev libusb-1.0-0-dev zlib1g-dev python3 curl binutils ca-certificates git libicu66 libssl1.1
 
       - uses: actions/checkout@v4
 
@@ -51,7 +54,7 @@ jobs:
           KIRIN_BUILD_COMMIT: ${{ github.sha }}
         run: |
           V="${GITHUB_REF_NAME#v}"
-          case "$V" in main|*"/"*) V="2.4.4" ;; esac
+          case "$V" in main|*"/"*) V="2.4.5" ;; esac
           ./packaging/build-appimage.sh publish-out "$V"
 
       - name: Upload AppImage
@@ -68,7 +71,7 @@ jobs:
     steps:
       - name: Install toolchain
         run: |
-          pacman -Syu --noconfirm git dotnet-sdk libusb pkgconf fontconfig freetype2 libx11 libice libsm openssl zlib icu
+          pacman -Syu --noconfirm git dotnet-sdk libusb pkgconf fontconfig freetype2 libx11 libice libsm openssl zlib icu cmake ninja python curl protobuf brotli lz4 pcre2 zstd
 
       - uses: actions/checkout@v4
 
@@ -78,9 +81,9 @@ jobs:
           build=$(mktemp -d /home/builder/pkg-XXXX)
           cp packaging/PKGBUILD packaging/kirin-tool-linux.install "$build/"
           printf '%s\n' "$GITHUB_SHA" > BUILD-COMMIT
-          tar czf "$build/kirin-tool-linux-2.4.4.tar.gz" \
-            --exclude .git --exclude bin --exclude obj --exclude .github \
-            --transform 's,^\.,kirin-tool-linux-2.4.4,' .
+          tar czf "$build/kirin-tool-linux-2.4.5.tar.gz" \
+            --exclude .git --exclude bin --exclude obj --exclude .github --exclude fastboot-modern/.build \
+            --transform 's,^\.,kirin-tool-linux-2.4.5,' .
           chown -R builder:builder "$build"
           su builder -c "cd $build && makepkg -f --noconfirm"
 

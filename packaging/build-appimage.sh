@@ -4,7 +4,7 @@
 # See docs/portable-appimage.md. Never copy optimized host libraries into the image.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="${2:-2.4.4}"
+VERSION="${2:-2.4.5}"
 PUBLISH_DIR="$(realpath -m "${1:-$ROOT/publish-out}")"
 HOST_GLIBC="$(getconf GNU_LIBC_VERSION | awk '{print $2}')"
 if [[ "$(printf '%s\n' "$HOST_GLIBC" 2.31 | sort -V | tail -n1)" != 2.31 ]]; then
@@ -13,7 +13,7 @@ if [[ "$(printf '%s\n' "$HOST_GLIBC" 2.31 | sort -V | tail -n1)" != 2.31 ]]; the
 fi
 export KIRIN_NATIVE_CFLAGS='-O2 -Wall -march=x86-64 -mtune=generic'
 export KIRIN_NATIVE_LDFLAGS=''
-make -C "$ROOT/fastboot-src" clean
+export CC="${CC:-gcc-10}" CXX="${CXX:-g++-10}"
 make -C "$ROOT/native/usb-update" clean
 "$ROOT/packaging/publish.sh" "$PUBLISH_DIR"
 STAGE="$(mktemp -d)"

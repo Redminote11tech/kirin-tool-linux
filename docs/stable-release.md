@@ -1,10 +1,19 @@
-# Kirin Tool Linux 2.4.4
+# Kirin Tool Linux 2.4.5
 
 October 11, 2026. Stable and main share one source tree; beta remains separate.
 The frozen Windows source reference remains 45440d47296ef4c250fc03730259dbeebb245ebc.
-No newer upstream source or new loader was imported. Preserve LICENSE and notices.
+No newer Windows Kirin GUI source or new loader was imported. Preserve LICENSE and notices.
 
 ## Changes
+
+- 2.4.5 replaces the packaged older fastboot engine with pinned modern AOSP
+  sources and independently reconstructed Huawei extensions. It includes staging,
+  range fetch, slots, fastbootd, logical/GSI/snapshot commands, ZIP/image plans,
+  liblp, boot-header/vbmeta support, TCP/UDP and bundled format helpers.
+  Explicit getvar refusals exit nonzero; failed staged/fetch transfers preserve
+  existing output files. The UI remains unchanged. See the
+  [parity and validation report](native-fastboot-parity-v2.4.5.md) for tested paths
+  and remaining limits. This does not override Kirin 9000 firmware restrictions.
 
 - 2.4.4 diagnostic correction: UltraFlash refusal now includes the exact remote
   failure reason before existing standard-flash fallback. Hardware-free CLI tests
@@ -58,7 +67,7 @@ AOSP features are catalogued, not claimed as newly ported.
 Arch/CachyOS:
 
 ```sh
-sudo pacman -U ./kirin-tool-linux-2.4.4-1-x86_64.pkg.tar.zst
+sudo pacman -U ./kirin-tool-linux-2.4.5-1-x86_64.pkg.tar.zst
 kirin-tool
 ```
 
@@ -68,8 +77,8 @@ same transaction. It includes Huawei udev rules and uses distribution libraries.
 Portable AppImage:
 
 ```sh
-chmod +x ./kirin-tool-linux-2.4.4-x86_64.AppImage
-./kirin-tool-linux-2.4.4-x86_64.AppImage
+chmod +x ./kirin-tool-linux-2.4.5-x86_64.AppImage
+./kirin-tool-linux-2.4.5-x86_64.AppImage
 ```
 
 Baseline x86-64 and glibc 2.31+, with .NET and libusb bundled. Host desktop/font,
