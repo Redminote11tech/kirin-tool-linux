@@ -11,7 +11,7 @@ Build example inside a Ubuntu 20.04 container with .NET 8 SDK installed:
 
 ```sh
 apt-get update
-apt-get install -y build-essential gcc-10 g++-10 cmake ninja-build libprotobuf-dev protobuf-compiler libbrotli-dev liblz4-dev libpcre2-dev libzstd-dev pkg-config libusb-1.0-0-dev zlib1g-dev python3 curl binutils
+apt-get install -y build-essential gcc-10 g++-10 cmake ninja-build libprotobuf-dev protobuf-compiler libbrotli-dev liblz4-dev libpcre2-dev libzstd-dev libgtest-dev pkg-config libusb-1.0-0-dev zlib1g-dev python3 curl binutils
 ./packaging/build-appimage.sh /work/new-publish 2.4.5
 ```
 

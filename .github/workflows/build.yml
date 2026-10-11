@@ -71,7 +71,7 @@ jobs:
     steps:
       - name: Install toolchain
         run: |
-          pacman -Syu --noconfirm git dotnet-sdk libusb pkgconf fontconfig freetype2 libx11 libice libsm openssl zlib icu cmake ninja python curl protobuf brotli lz4 pcre2 zstd
+          pacman -Syu --noconfirm git dotnet-sdk libusb pkgconf fontconfig freetype2 libx11 libice libsm openssl zlib icu cmake ninja python curl protobuf brotli lz4 pcre2 zstd gtest
 
       - uses: actions/checkout@v4
 

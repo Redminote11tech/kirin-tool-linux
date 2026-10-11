@@ -13,7 +13,7 @@ The archive contains AOSP components and an independent CMake build system; it i
 not a proprietary Windows binary or a new import of the upstream Kirin GUI.
 
 Build prerequisites: GCC 10 or newer with C++20, CMake, Ninja, Python 3, curl,
-pkg-config, zlib, protobuf, brotli, lz4, pcre2 and zstd development packages.
+Google Test headers (also required by production libziparchive), pkg-config, zlib, protobuf, brotli, lz4, pcre2 and zstd development packages.
 
 ```sh
 ./fastboot-modern/build.sh /tmp/new-kirin-native-bundle
