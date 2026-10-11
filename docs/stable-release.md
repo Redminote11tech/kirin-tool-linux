@@ -59,8 +59,9 @@ The release does not add Kirin 990 4G support or reuse a 5G loader for it.
 
 Stable retains the Windows positional SUPER merger and existing transport response
 policies; beta's extent merger and stricter batch policies are not merged.
-The modern Windows host SUPER generator, A/B/dynamic partitions and other audited
-AOSP features are catalogued, not claimed as newly ported.
+Version 2.4.5 adds modern AOSP host workflows, including slots, logical partitions
+and liblp super-image handling, to the bundled native CLI. This does not replace
+the existing GUI SUPER merger or establish hardware parity; see the coverage report.
 
 ## Install
 
