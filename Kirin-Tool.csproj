@@ -8,9 +8,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>x64</Platforms>
     <Product>Kirin Tool for Linux</Product>
-    <Version>2.4.5</Version>
-    <FileVersion>2.4.5</FileVersion>
-    <InformationalVersion>2.4.5</InformationalVersion>
+    <Version>2.4.6</Version>
+    <FileVersion>2.4.6</FileVersion>
+    <InformationalVersion>2.4.6</InformationalVersion>
     <ApplicationIcon>logo.ico</ApplicationIcon>
   </PropertyGroup>
 

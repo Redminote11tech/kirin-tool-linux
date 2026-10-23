@@ -21,8 +21,10 @@
 <Window x:Class="Kirin_Tool.MainWindow"
                  xmlns="https://github.com/avaloniaui"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:ui="clr-namespace:Kirin_Tool.UI"
                  Title="Kirin Tool for Linux" Height="700" Width="1000"
-                 WindowStartupLocation="CenterScreen" Background="#FAFAFA">
+                 WindowStartupLocation="CenterScreen" Background="#FAFAFA"
+                 SystemDecorations="BorderOnly" MinWidth="1000" MinHeight="700">
 
     <Window.Styles>
         <Style Selector="Border.notice">
@@ -31,7 +33,7 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="4"/>
             <Setter Property="Padding" Value="16,12"/>
-            <Setter Property="Margin" Value="0,0,0,16"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
         </Style>
     </Window.Styles>
 
@@ -41,7 +43,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Height="48"><TextBlock Text="Kirin Tool for Linux" Margin="32,0" VerticalAlignment="Center" FontSize="12" FontWeight="Normal"/></Border>
+        <ui:WindowCaption Grid.Row="0"/>
 
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
@@ -85,7 +87,7 @@
                         <ListBox x:Name="NavigationListBox"
                               Grid.Row="1"
                               Width="320"
-                              Margin="0,8,0,0">
+                              Margin="0,24,0,0">
 
                                 <ListBoxItem x:Name="WelcomeItem" Tag="Welcome" Classes="navigation" AutomationProperties.Name="Welcome">
                                     <Grid ColumnDefinitions="24,*">
@@ -152,7 +154,7 @@
                     <Grid x:Name="ContentContainer">
 
                         <StackPanel x:Name="WelcomePage" Margin="40,32,40,32">
-                            <TextBlock Text="Welcome to Kirin Tool for Linux"
+                            <TextBlock Text="Welcome to Kirin-Tool"
                                   FontSize="32" 
                                   FontWeight="Light"
                                   Margin="0,0,0,16"/>
@@ -185,13 +187,8 @@
                                 </StackPanel>
                             </Border>
 
-                            <Expander IsExpanded="True" HorizontalAlignment="Stretch" Margin="0,0,0,32">
-                                <Expander.Header>
-                                    <StackPanel Orientation="Horizontal" Spacing="12" Height="32">
-                                        <Path Data="M3,10 L12,3 L21,10 M5,9 L5,21 L10,21 L10,14 L14,14 L14,21 L19,21 L19,9" Stroke="#404040" StrokeThickness="1.5" Width="20" Height="20" Stretch="Uniform"/>
-                                        <TextBlock Text="Quick Start Guide" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Expander.Header>
+                            <ui:WindowsExpander Header="Quick Start Guide" IsExpanded="True" HorizontalAlignment="Stretch" Margin="0,0,0,32">
+
                                 <StackPanel Spacing="0">
                                     <Border Background="White" BorderBrush="#E5E5E5" BorderThickness="1" CornerRadius="4" Padding="14,12" MinHeight="56">
                                         <Grid ColumnDefinitions="210,*">
@@ -212,7 +209,7 @@
                                         </Grid>
                                     </Border>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
 
                             <Border Classes="notice"><Grid ColumnDefinitions="20,*"><Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,6 L12,13 M12,16 L12,17" Stroke="#A56500" StrokeThickness="1.6" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Top" Margin="0,4,0,0"/><StackPanel Grid.Column="1" Margin="10,0,0,0"><TextBlock Text="Important Notice" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="We are not responsible for any kind of damage you do with this tool. Use it at your own risk." TextWrapping="Wrap" Foreground="Black"/></StackPanel></Grid></Border>
 
@@ -231,96 +228,72 @@
                                    Opacity="0.7"
                                    Margin="0,0,0,32"/>
 
-                            <Expander x:Name="DeviceInfoExpander"
+                            <ui:WindowsExpander x:Name="DeviceInfoExpander"
                                          Header="Information"
                                          
                                          Margin="0,0,0,4"
                                          IsExpanded="False">
                                 <StackPanel>
-                                    <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="0,0,0,1" Padding="0,8,0,8" Margin="0,0,0,4">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="FB Lock" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock x:Name="InfoFbLock" 
+                                    <ui:WindowsCard Header="FB Lock">
+                                        <TextBlock x:Name="InfoFbLock"
                                                  Text="Not Read"
                                                  FontWeight="SemiBold"
-                                                 Opacity="0.7"/>
-                    </StackPanel>
-                </Border>
+                                                 Foreground="#666666" TextWrapping="Wrap" />
+                                    </ui:WindowsCard>
 
-                                    <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="0,0,0,1" Padding="0,8,0,8" Margin="0,0,0,4">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="User Lock" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock x:Name="InfoUserLock" 
+                                    <ui:WindowsCard Header="User Lock">
+                                        <TextBlock x:Name="InfoUserLock"
                                                  Text="Not Read"
                                                  FontWeight="SemiBold"
-                                                 Opacity="0.7"/>
-                    </StackPanel>
-                </Border>
+                                                 Foreground="#666666" TextWrapping="Wrap" />
+                                    </ui:WindowsCard>
 
-                                    <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="0,0,0,1" Padding="0,8,0,8" Margin="0,0,0,4">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Device Model" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock x:Name="InfoDeviceModel" 
+                                    <ui:WindowsCard Header="Device Model">
+                                        <TextBlock x:Name="InfoDeviceModel"
                                                  Text="Not Read"
                                                  FontWeight="SemiBold"
-                                                 Opacity="0.7"/>
-                    </StackPanel>
-                </Border>
+                                                 Foreground="#666666" TextWrapping="Wrap" />
+                                    </ui:WindowsCard>
                                     
-                                    <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="0,0,0,1" Padding="0,8,0,8" Margin="0,0,0,4">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Vendor / Country" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock x:Name="InfoVendorCountry" 
+                                    <ui:WindowsCard Header="Vendor / Country">
+                                        <TextBlock x:Name="InfoVendorCountry"
                                                  Text="Not Read"
                                                  FontWeight="SemiBold"
-                                                 Opacity="0.7"/>
-                    </StackPanel>
-                </Border>
+                                                 Foreground="#666666" TextWrapping="Wrap" />
+                                    </ui:WindowsCard>
 
-                                    <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="0,0,0,1" Padding="0,8,0,8" Margin="0,0,0,4">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Build Number" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock x:Name="InfoBuildNumber" 
+                                    <ui:WindowsCard Header="Build Number">
+                                        <TextBlock x:Name="InfoBuildNumber"
                                                  Text="Not Read"
                                                  FontWeight="SemiBold"
-                                                 Opacity="0.7"/>
-                    </StackPanel>
-                </Border>
+                                                 Foreground="#666666" TextWrapping="Wrap" />
+                                    </ui:WindowsCard>
 
-                                    <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="0,0,0,1" Padding="0,8,0,8" Margin="0,0,0,4">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Base Version" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock x:Name="InfoBaseVersion" 
+                                    <ui:WindowsCard Header="Base Version">
+                                        <TextBlock x:Name="InfoBaseVersion"
                                                  Text="Not Read"
                                                  FontWeight="SemiBold"
-                                                 Opacity="0.7"/>
-                    </StackPanel>
-                </Border>
+                                                 Foreground="#666666" TextWrapping="Wrap" />
+                                    </ui:WindowsCard>
 
-                                    <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="0,0,0,1" Padding="0,8,0,8" Margin="0,0,0,4">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Custom Version" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock x:Name="InfoCustomVersion" 
+                                    <ui:WindowsCard Header="Custom Version">
+                                        <TextBlock x:Name="InfoCustomVersion"
                                                  Text="Not Read"
                                                  FontWeight="SemiBold"
-                                                 Opacity="0.7"/>
-                    </StackPanel>
-                </Border>
+                                                 Foreground="#666666" TextWrapping="Wrap" />
+                                    </ui:WindowsCard>
 
-                                    <Border BorderBrush="{DynamicResource SystemControlBackgroundBaseLowBrush}" BorderThickness="0,0,0,1" Padding="0,8,0,8" Margin="0,0,0,4">
-                    <StackPanel Spacing="4">
-                        <TextBlock Text="Preload Version" FontWeight="SemiBold" FontSize="13"/>
-                        <TextBlock x:Name="InfoPreloadVersion" 
+                                    <ui:WindowsCard Header="Preload Version">
+                                        <TextBlock x:Name="InfoPreloadVersion"
                                                  Text="Not Read"
                                                  FontWeight="SemiBold"
-                                                 Opacity="0.7"/>
-                    </StackPanel>
-                </Border>
+                                                 Foreground="#666666" TextWrapping="Wrap" />
+                                    </ui:WindowsCard>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
 
                             <StackPanel Orientation="Horizontal" Margin="0,24,0,0">
-                                <Button Content="Read Info"
+                                <Button Classes="accent" Content="Read Info"
                                            
                                            Width="140"
                                            Height="40"
@@ -347,7 +320,7 @@
                                   Opacity="0.7"
                                   Margin="0,0,0,32"/>
 
-                            <Expander Header="Device Operations"
+                            <ui:WindowsExpander Header="Device Operations"
                                         
                                         Margin="0,0,0,4"
                                         IsExpanded="True">
@@ -372,7 +345,7 @@
                                                    Margin="0,16,0,0" />
                                         </StackPanel>
 
-                                        <Button Grid.Column="1"
+                                        <Button Classes="accent" Grid.Column="1"
                                                Content="Unlock"
                                                Width="100"
                                                Height="40"
@@ -382,9 +355,9 @@
                                                Click="OperationButton_Click"/>
                                     </Grid>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
 
-                            <Expander Header="Software Testpoint"
+                            <ui:WindowsExpander Header="Software Testpoint"
                                          
                                          Margin="0,0,0,16"
                                          IsExpanded="False">
@@ -422,7 +395,7 @@
                                     </Grid>
 
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <Button Content="Enter"
+                                        <Button Classes="accent" Content="Enter"
                                                Width="100"
                                                Height="40"
                                                Margin="0,0,8,0"
@@ -435,7 +408,7 @@
                                                Click="OperationButton_Click"/>
                                     </StackPanel>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
                         </StackPanel>
 
                         <StackPanel x:Name="FlashPage" Margin="40,32,40,32" IsVisible="False">
@@ -449,7 +422,7 @@
                                   Opacity="0.7"
                                   Margin="0,0,0,32"/>
 
-                            <Expander Header="Full OTA Flash"
+                            <ui:WindowsExpander Header="Full OTA Flash"
                                          
                                          Margin="0,0,0,16"
                                          IsExpanded="True">
@@ -776,9 +749,9 @@
                                         </Grid>
                                     </Border>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
 
-                            <Expander Header="Enable Downgrade"
+                            <ui:WindowsExpander Header="Enable Downgrade"
                                          
                                          Margin="0,0,0,16"
                                          IsExpanded="False">
@@ -800,7 +773,7 @@
                                                    Opacity="0.7"/>
                                         </StackPanel>
 
-                                        <Button Grid.Column="1"
+                                        <Button Classes="accent" Grid.Column="1"
                                                Content="Enable"
                                                
                                                Width="120"
@@ -812,9 +785,9 @@
                                                Click="OperationButton_Click"/>
                                     </Grid>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
 
-                            <Expander Header="Reboot to USB Update"
+                            <ui:WindowsExpander Header="Reboot to USB Update"
                                          
                                          Margin="0,0,0,16"
                                          IsExpanded="False">
@@ -856,7 +829,7 @@
                                                IsEnabled="{Binding UsbUpdateFile.HasFile, Mode=OneWay}"/>
                                     </Grid>
 
-                                    <Button Content="Reboot"
+                                    <Button Classes="accent" Content="Reboot"
                                            
                                            Width="140"
                                            Height="40"
@@ -865,9 +838,9 @@
                                            Tag="reboot-usb-update"
                                            Click="OperationButton_Click"/>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
 
-                            <Expander Header="Fastboot Flasher"
+                            <ui:WindowsExpander Header="Fastboot Flasher"
                                          
                                          Margin="0,0,0,16"
                                          IsExpanded="False">
@@ -919,14 +892,14 @@
                                                Opacity="0.7"/>
                                         </StackPanel>
 
-                                        <Button Grid.Column="1"
+                                        <Button Classes="accent" Grid.Column="1"
                                            Content="Flash"
                                            Width="140"
                                            Height="40"
                                            Click="FlashFromXml_Click"/>
                                     </Grid>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
 
                         </StackPanel>
 
@@ -941,7 +914,7 @@
                                   Opacity="0.7"
                                   Margin="0,0,0,32"/>
 
-                            <Expander Header="Security Bypass"
+                            <ui:WindowsExpander Header="Security Bypass"
                                         
                                         Margin="0,0,0,4"
                                         IsExpanded="True">
@@ -962,7 +935,7 @@
                                                    Opacity="0.7"/>
                                         </StackPanel>
 
-                                        <Button Grid.Column="1"
+                                        <Button Classes="caution" Grid.Column="1"
                                                Content="Remove FRP"
                                                Width="100"
                                                Height="40"
@@ -972,9 +945,9 @@
                                                Click="OperationButton_Click"/>
                                     </Grid>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
 
-                            <Expander Header="Unlocking"
+                            <ui:WindowsExpander Header="Unlocking"
                                         
                                         Margin="0,16,0,4"
                                         IsExpanded="True"
@@ -997,7 +970,7 @@
                                                    Opacity="0.7"/>
                                         </StackPanel>
 
-                                        <Button Grid.Column="1"
+                                        <Button Classes="accent" Grid.Column="1"
                                                Content="Unlock"
                                                Width="100"
                                                Height="40"
@@ -1007,13 +980,13 @@
                                                Click="OperationButton_Click"/>
                                     </Grid>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
                         </StackPanel>
 
                         <StackPanel x:Name="ExtractorPage" Margin="40,32,40,32" IsVisible="False">
                             <TextBlock Text="Extractor Tools" FontSize="28" FontWeight="SemiBold" Margin="0,0,0,8"/>
                             <TextBlock Text="Extract partitions from a Base, Cust or Preload UPDATE.APP" FontSize="14" Opacity="0.7" Margin="0,0,0,16" TextWrapping="Wrap"/>
-                            <Expander Header="UPDATE.APP Partition Extractor" IsExpanded="True">
+                            <ui:WindowsExpander Header="UPDATE.APP Partition Extractor" IsExpanded="True">
                                 <StackPanel Spacing="8" Margin="0,8,0,0">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <Button x:Name="ExtractorStartButton" Content="Extract Selected" Click="StartExtraction_Click" IsEnabled="False"/>
@@ -1057,7 +1030,7 @@
                                         </Border>
                                     </StackPanel>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
                         </StackPanel>
 
                         <StackPanel x:Name="OEMInfoPage" Margin="40,32,40,32" IsVisible="False">
@@ -1071,7 +1044,7 @@
                                   Opacity="0.7"
                                   Margin="0,0,0,32"/>
 
-                            <Expander Header="OEMInfo Converter"
+                            <ui:WindowsExpander Header="OEMInfo Converter"
                                         
                                         Margin="0,0,0,4"
                                         IsExpanded="True">
@@ -1114,7 +1087,7 @@
                                         </StackPanel>
                                     </StackPanel>
 
-                                    <Button Grid.Column="1"
+                                    <Button Classes="accent" Grid.Column="1"
                                            Content="Convert"
                                            Width="100"
                                            Height="40"
@@ -1123,7 +1096,7 @@
                                            x:Name="BtnConvertOem"
                                            Click="BtnConvertOem_Click"/>
                                </Grid>
-                            </Expander>
+                            </ui:WindowsExpander>
                         </StackPanel>
 
                         <StackPanel x:Name="NVMePage" Margin="40,32,40,32" IsVisible="False">
@@ -1137,7 +1110,7 @@
                                   Opacity="0.7"
                                   Margin="0,0,0,32"/>
 
-                            <Expander Header="Serial Number Management"
+                            <ui:WindowsExpander Header="Serial Number Management"
                                         
                                         Margin="0,0,0,4"
                                         IsExpanded="True">
@@ -1195,7 +1168,7 @@
                                                     HorizontalAlignment="Left"/>
                                         </StackPanel>
 
-                                        <Button Grid.Column="1"
+                                        <Button Classes="accent" Grid.Column="1"
                                                Content="Write SN"
                                                Width="100"
                                                Height="40"
@@ -1205,7 +1178,7 @@
                                                Click="OperationButton_Click"/>
                                     </Grid>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
                         </StackPanel>
 
                         <StackPanel x:Name="AboutPage" Margin="40,32,40,32" IsVisible="False">
@@ -1219,7 +1192,7 @@
                                   Opacity="0.7"
                                   Margin="0,0,0,32"/>
 
-                            <Expander Header="About and Credits"
+                            <ui:WindowsExpander Header="About and Credits"
                                         
                                         Margin="0,0,0,4"
                                         IsExpanded="True">
@@ -1239,7 +1212,7 @@
                                         <Button Content="GitHub"  Click="GithubButton_Click"/>
                                     </StackPanel>
                                 </StackPanel>
-                            </Expander>
+                            </ui:WindowsExpander>
                         </StackPanel>
 
                     </Grid>
@@ -1273,7 +1246,7 @@
                                Margin="0,0,0,32"/>
 
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <Button Content="Done!"
+                        <Button Classes="accent" Content="Done!"
                                 Width="140"
                                 Height="40"
                                 Margin="0,0,16,0"

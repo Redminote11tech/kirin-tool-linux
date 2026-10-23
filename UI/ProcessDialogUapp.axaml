@@ -24,8 +24,8 @@
                   Title="Flashing UPDATE.APP Partitions"
                   Width="900"
                   Height="550"
-                  WindowStartupLocation="CenterScreen"
-                  CanResize="False"
+                  WindowStartupLocation="CenterOwner"
+                  CanResize="False" SystemDecorations="BorderOnly"
                   Background="White">
 
     <Border Background="White" 
@@ -87,7 +87,7 @@
                                         <ColumnDefinition Width="40"/>
                                         <ColumnDefinition Width="200"/>
                                         <ColumnDefinition Width="70"/>
-                                        <ColumnDefinition Width="160"/>
+                                        <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="80"/>
                                     </Grid.ColumnDefinitions>
 
@@ -114,6 +114,7 @@
 
                                     <TextBlock Grid.Column="3"
                                               Text="{Binding StatusText}"
+                                              TextWrapping="Wrap" ToolTip.Tip="{Binding StatusText}"
                                               FontSize="12"
                                               Foreground="Black"
                                               VerticalAlignment="Center"

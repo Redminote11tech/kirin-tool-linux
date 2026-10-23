@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Kirin_Tool.UI.WindowCaption" Height="48">
+  <Grid ColumnDefinitions="*,Auto" Background="#FAFAFA">
+    <Border Background="Transparent" PointerPressed="DragTitleBar">
+      <TextBlock Text="Kirin Tool for Linux" Margin="32,0" VerticalAlignment="Center" FontSize="12"/>
+    </Border>
+    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+      <Button Classes="caption" AutomationProperties.Name="Minimize" Click="MinimizeWindow">
+        <Path Data="M0,5 L10,5" Stroke="#202020" StrokeThickness="1" Width="10" Height="10"/>
+      </Button>
+      <Button Classes="caption" AutomationProperties.Name="Maximize or restore" Click="ToggleMaximize">
+        <Path Data="M0,0 L10,0 L10,10 L0,10 Z" Stroke="#202020" StrokeThickness="1" Width="10" Height="10"/>
+      </Button>
+      <Button Classes="caption close" AutomationProperties.Name="Close" Click="CloseWindow">
+        <Path Data="M0,0 L10,10 M10,0 L0,10" Stroke="#202020" StrokeThickness="1" Width="10" Height="10"/>
+      </Button>
+    </StackPanel>
+  </Grid>
+</UserControl>

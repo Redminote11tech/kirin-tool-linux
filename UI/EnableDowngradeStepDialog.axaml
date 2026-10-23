@@ -8,8 +8,8 @@
         Title="Enable Downgrade in Progress"
         Width="450"
         Height="350"
-        WindowStartupLocation="CenterScreen"
-        CanResize="False">
+        WindowStartupLocation="CenterOwner"
+        CanResize="False" SystemDecorations="BorderOnly">
 
   <Border Background="White" CornerRadius="8" BorderBrush="LightGray" BorderThickness="1">
     <StackPanel Margin="32,24,32,24">

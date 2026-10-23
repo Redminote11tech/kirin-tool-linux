@@ -1,0 +1,144 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:Kirin_Tool.UI">
+  <!-- Recreated from the frozen WPF layout, using native Avalonia controls. -->
+  <Style Selector="Window">
+    <Setter Property="Foreground" Value="#303030"/>
+    <Setter Property="Background" Value="#FAFAFA"/>
+  </Style>
+  <Style Selector="Button">
+    <Setter Property="Background" Value="#FFFFFF"/>
+    <Setter Property="BorderBrush" Value="#DDDDDD"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="Padding" Value="12,6"/>
+    <Setter Property="MinHeight" Value="32"/>
+    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+  </Style>
+  <Style Selector="Button.accent">
+    <Setter Property="Background" Value="#0067C0"/>
+    <Setter Property="Foreground" Value="White"/>
+    <Setter Property="BorderBrush" Value="#005AA8"/>
+  </Style>
+  <Style Selector="Button.caution">
+    <Setter Property="Background" Value="#FFF4CE"/>
+    <Setter Property="BorderBrush" Value="#D6B656"/>
+  </Style>
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="#FFFFFF"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="MinHeight" Value="34"/>
+  </Style>
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="#FFFFFF"/>
+    <Setter Property="BorderBrush" Value="#DDDDDD"/>
+    <Setter Property="FontSize" Value="14"/>
+    <Setter Property="Padding" Value="10,6"/>
+  </Style>
+  <Style Selector="ListBox#NavigationListBox">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Padding" Value="8,0"/>
+  </Style>
+  <Style Selector="ListBoxItem.navigation">
+    <Setter Property="Padding" Value="12,0"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="NavigationBackground" Background="Transparent" CornerRadius="4">
+          <Grid>
+            <Border Name="SelectionIndicator" Width="3" Height="16" Background="#0067C0" CornerRadius="2" HorizontalAlignment="Left" IsVisible="False"/>
+            <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" Padding="{TemplateBinding Padding}" VerticalAlignment="Center"/>
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="ListBoxItem.navigation:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="Foreground" Value="#303030"/>
+  </Style>
+  <Style Selector="ListBoxItem.navigation:pointerover /template/ Border#NavigationBackground">
+    <Setter Property="Background" Value="#EDEDED"/>
+  </Style>
+  <Style Selector="ListBoxItem.navigation:selected /template/ Border#NavigationBackground">
+    <Setter Property="Background" Value="#E6E6E6"/>
+  </Style>
+  <Style Selector="ListBoxItem.navigation:selected /template/ Border#SelectionIndicator">
+    <Setter Property="IsVisible" Value="True"/>
+  </Style>
+  <Style Selector="ui|WindowsExpander">
+    <Setter Property="Background" Value="White"/>
+    <Setter Property="BorderBrush" Value="#E5E5E5"/>
+    <Setter Property="BorderThickness" Value="1"/>
+    <Setter Property="CornerRadius" Value="4"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}">
+          <StackPanel>
+            <ToggleButton Classes="card-header" AutomationProperties.Name="{TemplateBinding Header}" MinHeight="58" Padding="16,12" HorizontalAlignment="Stretch"
+                          IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+              <Grid ColumnDefinitions="24,*,16">
+                <Path Data="{TemplateBinding Icon}" Width="20" Height="20" Stretch="Uniform" Stroke="#404040" StrokeThickness="1.4" VerticalAlignment="Center"/>
+                <ContentPresenter Grid.Column="1" Content="{TemplateBinding Header}" Margin="12,0" VerticalAlignment="Center"/>
+                <Path Name="ExpanderChevron" Grid.Column="2" Data="M2,8 L7,3 L12,8" Stroke="#404040" StrokeThickness="1" Width="12" Height="10" VerticalAlignment="Center">
+                  <Path.RenderTransform><RotateTransform Angle="180"/></Path.RenderTransform>
+                </Path>
+              </Grid>
+            </ToggleButton>
+            <Border Name="ExpandedContent" IsVisible="{TemplateBinding IsExpanded}" BorderBrush="#E5E5E5" BorderThickness="0,1,0,0" Padding="14,16">
+              <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalContentAlignment="Stretch"/>
+            </Border>
+          </StackPanel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton.card-header">
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="HeaderBackground" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" CornerRadius="4">
+          <ContentPresenter Content="{TemplateBinding Content}" HorizontalContentAlignment="Stretch" VerticalAlignment="Center"/>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="ToggleButton.card-header:pointerover /template/ Border#HeaderBackground">
+    <Setter Property="Background" Value="#F6F6F6"/>
+  </Style>
+  <Style Selector="ui|WindowsExpander[IsExpanded=True] /template/ Path#ExpanderChevron">
+    <Setter Property="RenderTransform"><RotateTransform Angle="0"/></Setter>
+  </Style>
+  <Style Selector="ui|WindowsCard">
+    <Setter Property="MinHeight" Value="52"/>
+    <Setter Property="Margin" Value="0,0,0,2"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="White" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="4" Padding="14,12">
+          <Grid ColumnDefinitions="24,2*,3*">
+            <Path Data="{TemplateBinding Icon}" Width="18" Height="18" Stretch="Uniform" Stroke="#404040" StrokeThickness="1.4" VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1" Text="{TemplateBinding Header}" Margin="12,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+            <ContentPresenter Grid.Column="2" Content="{TemplateBinding Content}" VerticalAlignment="Center" HorizontalContentAlignment="Right"/>
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Button.caption">
+    <Setter Property="Width" Value="46"/>
+    <Setter Property="Height" Value="32"/>
+    <Setter Property="MinHeight" Value="0"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="Background" Value="Transparent"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="CornerRadius" Value="0"/>
+  </Style>
+  <Style Selector="Button.caption:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#E5E5E5"/>
+  </Style>
+  <Style Selector="Button.caption.close:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="#E81123"/>
+  </Style>
+</Styles>

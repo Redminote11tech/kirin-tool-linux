@@ -1,10 +1,19 @@
-# Kirin Tool Linux 2.4.5
+# Kirin Tool Linux 2.4.6
 
-October 11, 2026. Stable and main share one source tree; beta remains separate.
+October 23, 2026. Stable and main share one source tree; beta remains separate.
 The frozen Windows source reference remains 45440d47296ef4c250fc03730259dbeebb245ebc.
 No newer Windows Kirin GUI source or new loader was imported. Preserve LICENSE and notices.
 
 ## Changes
+
+- 2.4.6 recreates the frozen Windows WPF-UI presentation in Avalonia: a single
+  title bar with window controls, icon-bearing expandable cards, inline device
+  information, navigation selection and primary action colors. Dialogs retain
+  real modal ownership with consistent content borders. Progress errors wrap
+  into the available space and expose their full text as tooltips. Native file
+  pickers remain platform-specific; Inter stays bundled instead of redistributing
+  Segoe UI. No device command, loader, capability policy or transport was changed.
+  See [UI comparison and limitations](windows-ui-parity.md).
 
 - 2.4.5 replaces the packaged older fastboot engine with pinned modern AOSP
   sources and independently reconstructed Huawei extensions. It includes staging,
@@ -68,7 +77,7 @@ the existing GUI SUPER merger or establish hardware parity; see the coverage rep
 Arch/CachyOS:
 
 ```sh
-sudo pacman -U ./kirin-tool-linux-2.4.5-1-x86_64.pkg.tar.zst
+sudo pacman -U ./kirin-tool-linux-2.4.6-1-x86_64.pkg.tar.zst
 kirin-tool
 ```
 
@@ -78,8 +87,8 @@ same transaction. It includes Huawei udev rules and uses distribution libraries.
 Portable AppImage:
 
 ```sh
-chmod +x ./kirin-tool-linux-2.4.5-x86_64.AppImage
-./kirin-tool-linux-2.4.5-x86_64.AppImage
+chmod +x ./kirin-tool-linux-2.4.6-x86_64.AppImage
+./kirin-tool-linux-2.4.6-x86_64.AppImage
 ```
 
 Baseline x86-64 and glibc 2.31+, with .NET and libusb bundled. Host desktop/font,

@@ -28,7 +28,7 @@
         Width="600"
         Height="500"
         WindowStartupLocation="CenterOwner"
-        CanResize="False"
+        CanResize="False" SystemDecorations="BorderOnly"
         Background="White">
 
     <Border Background="White" 

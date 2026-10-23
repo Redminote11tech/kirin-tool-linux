@@ -49,6 +49,8 @@ public class DialogService
         var dialog = new Window
         {
             Title = title,
+            SystemDecorations = SystemDecorations.BorderOnly,
+            Background = Brushes.White,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             SizeToContent = SizeToContent.WidthAndHeight,
             MinWidth = 300,
@@ -95,6 +97,8 @@ public class DialogService
         var dialog = new Window
         {
             Title = title,
+            SystemDecorations = SystemDecorations.BorderOnly,
+            Background = Brushes.White,
             WindowStartupLocation = WindowStartupLocation.CenterOwner,
             SizeToContent = SizeToContent.WidthAndHeight,
             MinWidth = 350,

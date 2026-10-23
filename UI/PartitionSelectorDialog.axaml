@@ -24,8 +24,8 @@
                   Title="Select Partitions to Flash"
                   Width="800"
                   Height="750"
-                  WindowStartupLocation="CenterScreen"
-                  CanResize="False">
+                  WindowStartupLocation="CenterOwner"
+                  CanResize="False" SystemDecorations="BorderOnly">
 
     <Border Background="White" CornerRadius="8" BorderBrush="LightGray" BorderThickness="1">
         <Grid Margin="32,24,32,24">
