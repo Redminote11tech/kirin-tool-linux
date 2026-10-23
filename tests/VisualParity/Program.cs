@@ -58,6 +58,13 @@ foreach(var item in nav.Items.OfType<ListBoxItem>())
         foreach(var field in new[]{"InfoFbLock","InfoUserLock","InfoDeviceModel","InfoVendorCountry","InfoBuildNumber","InfoBaseVersion","InfoCustomVersion","InfoPreloadVersion"})
           Check(window.FindControl<TextBlock>(field) is {IsVisible:true},"named information field retained: "+field);
     }
+    foreach(var button in page.GetVisualDescendants().OfType<Button>().Where(b=>b.IsEffectivelyVisible && b.Bounds.Width>0 && b.Content is string))
+    {
+        var label=new TextBlock {Text=(string)button.Content!,FontFamily=button.FontFamily,FontSize=button.FontSize,FontWeight=button.FontWeight};
+        label.Measure(new Size(double.PositiveInfinity,double.PositiveInfinity));
+        Check(button.Bounds.Width >= label.DesiredSize.Width+button.Padding.Left+button.Padding.Right,
+            "action label fits: "+button.Content);
+    }
     Capture(item.Tag!.ToString()!,window);
 }
 // Owner/modal semantics and keyboard dismissal remain real Avalonia windows.

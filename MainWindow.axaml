@@ -1139,7 +1139,7 @@
                                         <Button Grid.Column="1"
                                                Content="Read NVE SN"
                                                
-                                               Width="100"
+                                               Width="120"
                                                Height="40"
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center"
