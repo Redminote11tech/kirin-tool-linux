@@ -2,7 +2,7 @@
              x:Class="Kirin_Tool.UI.WindowCaption" Height="48">
   <Grid ColumnDefinitions="*,Auto" Background="#FAFAFA">
     <Border Background="Transparent" PointerPressed="DragTitleBar">
-      <TextBlock Text="Kirin Tool for Linux" Margin="32,0" VerticalAlignment="Center" FontSize="12"/>
+      <TextBlock x:Name="CaptionTitle" Margin="32,0" VerticalAlignment="Center" FontSize="12"/>
     </Border>
     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
       <Button Classes="caption" AutomationProperties.Name="Minimize" Click="MinimizeWindow">

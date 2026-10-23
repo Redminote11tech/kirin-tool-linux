@@ -116,7 +116,7 @@ try
     var window = new MainWindow(); window.Show();
     Dispatcher.UIThread.RunJobs();
     var navigation=window.FindControl<ListBox>("NavigationListBox")!;
-    Check(navigation.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().Count()==9,"all nine navigation outline icons rendered");
+    Check(navigation.GetVisualDescendants().OfType<Kirin_Tool.UI.WindowsSymbol>().Count()==9,"all nine original Fluent navigation icons rendered");
     foreach(var pair in new[]{("WelcomeItem","WelcomePage"),("DeviceInfoItem","DeviceInfoPage"),("VcomItem","VcomPage"),("FlashItem","FlashPage"),("SecurityItem","SecurityPage"),("OEMInfoItem","OEMInfoPage"),("NVMeItem","NVMePage"),("AboutItem","AboutPage")})
     {
         navigation.SelectedItem=window.FindControl<ListBoxItem>(pair.Item1);Dispatcher.UIThread.RunJobs();

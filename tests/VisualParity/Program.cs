@@ -28,6 +28,8 @@ captionButtons[1].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
 Check(window.WindowState==WindowState.Maximized,"caption maximizes");
 captionButtons[1].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
 Check(window.WindowState==WindowState.Normal,"caption restores");
+Check(window.Title.Contains("v2.4.7") && window.Title.Contains("Linux port by Redminote11tech"),"version and Linux-port attribution appear in the window title");
+Check(caption.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.Text==window.Title),"caption and desktop title agree");
 Capture("welcome",window);
 var nav=window.FindControl<ListBox>("NavigationListBox")!;
 foreach(var item in nav.Items.OfType<ListBoxItem>())
@@ -62,11 +64,39 @@ foreach(var item in nav.Items.OfType<ListBoxItem>())
     {
         var label=new TextBlock {Text=(string)button.Content!,FontFamily=button.FontFamily,FontSize=button.FontSize,FontWeight=button.FontWeight};
         label.Measure(new Size(double.PositiveInfinity,double.PositiveInfinity));
-        Check(button.Bounds.Width >= label.DesiredSize.Width+button.Padding.Left+button.Padding.Right,
+        Check(button.Bounds.Width >= label.DesiredSize.Width+button.Padding.Left+button.Padding.Right+(button is WindowsButton ? 22 : 0),
             "action label fits: "+button.Content);
     }
     Capture(item.Tag!.ToString()!,window);
 }
+// Exercise selected-file UI without invoking firmware parsing or device commands.
+nav.SelectedItem=window.FindControl<ListBoxItem>("FlashItem"); Pump();
+var warning=window.FindControl<WindowsInfoBar>("FullOtaWarning")!;
+void SelectFiles(int count)
+{
+    int index=0;
+    foreach(var file in new[]{window.BasePtableFile,window.BaseUpdateFile,window.CustUpdateFile,window.PreloadUpdateFile,window.CustPtableFile,window.PreloadPtableFile})
+    {
+        typeof(FullOtaFile).GetField("_filePath",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.SetValue(file,index++<count?file.FileType+".APP":null);
+        foreach(var property in new[]{"HasFile","FileName","StatusText"})
+            typeof(FullOtaFile).GetMethod("OnPropertyChanged",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.Invoke(file,new object[]{property});
+    }
+    foreach(var property in new[]{"FullOtaStatusMessage","ShowFullOtaWarning","FullOtaWarningMessage","CanStartFullOta"})
+        typeof(MainWindow).GetMethod("OnPropertyChanged",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.DeclaredOnly)!.Invoke(window,new object[]{property});
+    Pump();
+}
+SelectFiles(0); Check(!warning.IsVisible,"no incomplete warning before choosing a file");
+SelectFiles(1); Check(warning.IsVisible && warning.Message!.Contains("all 4"),"partial fastboot OTA shows the four-file warning");
+Check(warning.GetVisualDescendants().OfType<WindowsSymbol>().Any(s=>s.Symbol=="ErrorCircle24" && s.Filled),"warning uses the original filled Fluent icon");
+Capture("OTA-1-of-4",window);
+warning.GetVisualDescendants().OfType<Button>().Single().RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); Pump();
+Check(warning.IsDismissed && !warning.IsVisible,"warning close button dismisses the panel");
+SelectFiles(2); Check(warning.IsVisible,"file-selection changes reopen the incomplete warning");
+SelectFiles(4); Check(!warning.IsVisible,"complete four-file selection hides the warning"); Capture("OTA-4-of-4",window);
+SelectFiles(0);window.IsUsbUpdateSelected=true;Pump();SelectFiles(1);
+Check(warning.IsVisible && warning.Message!.Contains("all 6"),"partial USB Update OTA shows the six-file warning");Capture("OTA-1-of-6",window);
+SelectFiles(6);Check(!warning.IsVisible,"complete six-file selection hides the warning");Capture("OTA-6-of-6",window);
+SelectFiles(0);window.IsUsbUpdateSelected=false;Pump();
 // Owner/modal semantics and keyboard dismissal remain real Avalonia windows.
 var dialogs=new DialogService(window);
 var message=dialogs.ShowMessageBox("Notice","Unsupported for kirin 9000",showHeading:true);Pump();

@@ -8,9 +8,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Platforms>x64</Platforms>
     <Product>Kirin Tool for Linux</Product>
-    <Version>2.4.6</Version>
-    <FileVersion>2.4.6</FileVersion>
-    <InformationalVersion>2.4.6</InformationalVersion>
+    <Version>2.4.7</Version>
+    <FileVersion>2.4.7</FileVersion>
+    <InformationalVersion>2.4.7</InformationalVersion>
     <ApplicationIcon>logo.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -19,6 +19,8 @@
     <EmbeddedResource Remove="tests/**" />
     <AvaloniaXaml Remove="tests/**" />
     <Content Include="logo.ico" />
+    <AvaloniaResource Include="Assets/Fonts/*.ttf" />
+    <Content Include="Assets/Fonts/LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="fastboot/payload">
       <Link>fastboot/payload</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

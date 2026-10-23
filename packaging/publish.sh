@@ -24,6 +24,7 @@ for probe in UsbUpdateProbe VcomOpenProbe; do
 done
 mkdir -p "$OUT/licenses" "$OUT/docs"
 cp LICENSE "$OUT/licenses/LICENSE"
+cp Assets/Fonts/LICENSE.txt "$OUT/licenses/LICENSE.fluent-system-icons"
 cp native/usb-update/LICENSE "$OUT/licenses/LICENSE.usb-bridge"
 cp fastboot-src/NOTICE "$OUT/licenses/NOTICE.fastboot-src"
 cp docs/{stable-release,testing-checklist,usb-update-userspace,partition-extractor,native-windows-port,windows-ui-parity,portable-appimage,windows-fastboot-audit-v2.4.3,native-fastboot-parity-v2.4.5,mate40-bootloader-analysis}.md "$OUT/docs/"

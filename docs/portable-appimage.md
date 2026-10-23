@@ -1,6 +1,6 @@
 # Portable AppImage
 
-Version 2.4.6 retains the portable.1 build baseline. Build in
+Version 2.4.7 retains the portable.1 build baseline. Build in
 Ubuntu 20.04 / glibc 2.31 with baseline x86-64 flags, not on the rolling-release
 host. No x86-64-v3/AVX2 requirement is introduced by the native client/USB bridge.
 .NET/Skia may select optional CPU optimizations at runtime. The self-contained
@@ -12,7 +12,7 @@ Build example inside a Ubuntu 20.04 container with .NET 8 SDK installed:
 ```sh
 apt-get update
 apt-get install -y build-essential gcc-10 g++-10 cmake ninja-build libprotobuf-dev protobuf-compiler libbrotli-dev liblz4-dev libpcre2-dev libzstd-dev libgtest-dev pkg-config libusb-1.0-0-dev zlib1g-dev python3 curl binutils
-./packaging/build-appimage.sh /work/new-publish 2.4.6
+./packaging/build-appimage.sh /work/new-publish 2.4.7
 ```
 
 Supply APPIMAGETOOL and APPIMAGE_RUNTIME paths for offline assembly. The shared

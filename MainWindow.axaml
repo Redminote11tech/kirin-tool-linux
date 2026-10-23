@@ -22,7 +22,7 @@
                  xmlns="https://github.com/avaloniaui"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="clr-namespace:Kirin_Tool.UI"
-                 Title="Kirin Tool for Linux" Height="700" Width="1000"
+                 Title="{x:Static ui:WindowCaption.ApplicationTitle}" Height="700" Width="1000"
                  WindowStartupLocation="CenterScreen" Background="#FAFAFA"
                  SystemDecorations="BorderOnly" MinWidth="1000" MinHeight="700">
 
@@ -91,55 +91,55 @@
 
                                 <ListBoxItem x:Name="WelcomeItem" Tag="Welcome" Classes="navigation" AutomationProperties.Name="Welcome">
                                     <Grid ColumnDefinitions="24,*">
-                                        <Path Data="M3,10 L12,3 L21,10 M5,9 L5,21 L10,21 L10,14 L14,14 L14,21 L19,21 L19,9" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <ui:WindowsSymbol Symbol="Home24" FontSize="16" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="Welcome" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                     </Grid>
                                 </ListBoxItem>
                                 <ListBoxItem x:Name="DeviceInfoItem" Tag="DeviceInfo" Classes="navigation" AutomationProperties.Name="Device Information">
                                     <Grid ColumnDefinitions="24,*">
-                                        <Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,10 L12,17 M12,6 L12,7" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <ui:WindowsSymbol Symbol="Info24" FontSize="16" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="Device Information" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                     </Grid>
                                 </ListBoxItem>
                                 <ListBoxItem x:Name="VcomItem" Tag="Vcom" Classes="navigation" AutomationProperties.Name="VCOM Operations">
                                     <Grid ColumnDefinitions="24,*">
-                                        <Path Data="M9,2 L9,7 M15,2 L15,7 M7,7 L17,7 L17,13 L14,16 L14,19 L10,19 L10,16 L7,13 Z M12,19 L12,23" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <ui:WindowsSymbol Symbol="UsbPlug24" FontSize="16" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="VCOM Operations" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                     </Grid>
                                 </ListBoxItem>
                                 <ListBoxItem x:Name="FlashItem" Tag="Flash" Classes="navigation" AutomationProperties.Name="Flash Operations">
                                     <Grid ColumnDefinitions="24,*">
-                                        <Path Data="M4,8 L20,8 Q22,8 22,10 L22,14 Q22,16 20,16 L4,16 Q2,16 2,14 L2,10 Q2,8 4,8 Z M16,12 L17,12 M19,12 L20,12" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <ui:WindowsSymbol Symbol="Storage24" FontSize="16" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="Flash Operations" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                     </Grid>
                                 </ListBoxItem>
                                 <ListBoxItem x:Name="SecurityItem" Tag="Security" Classes="navigation" AutomationProperties.Name="Security Tools">
                                     <Grid ColumnDefinitions="24,*">
-                                        <Path Data="M12,2 L21,6 L20,14 Q18,20 12,22 Q6,20 4,14 L3,6 Z" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <ui:WindowsSymbol Symbol="Shield24" FontSize="16" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="Security Tools" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                     </Grid>
                                 </ListBoxItem>
                                 <ListBoxItem x:Name="OEMInfoItem" Tag="OEMInfo" Classes="navigation" AutomationProperties.Name="OEMInfo Tools">
                                     <Grid ColumnDefinitions="24,*">
-                                        <Path Data="M12,2 L21,7 L21,17 L12,22 L3,17 L3,7 Z M12,8 L12,16 M8,12 L16,12" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <ui:WindowsSymbol Symbol="ShieldQuestion24" FontSize="16" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="OEMInfo Tools" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                     </Grid>
                                 </ListBoxItem>
                                 <ListBoxItem x:Name="NVMeItem" Tag="NVMe" Classes="navigation" AutomationProperties.Name="NVMe Tools">
                                     <Grid ColumnDefinitions="24,*">
-                                        <Path Data="M3,3 L13,3 L22,12 L12,22 L3,13 Z M7,7 A1,1 0 1 1 6.99,7" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <ui:WindowsSymbol Symbol="Tag24" FontSize="16" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="NVMe Tools" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                     </Grid>
                                 </ListBoxItem>
                                 <ListBoxItem x:Name="ExtractorItem" Tag="Extractor" Classes="navigation" AutomationProperties.Name="Extractor Tools">
                                     <Grid ColumnDefinitions="24,*">
-                                        <Path Data="M3,8 L3,20 L21,20 L21,8 M12,2 L12,15 M7,10 L12,15 L17,10" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <ui:WindowsSymbol Symbol="ArrowDownload24" FontSize="16" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="Extractor Tools" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                     </Grid>
                                 </ListBoxItem>
                                 <ListBoxItem x:Name="AboutItem" Tag="About" Classes="navigation" AutomationProperties.Name="About">
                                     <Grid ColumnDefinitions="24,*">
-                                        <Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,10 L12,17 M12,6 L12,7" Stroke="#404040" StrokeThickness="1.4" Width="16" Height="16" Stretch="Uniform" VerticalAlignment="Center"/>
+                                        <ui:WindowsSymbol Symbol="Info24" FontSize="16" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="1" Text="About" VerticalAlignment="Center" Margin="4,0,0,0"/>
                                     </Grid>
                                 </ListBoxItem>
@@ -166,7 +166,7 @@
 
                             <Border x:Name="UdevNotice" Classes="notice" IsVisible="False">
                                 <Grid ColumnDefinitions="20,*">
-                                    <Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,6 L12,13 M12,16 L12,17" Stroke="#A56500" StrokeThickness="1.6" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Top" Margin="0,4,0,0"/>
+                                    <ui:WindowsSymbol Symbol="ErrorCircle24" Filled="True" Foreground="#9D5D00" FontSize="16" VerticalAlignment="Top" Margin="0,2,0,0"/>
                                     <StackPanel Grid.Column="1" Margin="10,0,0,0" Spacing="8">
                                         <TextBlock Text="Apply udev rules" FontWeight="SemiBold" Foreground="Black"/>
                                         <TextBlock x:Name="UdevNoticeDescription" TextWrapping="Wrap" Foreground="Black"/>
@@ -211,9 +211,9 @@
                                 </StackPanel>
                             </ui:WindowsExpander>
 
-                            <Border Classes="notice"><Grid ColumnDefinitions="20,*"><Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,6 L12,13 M12,16 L12,17" Stroke="#A56500" StrokeThickness="1.6" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Top" Margin="0,4,0,0"/><StackPanel Grid.Column="1" Margin="10,0,0,0"><TextBlock Text="Important Notice" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="We are not responsible for any kind of damage you do with this tool. Use it at your own risk." TextWrapping="Wrap" Foreground="Black"/></StackPanel></Grid></Border>
+                            <ui:WindowsInfoBar Title="Important Notice" Message="We are not responsible for any kind of damage you do with this tool. Use it at your own risk." Margin="0,8,0,0"/>
 
-                            <Border Classes="notice"><Grid ColumnDefinitions="20,*"><Path Data="M12,2 A10,10 0 1 1 11.99,2 M12,6 L12,13 M12,16 L12,17" Stroke="#A56500" StrokeThickness="1.6" Width="14" Height="14" Stretch="Uniform" VerticalAlignment="Top" Margin="0,4,0,0"/><StackPanel Grid.Column="1" Margin="10,0,0,0"><TextBlock Text="Beware!" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="Kirin Tool for Linux is free software. If you have paid for this tool, you have been scammed - please ask for a refund immediately!" TextWrapping="Wrap" Foreground="Black"/></StackPanel></Grid></Border>
+                            <ui:WindowsInfoBar Title="Beware!" Message="Kirin Tool for Linux is free software. If you have paid for this tool, you have been scammed - please ask for a refund immediately!" Margin="0,8,0,0"/>
 
                         </StackPanel>
 
@@ -293,19 +293,19 @@
                             </ui:WindowsExpander>
 
                             <StackPanel Orientation="Horizontal" Margin="0,24,0,0">
-                                <Button Classes="accent" Content="Read Info"
+                                <ui:WindowsButton Classes="accent" Content="Read Info"
                                            
                                            Width="140"
                                            Height="40"
                                            Margin="0,0,16,0"
-                                           Click="ReadDeviceInfo_Click"/>
+                                           Click="ReadDeviceInfo_Click" Symbol="Search24"/>
                                     <Button Content="Read SN / PSID" Click="ReadPsid_Click" Width="140" Height="40" Margin="0,0,16,0"/>
                                 
-                                <Button Content="Reboot"
+                                <ui:WindowsButton Content="Reboot"
                                            
                                            Width="140"
                                            Height="40"
-                                           Click="RebootDevice_Click"/>
+                                           Click="RebootDevice_Click" Symbol="Power24"/>
                             </StackPanel>
                         </StackPanel>
 
@@ -367,7 +367,7 @@
                                            Opacity="0.7"
                                            Margin="0,0,0,16"/>
 
-                                    <Border Background="#FFF3CD" BorderBrush="#FFE69C" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,16"><StackPanel><TextBlock Text="Important notice" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="This feature only works on softwares before the 2021 February security patch (EMUI 10 and older), if you are running a newer system, please downgrade to use this feature. &#10;&#10;For the UPDATE file use a Base UPDATE.APP from the exact or newer firmware your device is currently running." TextWrapping="Wrap" Foreground="Black"/></StackPanel></Border>
+                                    <ui:WindowsInfoBar Title="Important notice" Message="This feature only works on softwares before the 2021 February security patch (EMUI 10 and older), if you are running a newer system, please downgrade to use this feature. &#10;&#10;For the UPDATE file use a Base UPDATE.APP from the exact or newer firmware your device is currently running." Margin="0,0,0,16"/>
 
                                     <Grid Margin="0,8,0,16">
                                         <Grid.ColumnDefinitions>
@@ -380,18 +380,18 @@
                                                  Text="{Binding SwTpUpdateFile.FilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  IsReadOnly="True"
                                                  Margin="0,0,8,0"/>
-                                        <Button Grid.Column="1"
+                                        <ui:WindowsButton Grid.Column="1"
                                                Content="Browse"
                                                
                                                Tag="SwTpUpdate"
                                                Click="BrowseOtaFile_Click"
-                                               Margin="0,0,4,0"/>
-                                        <Button Grid.Column="2" 
+                                               Margin="0,0,4,0" Symbol="FolderOpen16"/>
+                                        <ui:WindowsButton Grid.Column="2"
                                                Content="Clear" 
                                                
                                                Tag="SwTpUpdate"
                                                Click="ClearOtaFile_Click" 
-                                               IsEnabled="{Binding SwTpUpdateFile.HasFile, Mode=OneWay}"/>
+                                               IsEnabled="{Binding SwTpUpdateFile.HasFile, Mode=OneWay}" Symbol="Delete16"/>
                                     </Grid>
 
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -462,27 +462,27 @@
                                             Watermark="No file selected"
                                             Margin="8,0"/>
 
-                                        <Button Grid.Column="2" 
+                                        <ui:WindowsButton Grid.Column="2"
                                             Content="Browse" 
                                             
                                             Tag="BasePtable"
                                             Click="BrowseOtaFile_Click" 
-                                            Margin="0,0,4,0"/>
+                                            Margin="0,0,4,0" Symbol="FolderOpen16"/>
 
-                                        <Button Grid.Column="3" 
+                                        <ui:WindowsButton Grid.Column="3"
                                             Content="Edit" 
                                             
                                             Tag="BasePtable"
                                             Click="EditOtaFile_Click" 
                                             IsEnabled="{Binding BasePtableFile.IsEditEnabled, Mode=OneWay}"
-                                            Margin="0,0,4,0"/>
+                                            Margin="0,0,4,0" Symbol="Edit16"/>
 
-                                        <Button Grid.Column="4" 
+                                        <ui:WindowsButton Grid.Column="4"
                                             Content="Clear" 
                                             
                                             Tag="BasePtable"
                                             Click="ClearOtaFile_Click" 
-                                            IsEnabled="{Binding BasePtableFile.HasFile, Mode=OneWay}"/>
+                                            IsEnabled="{Binding BasePtableFile.HasFile, Mode=OneWay}" Symbol="Delete16"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,8">
@@ -507,27 +507,27 @@
                                             Watermark="No file selected"
                                             Margin="8,0"/>
 
-                                        <Button Grid.Column="2" 
+                                        <ui:WindowsButton Grid.Column="2"
                                            Content="Browse" 
                                            
                                            Tag="BaseUpdate"
                                            Click="BrowseOtaFile_Click" 
-                                           Margin="0,0,4,0"/>
+                                           Margin="0,0,4,0" Symbol="FolderOpen16"/>
 
-                                        <Button Grid.Column="3" 
+                                        <ui:WindowsButton Grid.Column="3"
                                            Content="Edit" 
                                            
                                            Tag="BaseUpdate"
                                            Click="EditOtaFile_Click" 
                                            IsEnabled="{Binding BaseUpdateFile.IsEditEnabled, Mode=OneWay}"
-                                           Margin="0,0,4,0"/>
+                                           Margin="0,0,4,0" Symbol="Edit16"/>
 
-                                        <Button Grid.Column="4" 
+                                        <ui:WindowsButton Grid.Column="4"
                                            Content="Clear" 
                                            
                                            Tag="BaseUpdate"
                                            Click="ClearOtaFile_Click" 
-                                           IsEnabled="{Binding BaseUpdateFile.HasFile, Mode=OneWay}"/>
+                                           IsEnabled="{Binding BaseUpdateFile.HasFile, Mode=OneWay}" Symbol="Delete16"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,8" IsVisible="{Binding IsUsbUpdateSelected}">
@@ -552,27 +552,27 @@
                                             Watermark="No file selected"
                                             Margin="8,0"/>
 
-                                        <Button Grid.Column="2" 
+                                        <ui:WindowsButton Grid.Column="2"
                                            Content="Browse" 
                                            
                                            Tag="CustPtable"
                                            Click="BrowseOtaFile_Click" 
-                                           Margin="0,0,4,0"/>
+                                           Margin="0,0,4,0" Symbol="FolderOpen16"/>
 
-                                        <Button Grid.Column="3" 
+                                        <ui:WindowsButton Grid.Column="3"
                                            Content="Edit" 
                                            
                                            Tag="CustPtable"
                                            Click="EditOtaFile_Click" 
                                            IsEnabled="False"
-                                           Margin="0,0,4,0"/>
+                                           Margin="0,0,4,0" Symbol="Edit16"/>
 
-                                        <Button Grid.Column="4" 
+                                        <ui:WindowsButton Grid.Column="4"
                                            Content="Clear" 
                                            
                                            Tag="CustPtable"
                                            Click="ClearOtaFile_Click" 
-                                           IsEnabled="{Binding CustPtableFile.HasFile, Mode=OneWay}"/>
+                                           IsEnabled="{Binding CustPtableFile.HasFile, Mode=OneWay}" Symbol="Delete16"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,8">
@@ -597,27 +597,27 @@
                                             Watermark="No file selected"
                                             Margin="8,0"/>
 
-                                        <Button Grid.Column="2" 
+                                        <ui:WindowsButton Grid.Column="2"
                                            Content="Browse" 
                                            
                                            Tag="CustUpdate"
                                            Click="BrowseOtaFile_Click" 
-                                           Margin="0,0,4,0"/>
+                                           Margin="0,0,4,0" Symbol="FolderOpen16"/>
 
-                                        <Button Grid.Column="3" 
+                                        <ui:WindowsButton Grid.Column="3"
                                            Content="Edit" 
                                            
                                            Tag="CustUpdate"
                                            Click="EditOtaFile_Click" 
                                            IsEnabled="{Binding CustUpdateFile.IsEditEnabled, Mode=OneWay}"
-                                           Margin="0,0,4,0"/>
+                                           Margin="0,0,4,0" Symbol="Edit16"/>
 
-                                        <Button Grid.Column="4" 
+                                        <ui:WindowsButton Grid.Column="4"
                                            Content="Clear" 
                                            
                                            Tag="CustUpdate"
                                            Click="ClearOtaFile_Click" 
-                                           IsEnabled="{Binding CustUpdateFile.HasFile, Mode=OneWay}"/>
+                                           IsEnabled="{Binding CustUpdateFile.HasFile, Mode=OneWay}" Symbol="Delete16"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,8" IsVisible="{Binding IsUsbUpdateSelected}">
@@ -642,27 +642,27 @@
                                             Watermark="No file selected"
                                             Margin="8,0"/>
 
-                                        <Button Grid.Column="2" 
+                                        <ui:WindowsButton Grid.Column="2"
                                            Content="Browse" 
                                            
                                            Tag="PreloadPtable"
                                            Click="BrowseOtaFile_Click" 
-                                           Margin="0,0,4,0"/>
+                                           Margin="0,0,4,0" Symbol="FolderOpen16"/>
 
-                                        <Button Grid.Column="3" 
+                                        <ui:WindowsButton Grid.Column="3"
                                            Content="Edit" 
                                            
                                            Tag="PreloadPtable"
                                            Click="EditOtaFile_Click" 
                                            IsEnabled="False"
-                                           Margin="0,0,4,0"/>
+                                           Margin="0,0,4,0" Symbol="Edit16"/>
 
-                                        <Button Grid.Column="4" 
+                                        <ui:WindowsButton Grid.Column="4"
                                            Content="Clear" 
                                            
                                            Tag="PreloadPtable"
                                            Click="ClearOtaFile_Click" 
-                                           IsEnabled="{Binding PreloadPtableFile.HasFile, Mode=OneWay}"/>
+                                           IsEnabled="{Binding PreloadPtableFile.HasFile, Mode=OneWay}" Symbol="Delete16"/>
                                     </Grid>
 
                                     <Grid Margin="0,0,0,8">
@@ -687,30 +687,30 @@
                                             Watermark="No file selected"
                                             Margin="8,0"/>
 
-                                        <Button Grid.Column="2" 
+                                        <ui:WindowsButton Grid.Column="2"
                                            Content="Browse" 
                                            
                                            Tag="PreloadUpdate"
                                            Click="BrowseOtaFile_Click" 
-                                           Margin="0,0,4,0"/>
+                                           Margin="0,0,4,0" Symbol="FolderOpen16"/>
 
-                                        <Button Grid.Column="3" 
+                                        <ui:WindowsButton Grid.Column="3"
                                            Content="Edit" 
                                            
                                            Tag="PreloadUpdate"
                                            Click="EditOtaFile_Click" 
                                            IsEnabled="{Binding PreloadUpdateFile.IsEditEnabled, Mode=OneWay}"
-                                           Margin="0,0,4,0"/>
+                                           Margin="0,0,4,0" Symbol="Edit16"/>
 
-                                        <Button Grid.Column="4" 
+                                        <ui:WindowsButton Grid.Column="4"
                                            Content="Clear" 
                                            
                                            Tag="PreloadUpdate"
                                            Click="ClearOtaFile_Click" 
-                                           IsEnabled="{Binding PreloadUpdateFile.HasFile, Mode=OneWay}"/>
+                                           IsEnabled="{Binding PreloadUpdateFile.HasFile, Mode=OneWay}" Symbol="Delete16"/>
                                         </Grid>
 
-                                    <Border Background="{DynamicResource SystemRegionBrush}" 
+                                    <Border Background="#F5F5F5"
                                         CornerRadius="8" 
                                         Padding="16" 
                                         Margin="0,16,0,0">
@@ -736,16 +736,19 @@
                                                    Opacity="0.7"/>
                                             </StackPanel>
 
-                                            <Border Grid.Row="1" Grid.ColumnSpan="2" IsVisible="{Binding ShowFullOtaWarning, Mode=OneWay}" Background="#FFF3CD" BorderBrush="#FFE69C" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,16"><StackPanel><TextBlock Text="Incomplete OTA Warning" FontWeight="SemiBold" Foreground="Black"/><TextBlock Text="{Binding FullOtaWarningMessage, Mode=OneWay}" TextWrapping="Wrap" Foreground="Black"/></StackPanel></Border>
+                                            <ui:WindowsInfoBar x:Name="FullOtaWarning" Grid.Row="1" Grid.ColumnSpan="2"
+                                                Title="Incomplete OTA Warning" Message="{Binding FullOtaWarningMessage, Mode=OneWay}"
+                                                ResetKey="{Binding FullOtaStatusMessage, Mode=OneWay}" IsOpen="{Binding ShowFullOtaWarning, Mode=OneWay}" Margin="0,8,0,8"/>
 
-                                            <Button Grid.Row="2" Grid.Column="1"
+                                            <ui:WindowsButton Grid.Row="2" Grid.Column="1"
+                                               Symbol="CloudSync24" Classes="accent"
                                                x:Name="StartFullOtaButton"
                                                IsEnabled="{Binding CanStartFullOta, Mode=OneWay}"
                                                Click="StartFullOtaButton_Click"
-                                               Content="Start Flash"
+                                               Content="Start"
                                                Width="140"
                                                Height="40">
-                                            </Button>
+                                            </ui:WindowsButton>
                                         </Grid>
                                     </Border>
                                 </StackPanel>
@@ -773,7 +776,7 @@
                                                    Opacity="0.7"/>
                                         </StackPanel>
 
-                                        <Button Classes="accent" Grid.Column="1"
+                                        <ui:WindowsButton Classes="accent" Grid.Column="1"
                                                Content="Enable"
                                                
                                                Width="120"
@@ -782,7 +785,7 @@
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center"
                                                Tag="enable-downgrade"
-                                               Click="OperationButton_Click"/>
+                                               Click="OperationButton_Click" Symbol="Checkmark24"/>
                                     </Grid>
                                 </StackPanel>
                             </ui:WindowsExpander>
@@ -814,29 +817,29 @@
                                                  IsReadOnly="True"
                                                  Margin="0,0,8,0"/>
 
-                                        <Button Grid.Column="1"
+                                        <ui:WindowsButton Grid.Column="1"
                                                Content="Browse"
                                                
                                                Tag="UsbUpdate"
                                                Click="BrowseOtaFile_Click"
-                                               Margin="0,0,4,0"/>
+                                               Margin="0,0,4,0" Symbol="FolderOpen16"/>
 
-                                        <Button Grid.Column="2" 
+                                        <ui:WindowsButton Grid.Column="2"
                                                Content="Clear" 
                                                
                                                Tag="UsbUpdate"
                                                Click="ClearOtaFile_Click" 
-                                               IsEnabled="{Binding UsbUpdateFile.HasFile, Mode=OneWay}"/>
+                                               IsEnabled="{Binding UsbUpdateFile.HasFile, Mode=OneWay}" Symbol="Delete16"/>
                                     </Grid>
 
-                                    <Button Classes="accent" Content="Reboot"
+                                    <ui:WindowsButton Classes="accent" Content="Reboot"
                                            
                                            Width="140"
                                            Height="40"
                                            HorizontalAlignment="Right"
                                            Margin="0,16,0,0"
                                            Tag="reboot-usb-update"
-                                           Click="OperationButton_Click"/>
+                                           Click="OperationButton_Click" Symbol="Power24"/>
                                 </StackPanel>
                             </ui:WindowsExpander>
 
@@ -868,12 +871,12 @@
                                                Opacity="0.7"/>
                                         </StackPanel>
 
-                                        <Button Grid.Column="1"
+                                        <ui:WindowsButton Grid.Column="1"
                                            Content="Dump"
                                            
                                            Width="140"
                                            Height="40"
-                                           Click="DumpPartitions_Click"/>
+                                           Click="DumpPartitions_Click" Symbol="ArrowDownload24"/>
                                     </Grid>
 
                                     <Grid>
@@ -892,11 +895,11 @@
                                                Opacity="0.7"/>
                                         </StackPanel>
 
-                                        <Button Classes="accent" Grid.Column="1"
+                                        <ui:WindowsButton Classes="accent" Grid.Column="1"
                                            Content="Flash"
                                            Width="140"
                                            Height="40"
-                                           Click="FlashFromXml_Click"/>
+                                           Click="FlashFromXml_Click" Symbol="ArrowUpload24"/>
                                     </Grid>
                                 </StackPanel>
                             </ui:WindowsExpander>
@@ -1073,7 +1076,7 @@
                                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8" x:Name="FileSelectionPanel">
                                             <TextBlock Text="OEMInfo File:" Width="120" VerticalAlignment="Center"/>
                                             <TextBox Width="200" x:Name="TxtOemInfoFile" Watermark="Select OEMInfo file" Margin="0,0,8,0"/>
-                                            <Button Content="Browse"  Click="BrowseOemInfoFile_Click"/>
+                                            <ui:WindowsButton Content="Browse"  Click="BrowseOemInfoFile_Click" Symbol="FolderOpen24"/>
                                         </StackPanel>
 
                                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -1136,10 +1139,10 @@
                                                    x:Name="CurrentSerialDisplay"/>
                                         </StackPanel>
 
-                                        <Button Grid.Column="1"
+                                        <ui:WindowsButton Symbol="Eye24" Grid.Column="1"
                                                Content="Read NVE SN"
                                                
-                                               Width="120"
+                                               Width="144"
                                                Height="40"
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center"
@@ -1168,14 +1171,14 @@
                                                     HorizontalAlignment="Left"/>
                                         </StackPanel>
 
-                                        <Button Classes="accent" Grid.Column="1"
+                                        <ui:WindowsButton Classes="accent" Grid.Column="1"
                                                Content="Write SN"
                                                Width="100"
                                                Height="40"
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center"
                                                Tag="write-sn"
-                                               Click="OperationButton_Click"/>
+                                               Click="OperationButton_Click" Symbol="Save24"/>
                                     </Grid>
                                 </StackPanel>
                             </ui:WindowsExpander>
@@ -1207,9 +1210,9 @@
                                     <TextBlock Text="• kasnria001 - Decrypted XLOADERs and lots of help in general" FontSize="12" Margin="0,0,0,4"/>
                                     <TextBlock Text="• Redminote11tech - Single-handed Linux port" FontSize="12" Margin="0,0,0,16"/>
                                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                        <Button Content="Kirin-Tool Guide"  Click="HelpButton_Click" Margin="0,0,8,0"/>
-                                        <Button Content="Telegram Support"  Click="TelegramButton_Click" Margin="0,0,8,0"/>
-                                        <Button Content="GitHub"  Click="GithubButton_Click"/>
+                                        <ui:WindowsButton Content="Kirin-Tool Guide"  Click="HelpButton_Click" Margin="0,0,8,0" Symbol="Book24"/>
+                                        <ui:WindowsButton Content="Telegram Support"  Click="TelegramButton_Click" Margin="0,0,8,0" Symbol="Send24"/>
+                                        <ui:WindowsButton Content="GitHub"  Click="GithubButton_Click" Symbol="Code24"/>
                                     </StackPanel>
                                 </StackPanel>
                             </ui:WindowsExpander>

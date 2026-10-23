@@ -1,4 +1,4 @@
-# Kirin Tool Linux 2.4.6
+# Kirin Tool Linux 2.4.7
 
 October 23, 2026. Stable and main share one source tree; beta remains separate.
 The frozen Windows source reference remains 45440d47296ef4c250fc03730259dbeebb245ebc.
@@ -6,6 +6,8 @@ No newer Windows Kirin GUI source or new loader was imported. Preserve LICENSE a
 
 ## Changes
 
+- 2.4.7 restores original Fluent icons, dismissible warnings and action icons,
+  and adds the assembly version and Linux-port credit to the caption.
 - 2.4.6 recreates the frozen Windows WPF-UI presentation in Avalonia: a single
   title bar with window controls, icon-bearing expandable cards, inline device
   information, navigation selection and primary action colors. Dialogs retain
@@ -77,7 +79,7 @@ the existing GUI SUPER merger or establish hardware parity; see the coverage rep
 Arch/CachyOS:
 
 ```sh
-sudo pacman -U ./kirin-tool-linux-2.4.6-1-x86_64.pkg.tar.zst
+sudo pacman -U ./kirin-tool-linux-2.4.7-1-x86_64.pkg.tar.zst
 kirin-tool
 ```
 
@@ -87,8 +89,8 @@ same transaction. It includes Huawei udev rules and uses distribution libraries.
 Portable AppImage:
 
 ```sh
-chmod +x ./kirin-tool-linux-2.4.6-x86_64.AppImage
-./kirin-tool-linux-2.4.6-x86_64.AppImage
+chmod +x ./kirin-tool-linux-2.4.7-x86_64.AppImage
+./kirin-tool-linux-2.4.7-x86_64.AppImage
 ```
 
 Baseline x86-64 and glibc 2.31+, with .NET and libusb bundled. Host desktop/font,

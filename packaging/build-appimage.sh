@@ -4,7 +4,7 @@
 # See docs/portable-appimage.md. Never copy optimized host libraries into the image.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="${2:-2.4.6}"
+VERSION="${2:-$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$ROOT/Kirin-Tool.csproj" | head -n1)}"
 PUBLISH_DIR="$(realpath -m "${1:-$ROOT/publish-out}")"
 HOST_GLIBC="$(getconf GNU_LIBC_VERSION | awk '{print $2}')"
 if [[ "$(printf '%s\n' "$HOST_GLIBC" 2.31 | sort -V | tail -n1)" != 2.31 ]]; then

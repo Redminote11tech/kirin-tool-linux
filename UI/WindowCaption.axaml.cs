@@ -7,7 +7,12 @@ namespace Kirin_Tool.UI;
 
 public partial class WindowCaption : UserControl
 {
-    public WindowCaption() => InitializeComponent();
+    public static string ApplicationTitle => $"Kirin Tool for Linux v{typeof(WindowCaption).Assembly.GetName().Version?.ToString(3)} · Linux port by Redminote11tech";
+    public WindowCaption()
+    {
+        InitializeComponent();
+        this.FindControl<TextBlock>("CaptionTitle")!.Text = ApplicationTitle;
+    }
     private Window? OwnerWindow => TopLevel.GetTopLevel(this) as Window;
     private void MinimizeWindow(object? sender, RoutedEventArgs e)
     { if (OwnerWindow is { } window) window.WindowState = WindowState.Minimized; }
