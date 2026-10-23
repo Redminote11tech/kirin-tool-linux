@@ -68,8 +68,14 @@ Check(modal.Owner==window && modal.GetVisualDescendants().OfType<TextBlock>().An
 Capture("notice",modal);
 modal.GetVisualDescendants().OfType<Button>().Single(b=>Equals(b.Content,"OK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
 Check(message.IsCompletedSuccessfully,"notice closes via OK");
+var ordinary=dialogs.ShowMessageBox("Read failed","Example query failure; no device operations.");Pump();
+modal=window.OwnedWindows.Single();
+Check(modal.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.Text=="Read failed"),"ordinary messages retain a visible heading without desktop chrome");
+modal.GetVisualDescendants().OfType<Button>().Single(b=>Equals(b.Content,"OK")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
+Check(ordinary.IsCompletedSuccessfully,"ordinary message closes via OK");
 var confirm=dialogs.ShowConfirmDialog("Confirm","Example only; no device operations.");Pump();
 modal=window.OwnedWindows.Single();
+Check(modal.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.Text=="Confirm"),"confirmation title is rendered inside the dialog");
 modal.GetVisualDescendants().OfType<Button>().Single(b=>Equals(b.Content,"Cancel")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
 Check(confirm.IsCompletedSuccessfully && !confirm.Result,"confirmation cancellation retained");
 using(var cancel=new CancellationTokenSource())
