@@ -28,7 +28,7 @@ captionButtons[1].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
 Check(window.WindowState==WindowState.Maximized,"caption maximizes");
 captionButtons[1].RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Pump();
 Check(window.WindowState==WindowState.Normal,"caption restores");
-Check(window.Title.Contains("v2.4.7") && window.Title.Contains("Linux port by Redminote11tech"),"version and Linux-port attribution appear in the window title");
+Check(window.Title.Contains("v2.4.8") && window.Title.Contains("Linux port by Redminote11tech"),"version and Linux-port attribution appear in the window title");
 Check(caption.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.Text==window.Title),"caption and desktop title agree");
 Capture("welcome",window);
 var nav=window.FindControl<ListBox>("NavigationListBox")!;

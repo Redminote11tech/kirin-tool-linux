@@ -93,14 +93,17 @@ namespace Kirin_Tool.Utils
 
         private static void WriteLog(string executablePath, string arguments, string output)
         {
+            if (!executablePath.Contains("fastboot", StringComparison.OrdinalIgnoreCase)) return;
+            WriteDiagnostic($"{Path.GetFileName(executablePath)} {arguments}", output);
+        }
+
+        public static void WriteDiagnostic(string source, string output)
+        {
             try
             {
-                if (!executablePath.Contains("fastboot", StringComparison.OrdinalIgnoreCase))
-                    return;
-
                 string fileName = $"kirintool_log_{DateTime.Now:yyyy_MM_dd}.log";
                 string timestamp = DateTime.Now.ToString("HH:mm:ss");
-                string cmdText = $"{Path.GetFileName(executablePath)} {arguments}";
+                string cmdText = source;
                 string logMessage = $"[{timestamp}] {cmdText}\n{output}\n\n";
 
                 // Prefer a log dir next to the executable; when that is not

@@ -22,6 +22,9 @@ jobs:
       - name: Publish app and native components
         run: ./packaging/publish.sh publish-out
 
+      - name: USB transfer diagnostic regression tests (no hardware)
+        run: dotnet run --project tests/UsbDiagnostics -c Release -p:NuGetAudit=false
+
       - name: Native fastboot hardware-free parity tests
         run: ./fastboot-modern/test.sh
 

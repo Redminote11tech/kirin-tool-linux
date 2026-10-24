@@ -22,7 +22,7 @@ An unofficial, independently maintained Linux port of [Kirin-Tool](https://githu
 
 ## Features
 
-Version **2.4.7** brings the original Fluent icons, dismissible warning panels and icon-bearing action buttons to native Avalonia. The title bar shows the version and Linux-port credit. See the [UI comparison and limitations](docs/windows-ui-parity.md).
+Version **2.4.8** preserves USB Update and Software Testpoint failure details in the popup and daily log, including partition, stage, block offset and available device responses. It retains the original Fluent icons, warning panels and version/port credit. See the [UI comparison and limitations](docs/windows-ui-parity.md).
 
 | Tool | What you can do |
 | :--- | :--- |
@@ -40,11 +40,11 @@ Version **2.4.5** adds modern native fastboot host functionality, including stag
 
 Download the prebuilt files from [GitHub Releases](https://github.com/Redminote11tech/kirin-tool-linux/releases/latest). You do not need to build the application or install a separate .NET runtime.
 
-| Format | Download v2.4.7 | Compatibility |
+| Format | Download v2.4.8 | Compatibility |
 | :--- | :--- | :--- |
-| **Arch package** | [`.pkg.tar.zst`](https://github.com/Redminote11tech/kirin-tool-linux/releases/download/v2.4.7/kirin-tool-linux-2.4.7-1-x86_64.pkg.tar.zst) | Arch Linux and CachyOS, x86-64; native fastboot requires glibc 2.38+. |
-| **AppImage** | [`.AppImage`](https://github.com/Redminote11tech/kirin-tool-linux/releases/download/v2.4.7/kirin-tool-linux-2.4.7-x86_64.AppImage) | Linux x86-64, glibc 2.31+; baseline CPU build with host desktop libraries still required. |
-| **Native fastboot bundle** | [`.tar.xz`](https://github.com/Redminote11tech/kirin-tool-linux/releases/download/v2.4.7/kirin-fastboot-35.0.2-huawei-linux-x86_64.tar.xz) | CLI client, filesystem helpers, corresponding sources and notices. |
+| **Arch package** | [`.pkg.tar.zst`](https://github.com/Redminote11tech/kirin-tool-linux/releases/download/v2.4.8/kirin-tool-linux-2.4.8-1-x86_64.pkg.tar.zst) | Arch Linux and CachyOS, x86-64; native fastboot requires glibc 2.38+. |
+| **AppImage** | [`.AppImage`](https://github.com/Redminote11tech/kirin-tool-linux/releases/download/v2.4.8/kirin-tool-linux-2.4.8-x86_64.AppImage) | Linux x86-64, glibc 2.31+; baseline CPU build with host desktop libraries still required. |
+| **Native fastboot bundle** | [`.tar.xz`](https://github.com/Redminote11tech/kirin-tool-linux/releases/download/v2.4.8/kirin-fastboot-35.0.2-huawei-linux-x86_64.tar.xz) | CLI client, filesystem helpers, corresponding sources and notices. |
 
 SHA256 checksums and build provenance accompany the release. Use the AppImage if you need the older glibc baseline. Neither packaged format introduces a mandatory x86-64-v3 requirement; older physical CPU GUI compatibility is not fully verified.
 
@@ -53,7 +53,7 @@ SHA256 checksums and build provenance accompany the release. Use the AppImage if
 From the directory containing the downloaded package:
 
 ```bash
-sudo pacman -U ./kirin-tool-linux-2.4.7-1-x86_64.pkg.tar.zst
+sudo pacman -U ./kirin-tool-linux-2.4.8-1-x86_64.pkg.tar.zst
 kirin-tool
 ```
 
@@ -71,14 +71,14 @@ Log out and back in after changing groups, then reconnect the phone. A Huawei-ca
 ### AppImage
 
 ```bash
-chmod +x ./kirin-tool-linux-2.4.7-x86_64.AppImage
-./kirin-tool-linux-2.4.7-x86_64.AppImage
+chmod +x ./kirin-tool-linux-2.4.8-x86_64.AppImage
+./kirin-tool-linux-2.4.8-x86_64.AppImage
 ```
 
 If FUSE2 is unavailable, run without mounting the image:
 
 ```bash
-./kirin-tool-linux-2.4.7-x86_64.AppImage --appimage-extract-and-run
+./kirin-tool-linux-2.4.8-x86_64.AppImage --appimage-extract-and-run
 ```
 
 On Arch/CachyOS you can alternatively install FUSE2 with `sudo pacman -S fuse2`.

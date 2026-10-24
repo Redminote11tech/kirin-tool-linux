@@ -1,10 +1,17 @@
-# Kirin Tool Linux 2.4.7
+# Kirin Tool Linux 2.4.8
 
-October 23, 2026. Stable and main share one source tree; beta remains separate.
+October 24, 2026. Stable and main share one source tree; beta remains separate.
 The frozen Windows source reference remains 45440d47296ef4c250fc03730259dbeebb245ebc.
 No newer Windows Kirin GUI source or new loader was imported. Preserve LICENSE and notices.
 
 ## Changes
+
+- 2.4.8 fixes discarded USB Update/Software Testpoint logging and preserves the
+  partition, header/data/finalization stage, data block offset and original error
+  response or timeout. Software Testpoint no longer replaces every transfer
+  failure with firmware-version advice. Logs include preparation/handshake stages
+  and exception details in the existing daily application log. No command bytes,
+  transfer sizes/timeouts, retries, loaders, patching or feature gates changed.
 
 - 2.4.7 restores original Fluent icons, dismissible warnings and action icons,
   and adds the assembly version and Linux-port credit to the caption.
@@ -79,7 +86,7 @@ the existing GUI SUPER merger or establish hardware parity; see the coverage rep
 Arch/CachyOS:
 
 ```sh
-sudo pacman -U ./kirin-tool-linux-2.4.7-1-x86_64.pkg.tar.zst
+sudo pacman -U ./kirin-tool-linux-2.4.8-1-x86_64.pkg.tar.zst
 kirin-tool
 ```
 
@@ -89,8 +96,8 @@ same transaction. It includes Huawei udev rules and uses distribution libraries.
 Portable AppImage:
 
 ```sh
-chmod +x ./kirin-tool-linux-2.4.7-x86_64.AppImage
-./kirin-tool-linux-2.4.7-x86_64.AppImage
+chmod +x ./kirin-tool-linux-2.4.8-x86_64.AppImage
+./kirin-tool-linux-2.4.8-x86_64.AppImage
 ```
 
 Baseline x86-64 and glibc 2.31+, with .NET and libusb bundled. Host desktop/font,

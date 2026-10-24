@@ -147,13 +147,13 @@ namespace Kirin_Tool
             _fastbootFlasherService = new FastbootFlasherService(_xmlFastbootClient);
 
             _usbUpdateFlasherService = new USBUpdateFlasherService(
-                msg => { }, 
+                msg => ProcessRunner.WriteDiagnostic("USB Update", msg),
                 "dload", 
                 async (title, message) => await ShowGlobalInteractionPromptAsync($"{title}: {message}")
             );
 
             _swTpService = new SoftwareTestpointService(
-                msg => { },
+                msg => ProcessRunner.WriteDiagnostic("Software Testpoint", msg),
                 "dload",
                 _fastbootClient,
                 async (title, message) => await ShowGlobalInteractionPromptAsync($"{title}: {message}")
@@ -1429,6 +1429,7 @@ namespace Kirin_Tool
             }
             catch (Exception ex)
             {
+                ProcessRunner.WriteDiagnostic("Software Testpoint", ex.ToString());
                 await ShowMessageBox("Error", ex.Message);
             }
         }

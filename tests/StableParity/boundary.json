@@ -20,8 +20,8 @@
     "sha256": "768f0c3ec23df7754011f9f9b538c538200ac6865ae4c9e62f3c9de451f92c28"
   },
   "Services/USBUpdate/SoftwareTestpointService.cs": {
-    "reference": "45440d47296ef4c250fc03730259dbeebb245ebc",
-    "sha256": "cb3e363a7181270da41f376b365cdc3fb8c471d321f2d3654b3addcf43677262"
+    "reference": "45440d47296ef4c250fc03730259dbeebb245ebc + v2.4.8 reviewed diagnostics-only service logging and error preservation; wire commands, timing, retries and firmware patching unchanged",
+    "sha256": "bdf035d14b46f04d6f95ba655c730ea4ab61beb1f52604d300928c42ac09631f"
   },
   "Services/VcomFlasher.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + verified Linux option COM1 port-open DTR/RTS adaptation; packet protocol unchanged + candidate modal prompt ownership and Linux tty reopen after instructed cable replug",
@@ -32,16 +32,16 @@
     "sha256": "e43e714a9537b2e87d4cf8ec8d20a4c63b7614466bcbd442563bb44be3be1ed5"
   },
   "Services/USBUpdate/UsbDownloadService.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Linux DBAdapter ff/13/23 discovery adaptation (Huawei hw_cdcacm.inf; no transport changes) + candidate5 transport abstraction; protocol checked against candidate4",
-    "sha256": "02f5fa9a0c5438b808d8decae4074a35cdc36b85d727128f47411c666a5f58a3"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Linux DBAdapter ff/13/23 discovery adaptation (Huawei hw_cdcacm.inf; no transport changes) + candidate5 transport abstraction; protocol checked against candidate4 + v2.4.8 reviewed diagnostics-only service logging and error preservation; wire commands, timing, retries and firmware patching unchanged",
+    "sha256": "9d6eedfef8d8b3fc973328f1c813123492afe55de7f07a3e0be660f112d6294b"
   },
   "Services/USBUpdate/USBUpdateApp.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
     "sha256": "a591aaa27091f76e125a95e61c0ecc69f9e7a29759bb0705a05e06ecd702540e"
   },
   "MainWindow.axaml.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug + candidate5 read-only query error reporting + candidate6 offline extractor navigation and cancellation on window close + candidate6 r3 navigation uses stable page Tags alongside icons (no device handlers changed) + portable AppImage read-only udev notice on Opened/Activated; device handlers unchanged + v2.4.3 reviewed Kirin9000 operation gates, experimental rescue image mapping/preflight, OEM version format parsing and flash failure details",
-    "sha256": "f8528a5460e140ef4dec70f48978348780ec8d6dbd8d8410e61864f6717d01bb"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug + candidate5 read-only query error reporting + candidate6 offline extractor navigation and cancellation on window close + candidate6 r3 navigation uses stable page Tags alongside icons (no device handlers changed) + portable AppImage read-only udev notice on Opened/Activated; device handlers unchanged + v2.4.3 reviewed Kirin9000 operation gates, experimental rescue image mapping/preflight, OEM version format parsing and flash failure details + v2.4.8 reviewed diagnostics-only service logging and error preservation; wire commands, timing, retries and firmware patching unchanged",
+    "sha256": "69ac889bef02d1b9e4781e0c3a01880614359d670c6395999b072d48b3e552ab"
   },
   "UI/ProcessDialogUapp.axaml.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Avalonia collection-binding initialization and completion-message fixes + candidate6 r2 additive offline extraction configuration/progress/finalization; legacy flashing methods unchanged",

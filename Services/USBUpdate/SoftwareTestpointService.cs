@@ -59,6 +59,7 @@ namespace Kirin_Tool.Services.USBUpdate
             };
 
 
+            _log($"Preparing Base UPDATE.APP: {Path.GetFullPath(updateAppPath)}");
             extractor.ExtractUpToXloader(updateAppPath);
 
             string xloaderPath = Path.Combine(_dloadDirectory, "XLOADER.img");
@@ -89,12 +90,13 @@ namespace Kirin_Tool.Services.USBUpdate
                 patcher.PatchXloaderHeader(xloaderHeaderPath);
 
                 patcher.ModifyListTxtStopAfterXloader();
+                _log("XLOADER patch verified; starting USB Update transfer.");
 
 
                 bool success = await Task.Run(() => usbService.FlashImages());
                 if (!success)
                 {
-                    throw new Exception("Failed to Software Testpoint the device!\n\nMake sure you are using the Base UPDATE from the exact or newer firmware that your device is running.");
+                    throw new IOException($"Software Testpoint transfer failed.\n\n{usbService.LastError ?? "No transfer details were returned."}\n\nSee the application log for details. Firmware compatibility has not been determined by this error.");
                 }
 
 

@@ -37,6 +37,16 @@ namespace Kirin_Tool.Services.USBUpdate
         private readonly Action<string> _log;
         private readonly string _dloadDirectory;
 
+        public string? LastError { get; private set; }
+        private static string FailureReason(Exception error) => error.InnerException == null
+            ? error.Message : $"{error.Message} ({error.GetBaseException().Message})";
+        private bool RecordFailure(string details)
+        {
+            LastError = details;
+            _log("FAILED: " + details);
+            return false;
+        }
+
         public Func<string, string, bool>? OnRetryRequired;
         public Action<int>? OnProgressUpdate;
         public Action<int, string>? OnPartitionStarted;
@@ -51,6 +61,8 @@ namespace Kirin_Tool.Services.USBUpdate
 
         public bool FlashImages()
         {
+            LastError = null;
+            _log("Opening USB Update connection.");
             IUpdateTransport port = null;
             
             while (port == null)
@@ -77,8 +89,10 @@ namespace Kirin_Tool.Services.USBUpdate
 
             try
             {
+                _log("USB Update connection opened; starting handshake.");
                 DoHandshake(port);
                 
+                _log("Handshake routine returned; sending package authorization if present.");
                 SendUnlockCommand(port);
                 
                 success = FlashPartitions(port);
@@ -92,6 +106,12 @@ namespace Kirin_Tool.Services.USBUpdate
                 else
                 {
                 }
+            }
+            catch (Exception ex)
+            {
+                RecordFailure(FailureReason(ex));
+                _log(ex.ToString());
+                throw;
             }
             finally
             {
@@ -176,9 +196,10 @@ namespace Kirin_Tool.Services.USBUpdate
                 Thread.Sleep(50);
 
                 byte[] response = ReadResponse(port);
-                
+                _log($"Handshake attempt {attempt}: {response.Length} response bytes; {Convert.ToHexString(response.AsSpan(0, Math.Min(64, response.Length)))}");
                 if (ContainsSequence(response, expectedPrefix))
                 {
+                    _log("Expected handshake response received.");
                     return;
                 }
 
@@ -187,7 +208,7 @@ namespace Kirin_Tool.Services.USBUpdate
                     Thread.Sleep(200);
                 }
             }
-
+            _log("Expected handshake response not observed; continuing the existing protocol sequence.");
         }
 
         private void SendUnlockCommand(IUpdateTransport port)
@@ -220,7 +241,7 @@ namespace Kirin_Tool.Services.USBUpdate
             string listPath = Path.Combine(_dloadDirectory, "list.txt");
             if (!File.Exists(listPath))
             {
-                return false;
+                return RecordFailure("Transfer preparation: list.txt was not found.");
             }
 
             var lines = File.ReadAllLines(listPath);
@@ -309,32 +330,46 @@ namespace Kirin_Tool.Services.USBUpdate
                 double fileSizeMB = fileSize / 1024.0 / 1024.0;
                 double tailTimeout = Math.Max(35.0, Math.Min(180.0, 15.0 + (fileSizeMB / 10.0)));
                 
+                _log($"Partition {name}: sending header; image size {fileSize} bytes.");
                 byte[] header = ReadHeader(name);
-                string? headError = SendCommandInternal(port, CreateHeadCommand(header), 2.0);
-                if (headError != null)
-                {
-                    throw new Exception($"Failed to send partition header.");
-                }
-                
-                int blockSize = 0x20000;
                 try
                 {
-                    string? imageError = SendImage(port, lineIndex, name, blockSize);
-                    if (imageError != null)
-                    {
-                        throw new Exception($"Failed to send partition data.");
-                    }
-                    string? tailError = SendCommandInternal(port, CreateTailCommand(header), tailTimeout);
-                    if (tailError != null)
-                    {
-                        throw new Exception($"Failed to finalize partition.");
-                    }
-                    OnPartitionCompleted?.Invoke(lineIndex, name, true, "Success");
+                    string? headError = SendCommandInternal(port, CreateHeadCommand(header), 2.0);
+                    if (headError != null) throw new IOException(headError);
                 }
                 catch (Exception ex)
                 {
-                    OnPartitionCompleted?.Invoke(lineIndex, name, false, ex.Message);
-                    return false;
+                    string details = $"Partition {name}, header: {FailureReason(ex)}";
+                    RecordFailure(details);
+                    throw new IOException(details, ex);
+                }
+
+                int blockSize = 0x20000;
+                string stage = "data transfer";
+                try
+                {
+                    _log($"Partition {name}: sending data.");
+                    string? imageError = SendImage(port, lineIndex, name, blockSize);
+                    if (imageError != null)
+                    {
+                        throw new IOException(imageError);
+                    }
+                    stage = "finalization";
+                    _log($"Partition {name}: finalizing; response timeout {tailTimeout:F1}s.");
+                    string? tailError = SendCommandInternal(port, CreateTailCommand(header), tailTimeout);
+                    if (tailError != null)
+                    {
+                        throw new IOException(tailError);
+                    }
+                    OnPartitionCompleted?.Invoke(lineIndex, name, true, "Success");
+                    _log($"Partition {name}: completed successfully.");
+                }
+                catch (Exception ex)
+                {
+                    string details = $"Partition {name}, {stage}: {FailureReason(ex)}";
+                    OnPartitionCompleted?.Invoke(lineIndex, name, false, details);
+                    _log(ex.ToString());
+                    return RecordFailure(details);
                 }
                 
                 lineIndex++;
@@ -376,10 +411,15 @@ namespace Kirin_Tool.Services.USBUpdate
                     double compressedSizeMB = compressed.Length / 1024.0 / 1024.0;
                     double timeout = Math.Max(1.0, Math.Min(8.0, compressedSizeMB * 1.5));
                     
-                    string? dataError = SendCommandInternal(port, dataCmd, timeout);
+                    string? dataError;
+                    try { dataError = SendCommandInternal(port, dataCmd, timeout); }
+                    catch (Exception ex)
+                    {
+                        throw new IOException($"Data block offset 0x{addr:X}: {FailureReason(ex)}", ex);
+                    }
                     if (dataError != null)
                     {
-                        return dataError;
+                        return $"Data block offset 0x{addr:X}: {dataError}";
                     }
 
                     addr += (uint)toRead;
@@ -424,6 +464,7 @@ namespace Kirin_Tool.Services.USBUpdate
             string? error = SendCommandInternal(port, cmd, timeout);
             if (error != null)
             {
+                _log("Command response failure: " + error);
                 return false;
             }
             return true;
@@ -489,11 +530,11 @@ namespace Kirin_Tool.Services.USBUpdate
                     {
                         return $"Device error (0x03). Response: {responseHex}";
                     }
-                    return $"Unexpected respond: {responseHex}";
+                    return $"Unexpected response: {responseHex}";
                 }
                 else
                 {
-                    return $"No respond within {timeoutMs}ms";
+                    return $"No response within {timeoutMs}ms";
                 }
             }
 
