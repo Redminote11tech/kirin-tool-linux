@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>KirinTool.Cli</AssemblyName>
+    <RootNamespace>Kirin_Tool.Cli</RootNamespace>
+    <Version>2.4.8</Version>
+    <RollForward>LatestMajor</RollForward>
+    <Product>Kirin Tool CLI</Product>
+    <Description>Headless CLI + MCP stdio entry for Kirin-Tool (local fork, read-only first).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Kirin-Tool.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <None Remove="tests/**" />
+  </ItemGroup>
+
+</Project>

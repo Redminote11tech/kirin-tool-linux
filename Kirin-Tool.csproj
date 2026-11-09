@@ -18,6 +18,12 @@
     <Compile Remove="tests/**/*.cs" />
     <EmbeddedResource Remove="tests/**" />
     <AvaloniaXaml Remove="tests/**" />
+    <!-- The CLI/MCP entry is a separate project under KirinTool.Cli/; keep it out of
+         this project's default globs so its generated AssemblyInfo is not compiled twice. -->
+    <Compile Remove="KirinTool.Cli/**/*.cs" />
+    <EmbeddedResource Remove="KirinTool.Cli/**" />
+    <AvaloniaXaml Remove="KirinTool.Cli/**" />
+    <None Remove="KirinTool.Cli/**" />
     <Content Include="logo.ico" />
     <AvaloniaResource Include="Assets/Fonts/*.ttf" />
     <Content Include="Assets/Fonts/LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
