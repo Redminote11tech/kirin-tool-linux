@@ -71,7 +71,7 @@
                          Padding="12"
                          MaxHeight="350">
 
-                <ItemsControl ItemsSource="{Binding PartitionItems}">
+                <ItemsControl x:Name="PartitionItemsControl" ItemsSource="{Binding PartitionItems}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <Border x:Name="PartitionBorder"
