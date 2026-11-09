@@ -38,6 +38,9 @@ public class DialogService
         var tcs = new TaskCompletionSource();
         dialog.Closed += (_, _) => tcs.TrySetResult();
         dialog.Show(_owner);
+        // Non-modal windows are not focused automatically; bring the dialog to the front so it
+        // does not end up stacked behind the main window.
+        dialog.Activate();
         return tcs.Task;
     }
 
