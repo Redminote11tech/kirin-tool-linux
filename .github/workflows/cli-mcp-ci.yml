@@ -1,0 +1,154 @@
+name: cli-mcp-ci
+
+# Lightweight CI for the headless CLI + stdio MCP entry points.
+#
+# Why a separate workflow instead of extending build.yml: the upstream release
+# pipeline (build.yml) only triggers on v* tags and builds the native fastboot
+# payload, the AppImage (glibc 2.31 container) and the pacman package. None of
+# that runs on a branch push, so it cannot gate the CLI/MCP change set. This
+# workflow is deliberately narrow: restore, build the two C# projects, run
+# hardware-free smoke tests, upload the CLI build output. Firmware/loaders and
+# the bundled fastboot payload are excluded from the artifact on purpose
+# (business-source-licensed assets, not build products).
+#
+# The main csproj runs "make -C native/usb-update" through its
+# BuildUsbUpdateBridge target on Linux, so the CI needs cc + pkg-config +
+# libusb-1.0 headers. That is the only native step required here; the whole
+# native/fastboot-modern build stays in build.yml.
+
+on:
+  push:
+    branches:
+      - main
+      - feat/cli-and-mcp-entry
+  pull_request:
+    branches:
+      - main
+      - feat/cli-and-mcp-entry
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cli-mcp-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-cli:
+    name: build CLI + MCP entry (net8.0)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DOTNET_NOLOGO: 'true'
+      DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Show SDK info
+        run: dotnet --info
+
+      # Required by the BuildUsbUpdateBridge target in Kirin-Tool.csproj.
+      - name: Install native build dependencies (libusb headers only)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential pkg-config libusb-1.0-0-dev
+
+      - name: Restore
+        run: |
+          dotnet restore Kirin-Tool.csproj
+          dotnet restore KirinTool.Cli/KirinTool.Cli.csproj
+
+      - name: Build main app (Release)
+        run: dotnet build Kirin-Tool.csproj -c Release --no-restore -p:NuGetAudit=false
+
+      - name: Build CLI project (Release)
+        run: dotnet build KirinTool.Cli/KirinTool.Cli.csproj -c Release --no-restore -p:NuGetAudit=false
+
+      # The runner has no phone in fastboot mode. BinaryLocator also probes PATH
+      # and /usr/bin, so a tiny stub is enough to exercise "doctor" end to end
+      # without installing platform-tools or touching USB.
+      - name: Smoke test - help, version, doctor (stubbed fastboot)
+        run: |
+          set -euo pipefail
+          cli=KirinTool.Cli/bin/Release/net8.0/KirinTool.Cli
+          test -x "$cli"
+
+          "$cli" --help | tee /tmp/help.txt
+          grep -q 'usage: kirintool' /tmp/help.txt
+          grep -q 'mcp' /tmp/help.txt
+
+          "$cli" version
+
+          stub="$RUNNER_TEMP/stub-bin"
+          mkdir -p "$stub"
+          # Written with echo (not a heredoc): a YAML block scalar cannot hold
+          # column-0 lines, and a shebang needs to start at column 0.
+          {
+            echo '#!/usr/bin/env bash'
+            echo 'if [ "${1:-}" = "--version" ]; then echo "fastboot version 35.0.2-ci-stub"; exit 0; fi'
+            echo 'if [ "${1:-}" = "devices" ]; then exit 0; fi'
+            echo 'echo "FAILED (remote: no device in CI stub)"; exit 1'
+          } > "$stub/fastboot"
+          chmod +x "$stub/fastboot"
+
+          KIRIN_FASTBOOT="$stub/fastboot" "$cli" doctor --json | tee /tmp/doctor.json
+          grep -q '"fastboot-found"' /tmp/doctor.json
+          grep -q '"loaders-bundled"' /tmp/doctor.json
+          "$stub/fastboot" --version
+
+      - name: Smoke test - stdio MCP session
+        run: |
+          set -euo pipefail
+          cli=KirinTool.Cli/bin/Release/net8.0/KirinTool.Cli
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | "$cli" mcp 2>/tmp/mcp.err | tee /tmp/mcp.out
+          grep -q '"result"' /tmp/mcp.out
+          grep -q '"tools"' /tmp/mcp.out
+          grep -q '"flash_ota"' /tmp/mcp.out
+
+      # Build products only: skip the bundled loaders (**/*.ktl firmware) and the
+      # fastboot/payload blob, they are licensed assets copied from the repo,
+      # not something CI produced. The Skia/Avalonia native runtimes for
+      # win-*/osx/arm/musl are pull-through from Avalonia's package and account
+      # for ~120 MB; only runtimes/linux-x64 is kept so the artifact stays usable
+      # on x64 Linux without uploading other platforms' binaries.
+      - name: Stage artifact (CLI output, no firmware)
+        run: |
+          set -euo pipefail
+          src=KirinTool.Cli/bin/Release/net8.0
+          dst=artifact/KirinTool.Cli
+          mkdir -p "$dst"
+          rsync -a \
+            --exclude 'runtimes/' \
+            --exclude 'loaders/' \
+            --exclude 'fastboot/' \
+            --exclude 'fastboot-modern/' \
+            --exclude '*.pdb' \
+            --exclude '*.dbg' \
+            "$src/" "$dst/"
+          # Re-add only the x64 Linux native runtimes (SkiaSharp/HarfBuzzSharp).
+          mkdir -p "$dst/runtimes"
+          rsync -a "$src/runtimes/linux-x64" "$dst/runtimes/"
+          # Belt and braces: never ship a large blob by accident.
+          find artifact -type f -size +25M -print -delete
+          du -sh artifact/KirinTool.Cli
+          ls artifact/KirinTool.Cli | head -40
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kirin-tool-cli-${{ github.sha }}
+          path: artifact/KirinTool.Cli
+          if-no-files-found: error
+          retention-days: 14
