@@ -17,6 +17,18 @@ Check(ChipCapabilities.Allows("hisi9000","reboot-usb-update"),"experimental resc
 foreach(var operation in new[]{"unlock-fastboot","write-sn","frp-remove","unlock-bootloader","enable-downgrade","sw-testpoint-enter","sw-testpoint-exit","dump-partitions","flash-xml","full-ota","convert-oem","reboot"})
  Check(!ChipCapabilities.Allows("hisi9000",operation),operation+" blocked");
 Check(ChipCapabilities.Allows("hisi980","write-sn")&&ChipCapabilities.Allows("hisi990","unlock-fastboot"),"existing chip policy retained");
+// D-17 (2026-11-17): an unknown/typo chip is no longer a wildcard. Every operation, including
+// the read-only ones, is denied; and the known-chip list is the loader table itself.
+foreach(var unknown in new[]{"","hisi000","his i990","kirin990","HISI990x"})
+{
+ Check(!ChipCapabilities.IsKnownChip(unknown),$"unknown chip '{unknown}' is not known");
+ foreach(var operation in new[]{"read-info","read-sn","write-sn","unlock-fastboot","full-ota","convert-oem"})
+  Check(!ChipCapabilities.Allows(unknown,operation),$"unknown chip '{unknown}' cannot do {operation}");
+ Check(ChipCapabilities.NoticeFor(unknown)!=null,$"unknown chip '{unknown}' has a notice");
+}
+Check(ChipCapabilities.IsKnownChip("HISI990")&&ChipCapabilities.Allows("HISI990","unlock-fastboot"),"known chip matching is case-insensitive");
+Check(ChipCapabilities.NoticeFor("hisi990")==null,"a known chip has no notice");
+Console.WriteLine("PASS D-17 unknown chipset is denied instead of allowed-everything");
 Check(RescuePartitionPlan.ForChip("hisi9000").Select(x=>x.Image).SequenceEqual(new[]{"ERECOVERY","ERECOVERY_RAMDISK","ERECOVERY_VENDOR"}),"Mate40 firmware image names");
 Check(RescuePartitionPlan.ForChip("hisi9000")[0].Target=="rescue_recovery","explicit experimental destination");
 Check(RescuePartitionPlan.ForChip("hisi980")[0]==new RescueImageTarget("ERECOVERY_KERNEL","rescue_recovery_kernel"),"older rescue mapping retained");
