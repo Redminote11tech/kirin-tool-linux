@@ -343,12 +343,41 @@ namespace Kirin_Tool.UI
             try
             {
                 var index = PartitionItems.IndexOf(item);
-                if (index >= 0 && PartitionScrollViewer != null)
+                if (index < 0 || PartitionScrollViewer == null) return;
+
+                // Preferred path: ask the ItemsControl for the realized container and use its
+                // real (variable) height/position instead of extrapolating a fixed item height.
+                if (PartitionItemsControl?.ContainerFromIndex(index) is Control container &&
+                    container.Bounds.Height > 0)
                 {
-                    var itemHeight = 60;
-                    var scrollPosition = index * itemHeight;
-                    PartitionScrollViewer.Offset = new Vector(PartitionScrollViewer.Offset.X, Math.Max(0, scrollPosition - 100));
+                    var topLeft = container.TranslatePoint(new Point(0, 0), PartitionScrollViewer);
+                    if (topLeft.HasValue)
+                    {
+                        var viewportHeight = PartitionScrollViewer.Viewport.Height;
+                        var itemTop = topLeft.Value.Y;
+                        var itemBottom = itemTop + container.Bounds.Height;
+                        const double margin = 8;
+
+                        double delta = 0;
+                        if (itemBottom > viewportHeight - margin)
+                            delta = itemBottom - (viewportHeight - margin);
+                        else if (itemTop < margin)
+                            delta = itemTop - margin;
+
+                        if (Math.Abs(delta) > 0.5)
+                        {
+                            var maxOffset = Math.Max(0, PartitionScrollViewer.Extent.Height - viewportHeight);
+                            var newY = Math.Clamp(PartitionScrollViewer.Offset.Y + delta, 0, maxOffset);
+                            PartitionScrollViewer.Offset = new Vector(PartitionScrollViewer.Offset.X, newY);
+                        }
+                        return;
+                    }
                 }
+
+                // Fallback: legacy fixed-height estimate (only when the container is not realized).
+                var itemHeight = 60;
+                var scrollPosition = index * itemHeight;
+                PartitionScrollViewer.Offset = new Vector(PartitionScrollViewer.Offset.X, Math.Max(0, scrollPosition - 100));
             }
             catch (Exception ex)
             {

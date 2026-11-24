@@ -1823,6 +1823,9 @@ namespace Kirin_Tool
 
                 if (!deviceReappeared)
                 {
+                    // Close the progress dialog before showing the message box: leaving it open
+                    // leaks the window and both windows fight over z-order.
+                    try { progressDialog.Close(); } catch { }
                     await ShowMessageBox("Timeout", "Device did not reappear in fastboot mode after reboot.");
                     return;
                 }
