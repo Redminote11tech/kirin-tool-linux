@@ -8,8 +8,8 @@
     "sha256": "17da39cb6a3bfe2abf3ec422dc95c8c6e68b02d325354c48f4ae6d8750636415"
   },
   "Services/OemInfoEditor.cs": {
-    "reference": "45440d47296ef4c250fc03730259dbeebb245ebc",
-    "sha256": "63cb0cc92e13914a66ab9140d7b419ee92b9b75dda38f9244292ebd3eaaefe6d"
+    "reference": "45440d47296ef4c250fc03730259dbeebb245ebc + D-11: EditEntriesDetailed reports how many model/region entries were rewritten; a conversion that matches nothing is no longer treated as success (EditEntries keeps its signature).",
+    "sha256": "6f95d2c6ed2e792c28258a209e2fa4a6d4ef7d08cee5313da166062e4a48a902"
   },
   "Security/CryptoUtil.cs": {
     "reference": "45440d47296ef4c250fc03730259dbeebb245ebc",
@@ -36,16 +36,16 @@
     "sha256": "9d6eedfef8d8b3fc973328f1c813123492afe55de7f07a3e0be660f112d6294b"
   },
   "Services/USBUpdate/USBUpdateApp.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
-    "sha256": "a591aaa27091f76e125a95e61c0ecc69f9e7a29759bb0705a05e06ecd702540e"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + path-traversal guard: entry names are validated against the known partition-name table before extraction.",
+    "sha256": "3ce23cc20e874d72b145c16b89d298e7a90748ed859457643cd0c705430fadd8"
   },
   "MainWindow.axaml.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug + candidate5 read-only query error reporting + candidate6 offline extractor navigation and cancellation on window close + candidate6 r3 navigation uses stable page Tags alongside icons (no device handlers changed) + portable AppImage read-only udev notice on Opened/Activated; device handlers unchanged + v2.4.3 reviewed Kirin9000 operation gates, experimental rescue image mapping/preflight, OEM version format parsing and flash failure details + v2.4.8 reviewed diagnostics-only service logging and error preservation; wire commands, timing, retries and firmware patching unchanged",
-    "sha256": "69ac889bef02d1b9e4781e0c3a01880614359d670c6395999b072d48b3e552ab"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + D-05: partitions skipped by the secure-partition gate are counted as skipped instead of successful.",
+    "sha256": "2c142d1541eef370546fcaafbaa116f4f6ab3e21a69a97e1a1cf427e6d3c86af"
   },
   "UI/ProcessDialogUapp.axaml.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Avalonia collection-binding initialization and completion-message fixes + candidate6 r2 additive offline extraction configuration/progress/finalization; legacy flashing methods unchanged",
-    "sha256": "03596eab8eb72be4c482023ad47c74daa17cb9a68ba21f8ac7a26e1a0399ffbb"
+    "sha256": "fd8064b1a6f3d1e48fb1318e33d40aaf4593523e11fd00c9dce5e1696c3e9998"
   },
   "UI/ProgressDialog.axaml.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",
