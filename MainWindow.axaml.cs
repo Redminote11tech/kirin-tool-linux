@@ -21,6 +21,7 @@
 using Kirin_Tool.Models;
 using Kirin_Tool.Services;
 using Kirin_Tool.Services.USBUpdate;
+using Kirin_Tool.Services.Verdict;
 using Kirin_Tool.UI;
 using Kirin_Tool.Utils;
 
@@ -1894,8 +1895,11 @@ namespace Kirin_Tool
                     var finalResult = await _fastbootClient.GetVarAsync("rescue_enter_recovery");
 
                     if (!string.IsNullOrEmpty(finalResult) && 
-                        (finalResult.ToUpper().Contains("OKAY") || 
-                         finalResult.ToUpper().Contains("SUCCESS") || 
+                        // D-10: line-anchored verdict — OKAY/SUCCESS must lead a line; a
+                        // failure token in the reply (e.g. "FAILED (remote: ...)") wins.
+                        // GetVarAsync hands back the merged stream, so the classifier runs
+                        // in its legacy single-stream mode here.
+                        (CommandOutput.Classify(finalResult) == CommandOutputVerdict.Succeeded || 
                          finalResult.Contains("This is sec phone!!") || 
                          finalResult.Contains("start to hisuite")))
                     {
@@ -2043,10 +2047,13 @@ namespace Kirin_Tool
                 }
                 
                 bool isSuccess = finalOutput.Contains("The device will reboot and do factory reset") ||
-                                finalOutput.ToUpper().Contains("OKAY");
+                                // D-10: line-anchored verdict — success needs a line-leading
+                                // OKAY/SUCCESS, failure tokens anywhere win over a stray OKAY.
+                                // UnlockBootloaderAsync exposes the merged stream, so the
+                                // classifier runs in its legacy single-stream mode here.
+                                CommandOutput.Classify(finalOutput) == CommandOutputVerdict.Succeeded;
                 
-                bool isFailure = finalOutput.ToUpper().Contains("ERROR") ||
-                               finalOutput.ToUpper().Contains("FAILED");
+                bool isFailure = CommandOutput.Classify(finalOutput) == CommandOutputVerdict.Failed;
 
                 if (isSuccess)
                 {
@@ -2262,7 +2269,9 @@ namespace Kirin_Tool
 
                 var flashResult = await _oemInfoService.FlashConvertedOemInfo(filePath);
 
-                if (flashResult.IsSuccess && flashResult.Output.ToUpper().Contains("OKAY"))
+                // D-10: success only when stdout carries a line-leading OKAY/SUCCESS;
+                // "FAILED (remote: ...)" on the next line is a failure, not a success.
+                if (flashResult.IsSuccess && CommandOutput.Classify(flashResult) == CommandOutputVerdict.Succeeded)
                 {
                     progressDialog.UpdateOverallStatus("OEMInfo flashed successfully!");
                     progressDialog.ProgressItems[0].StatusText = "Done";

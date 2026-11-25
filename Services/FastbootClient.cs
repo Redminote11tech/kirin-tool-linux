@@ -19,6 +19,7 @@
  */
 
 using Kirin_Tool.Models;
+using Kirin_Tool.Services.Verdict;
 using Kirin_Tool.Utils;
 using System;
 using System.Diagnostics;
@@ -116,15 +117,17 @@ namespace Kirin_Tool.Services
             var result = new FrpBypassResult();
 
             var step1Result = await ProcessRunner.RunAsync(_fastbootPath, "erase frp");
-            result.Step1Success = step1Result.IsSuccess && step1Result.Output.ToUpper().Contains("OKAY");
+            // D-10: success only when stdout carries a line-leading OKAY/SUCCESS; a
+            // failure token anywhere (e.g. "FAILED (remote: ...)") wins over a stray OKAY.
+            result.Step1Success = step1Result.IsSuccess && CommandOutput.Classify(step1Result) == CommandOutputVerdict.Succeeded;
             result.Step1Output = step1Result.Output;
 
             var step2Result = await ProcessRunner.RunAsync(_fastbootPath, "erase config");
-            result.Step2Success = step2Result.IsSuccess && step2Result.Output.ToUpper().Contains("OKAY");
+            result.Step2Success = step2Result.IsSuccess && CommandOutput.Classify(step2Result) == CommandOutputVerdict.Succeeded;
             result.Step2Output = step2Result.Output;
 
             var step3Result = await ProcessRunner.RunAsync(_fastbootPath, "oem frp-erase");
-            result.Step3Success = step3Result.IsSuccess && step3Result.Output.ToUpper().Contains("OKAY");
+            result.Step3Success = step3Result.IsSuccess && CommandOutput.Classify(step3Result) == CommandOutputVerdict.Succeeded;
             result.Step3Output = step3Result.Output;
 
 
@@ -136,19 +139,19 @@ namespace Kirin_Tool.Services
             var result = new EnableDowngradeResult();
 
             var step1Result = await ProcessRunner.RunAsync(_fastbootPath, "oem oeminfoerase-amssver");
-            result.Step1Success = step1Result.IsSuccess && step1Result.Output.ToUpper().Contains("OKAY");
+            result.Step1Success = step1Result.IsSuccess && CommandOutput.Classify(step1Result) == CommandOutputVerdict.Succeeded;
             result.Step1Output = step1Result.Output;
 
             var step2Result = await ProcessRunner.RunAsync(_fastbootPath, "oem oeminfoerase-basever");
-            result.Step2Success = step2Result.IsSuccess && step2Result.Output.ToUpper().Contains("OKAY");
+            result.Step2Success = step2Result.IsSuccess && CommandOutput.Classify(step2Result) == CommandOutputVerdict.Succeeded;
             result.Step2Output = step2Result.Output;
 
             var step3Result = await ProcessRunner.RunAsync(_fastbootPath, "oem oeminfoerase-custver");
-            result.Step3Success = step3Result.IsSuccess && step3Result.Output.ToUpper().Contains("OKAY");
+            result.Step3Success = step3Result.IsSuccess && CommandOutput.Classify(step3Result) == CommandOutputVerdict.Succeeded;
             result.Step3Output = step3Result.Output;
 
             var step4Result = await ProcessRunner.RunAsync(_fastbootPath, "oem oeminfoerase-preloadver");
-            result.Step4Success = step4Result.IsSuccess && step4Result.Output.ToUpper().Contains("OKAY");
+            result.Step4Success = step4Result.IsSuccess && CommandOutput.Classify(step4Result) == CommandOutputVerdict.Succeeded;
             result.Step4Output = step4Result.Output;
 
             return result;
