@@ -72,7 +72,20 @@ namespace Kirin_Tool.Services
                 progress?.Report("Converting OEMInfo...");
                 var originalData = await File.ReadAllBytesAsync(sourceFilePath);
                 var editor = new OemInfoEditor(originalData);
-                var modifiedData = editor.EditEntries(model, vendorCountry);
+                var edit = editor.EditEntriesDetailed(model!, vendorCountry!);
+                var modifiedData = edit.Data;
+
+                // D-11 / audit F05: zero matched entries used to be a "success" whose output was
+                // byte-identical to its input; that image would be flashed back unchanged while
+                // the UI said the model/region had been converted.
+                if (!edit.AnyRewritten)
+                {
+                    result.ErrorMessage =
+                        "OEMInfo conversion matched 0 entries for version " + editor.DetectedVersion +
+                        "; the image was not modified (nothing to rewrite for model/region).";
+                    progress?.Report("Conversion failed: no matching OEMINFO entry was found!");
+                    return result;
+                }
 
                 result.ConvertedData = modifiedData;
                 result.IsSuccess = true;

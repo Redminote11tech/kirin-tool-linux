@@ -34,6 +34,9 @@ namespace Kirin_Tool.Services
         private readonly byte[] _binaryData;
         private readonly int _detectedVersion;
 
+        /// <summary>The OEMINFO block version found in the image (for verdict text).</summary>
+        public int DetectedVersion => _detectedVersion;
+
         private static readonly Dictionary<int, (List<int> ModelIds, int RegionId)> TargetIdsMap = new Dictionary<int, (List<int>, int)>
         {
             { 6, (new List<int>{0x5b, 0x61}, 0x12) },
@@ -65,13 +68,28 @@ namespace Kirin_Tool.Services
             return -1;
         }
 
-        public byte[] EditEntries(string model, string regionVendor)
+        /// <summary>Longest accepted model/vendor value (a GPT name is 36 chars; 64 is generous).</summary>
+        public const int MaxFieldLength = 64;
+
+        /// <summary>
+        /// D-11 / audit F05: the counts come back with the bytes, so a conversion that matched
+        /// <b>no</b> entry can be reported as a failure instead of a silent "success" whose
+        /// output is byte-identical to the input.
+        /// </summary>
+        public sealed record EditOutcome(byte[] Data, int ModelEntriesRewritten, int RegionEntriesRewritten)
+        {
+            public bool AnyRewritten => ModelEntriesRewritten > 0 || RegionEntriesRewritten > 0;
+        }
+
+        public EditOutcome EditEntriesDetailed(string model, string regionVendor)
         {
             if (!TargetIdsMap.ContainsKey(_detectedVersion))
                 throw new System.NotSupportedException($"OEMINFO version '{_detectedVersion}' is not supported for modification.");
 
             var targets = TargetIdsMap[_detectedVersion];
             var modifiedData = (byte[])_binaryData.Clone();
+            int modelHits = 0;
+            int regionHits = 0;
 
             for (int offset = 0; offset < modifiedData.Length; offset += BlockSize)
             {
@@ -84,13 +102,22 @@ namespace Kirin_Tool.Services
                 if (entryVersion == _detectedVersion)
                 {
                     if (targets.ModelIds.Contains(entryId))
+                    {
                         UpdateEntry(modifiedData, offset, model);
+                        modelHits++;
+                    }
                     else if (targets.RegionId == entryId)
+                    {
                         UpdateEntry(modifiedData, offset, regionVendor);
+                        regionHits++;
+                    }
                 }
             }
-            return modifiedData;
+            return new EditOutcome(modifiedData, modelHits, regionHits);
         }
+
+        public byte[] EditEntries(string model, string regionVendor) =>
+            EditEntriesDetailed(model, regionVendor).Data;
 
         private void UpdateEntry(byte[] data, int blockOffset, string newString)
         {

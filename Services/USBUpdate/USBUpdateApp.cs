@@ -23,6 +23,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Kirin_Tool.Models;
+using Kirin_Tool.Utils;
 
 namespace Kirin_Tool.Services.USBUpdate
 {
@@ -37,6 +38,48 @@ namespace Kirin_Tool.Services.USBUpdate
             _dloadDirectory = dloadDirectory;
         }
 
+        /// <summary>
+        /// Target path for one extracted entry. The name comes from the package header (32 raw
+        /// bytes) and is untrusted: it goes through the shared whitelist
+        /// (<see cref="PartitionNames"/>) and the resolved path is re-checked against the transfer
+        /// directory, so a name like "../../evil" cannot write outside it (audit 2026-11-15 §1.1).
+        /// </summary>
+        private string ImagePath(string partitionName, string suffix) =>
+            PartitionNames.ChildPathWithin(_dloadDirectory, partitionName, suffix);
+
+        /// <summary>
+        /// Creates the extraction target exclusively (CreateNew) with 0600 on Unix. Any existing
+        /// entry at the validated path is removed first: that deletes a planted symlink instead of
+        /// following it, and keeps a re-extraction into the same directory working exactly as before.
+        /// </summary>
+        private static FileStream CreateExtractionFile(string path)
+        {
+            if (File.Exists(path) || IsSymlink(path)) File.Delete(path);
+
+            var options = new FileStreamOptions
+            {
+                Mode = FileMode.CreateNew,
+                Access = FileAccess.Write,
+                Share = FileShare.None,
+            };
+            if (!OperatingSystem.IsWindows())
+                options.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            return new FileStream(path, options);
+        }
+
+        /// <summary>File.Exists is false for a dangling symlink; File.Delete still removes the link.</summary>
+        private static bool IsSymlink(string path)
+        {
+            try { return new FileInfo(path).LinkTarget != null; }
+            catch (Exception) { return false; }
+        }
+
+        private static void WriteBytesSafely(string path, byte[] bytes)
+        {
+            using FileStream file = CreateExtractionFile(path);
+            file.Write(bytes, 0, bytes.Length);
+        }
+
         public void ExtractUpToXloader(string updateAppPath)
         {
             Directory.CreateDirectory(_dloadDirectory);
@@ -44,10 +87,12 @@ namespace Kirin_Tool.Services.USBUpdate
             using (FileStream fs = new FileStream(updateAppPath, FileMode.Open, FileAccess.Read))
             using (BinaryReader reader = new BinaryReader(fs))
             {
-                int startAddr = 0;
+                long startAddr = 0;
                 byte[] unlockCmd = FindUnlockCode(reader, ref startAddr);
 
-                File.WriteAllBytes(Path.Combine(_dloadDirectory, "unlockcode"), unlockCmd);
+                // 0600: the unlock code is a package-authorization secret (OperationLogger already
+                // masks it in the logs); it must not be world-readable on disk (audit 2026-11-15 §4.1).
+                WriteBytesSafely(PartitionNames.ChildPathWithin(_dloadDirectory, "unlockcode", ""), unlockCmd);
 
                 fs.Seek(startAddr, SeekOrigin.Begin);
 
@@ -65,10 +110,10 @@ namespace Kirin_Tool.Services.USBUpdate
                         break;
 
 
-                    string headerPath = Path.Combine(_dloadDirectory, $"{partitionName}.img.header");
-                    File.WriteAllBytes(headerPath, headerData);
+                    string headerPath = ImagePath(partitionName, ".img.header");
+                    WriteBytesSafely(headerPath, headerData);
 
-                    string imgPath = Path.Combine(_dloadDirectory, $"{partitionName}.img");
+                    string imgPath = ImagePath(partitionName, ".img");
                     ExtractImageData(reader, imgPath, dataLength);
 
                     if (File.Exists(imgPath))
@@ -117,7 +162,7 @@ namespace Kirin_Tool.Services.USBUpdate
             using (FileStream fs = new FileStream(updateAppPath, FileMode.Open, FileAccess.Read))
             using (BinaryReader reader = new BinaryReader(fs))
             {
-                int startAddr = 0;
+                long startAddr = 0;
                 FindUnlockCode(reader, ref startAddr);
                 fs.Seek(startAddr, SeekOrigin.Begin);
 
@@ -133,9 +178,9 @@ namespace Kirin_Tool.Services.USBUpdate
 
                     if (partitionName.Equals(targetPartition, StringComparison.OrdinalIgnoreCase))
                     {
-                        File.WriteAllBytes(Path.Combine(_dloadDirectory, $"{partitionName}.img.header"), headerData);
+                        WriteBytesSafely(ImagePath(partitionName, ".img.header"), headerData);
 
-                        string imgPath = Path.Combine(_dloadDirectory, $"{partitionName}.img");
+                        string imgPath = ImagePath(partitionName, ".img");
                         ExtractImageData(reader, imgPath, dataLength);
                         return;
                     }
@@ -160,10 +205,10 @@ namespace Kirin_Tool.Services.USBUpdate
             }
         }
 
-        public (List<string> imageList, int startAddr) GetPartitionNames(string updateAppPath)
+        public (List<string> imageList, long startAddr) GetPartitionNames(string updateAppPath)
         {
             List<string> imageList = new List<string>();
-            int foundAddr = 0;
+            long foundAddr = 0;
 
             using (FileStream fs = new FileStream(updateAppPath, FileMode.Open, FileAccess.Read))
             using (BinaryReader reader = new BinaryReader(fs))
@@ -201,7 +246,7 @@ namespace Kirin_Tool.Services.USBUpdate
             return (imageList, foundAddr);
         }
 
-        public List<string> ExtractAllPartitions(string updateAppPath, bool extractUnlockCode = false, int startAddr = -1, Action<int>? onProgress = null, List<string>? includePartitions = null)
+        public List<string> ExtractAllPartitions(string updateAppPath, bool extractUnlockCode = false, long startAddr = -1, Action<int>? onProgress = null, List<string>? includePartitions = null)
         {
             Directory.CreateDirectory(_dloadDirectory);
 
@@ -212,16 +257,16 @@ namespace Kirin_Tool.Services.USBUpdate
             {
                 if (startAddr == -1)
                 {
-                    int foundAddr = 0;
+                    long foundAddr = 0;
                     byte[] unlockCmd = FindUnlockCode(reader, ref foundAddr);
                     startAddr = foundAddr;
 
                     if (extractUnlockCode)
                     {
-                        string unlockPath = Path.Combine(_dloadDirectory, "unlockcode");
+                        string unlockPath = PartitionNames.ChildPathWithin(_dloadDirectory, "unlockcode", "");
                         if (!File.Exists(unlockPath))
                         {
-                            File.WriteAllBytes(unlockPath, unlockCmd);
+                            WriteBytesSafely(unlockPath, unlockCmd);
                         }
                     }
                 }
@@ -257,10 +302,10 @@ namespace Kirin_Tool.Services.USBUpdate
                     }
 
 
-                    string headerPath = Path.Combine(_dloadDirectory, $"{partitionName}.img.header");
-                    File.WriteAllBytes(headerPath, headerData);
+                    string headerPath = ImagePath(partitionName, ".img.header");
+                    WriteBytesSafely(headerPath, headerData);
 
-                    string imgPath = Path.Combine(_dloadDirectory, $"{partitionName}.img");
+                    string imgPath = ImagePath(partitionName, ".img");
                     ExtractImageData(reader, imgPath, dataLength);
 
                     if (File.Exists(imgPath))
@@ -291,7 +336,7 @@ namespace Kirin_Tool.Services.USBUpdate
             return imageList;
         }
 
-        private byte[] FindUnlockCode(BinaryReader reader, ref int startAddr)
+        private byte[] FindUnlockCode(BinaryReader reader, ref long startAddr)
         {
             long length = reader.BaseStream.Length;
             int bufferSize = 64 * 1024;
@@ -308,7 +353,9 @@ namespace Kirin_Tool.Services.USBUpdate
                 {
                     if (buffer[i] == 0x55 && buffer[i + 1] == 0xAA && buffer[i + 2] == 0x5A && buffer[i + 3] == 0xA5)
                     {
-                        startAddr = (int)(currentPos + i);
+                        // long: a >2 GiB package used to truncate the offset into a negative int
+                        // and the following Seek threw (audit 2026-11-15 round3 §1.3).
+                        startAddr = currentPos + i;
                         reader.BaseStream.Seek(startAddr + 12, SeekOrigin.Begin);
                         byte[] unlockCode = reader.ReadBytes(8);
                         
@@ -363,6 +410,12 @@ namespace Kirin_Tool.Services.USBUpdate
 
             headerWriter.Write(reader.ReadBytes(6));
 
+            // The header length is an attacker-controlled int32 from the package. A value below
+            // the 98-byte fixed part would seek backwards, and an unbounded one would be read
+            // whole into memory (audit 2026-11-15 round3 §1.3).
+            if (headerLength < 98 || headerLength > 4096)
+                throw new InvalidDataException("UPDATE.APP entry declares an implausible header length (" + headerLength + ")");
+
             int remainingHeaderLen = headerLength - 98;
 
             if (remainingHeaderLen > 0)
@@ -375,7 +428,9 @@ namespace Kirin_Tool.Services.USBUpdate
 
         private void ExtractImageData(BinaryReader reader, string outputPath, long dataLength)
         {
-            using (FileStream outFile = new FileStream(outputPath, FileMode.Create, FileAccess.Write))
+            // Validated path + CreateNew + 0600: never FileMode.Create (it follows symlinks and
+            // truncates whatever is already there).
+            using (FileStream outFile = CreateExtractionFile(outputPath))
             {
                 long remaining = dataLength;
                 int bufferSize = 1024 * 1024;

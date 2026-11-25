@@ -171,7 +171,9 @@ namespace Kirin_Tool.Utils
                 }
                 else _fileStream.Seek(alignment, SeekOrigin.Current);
 
-                if (_strict && (string.IsNullOrWhiteSpace(type) || type.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '_' && c != '-' && c != '.') || type == "." || type == ".."))
+                // One whitelist for both parsers (Utils/PartitionNames.cs): the loose USB-update
+                // extractor used to concatenate this name into a path with no check at all.
+                if (_strict && !PartitionNames.IsSafe(type))
                     throw new InvalidDataException("Invalid partition name in UPDATE.APP.");
                 string partitionName = _isUsbMode ? type : GetPartitionName(type);
                 if (string.IsNullOrWhiteSpace(partitionName)) partitionName = "UNKNOWN";
