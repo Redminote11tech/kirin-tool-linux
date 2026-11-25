@@ -30,7 +30,11 @@ namespace Kirin_Tool.Models
     {
         public int ExitCode { get; set; }
         public string Output { get; set; }
-        public string Arguments { get; set; }
+        // D-10 / audit S24: the merged text above stays for compatibility, but the streams are
+        // also kept apart so a verdict can require the success token to come from stdout.
+        public string StandardOutput { get; set; } = string.Empty;
+        public string ErrorOutput { get; set; } = string.Empty;
+        public string Arguments { get; set; } = string.Empty;
         public bool IsSuccess => ExitCode == 0;
     }
 }
