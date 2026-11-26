@@ -40,12 +40,12 @@
     "sha256": "a591aaa27091f76e125a95e61c0ecc69f9e7a29759bb0705a05e06ecd702540e"
   },
   "MainWindow.axaml.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug + candidate5 read-only query error reporting + candidate6 offline extractor navigation and cancellation on window close + candidate6 r3 navigation uses stable page Tags alongside icons (no device handlers changed) + portable AppImage read-only udev notice on Opened/Activated; device handlers unchanged + v2.4.3 reviewed Kirin9000 operation gates, experimental rescue image mapping/preflight, OEM version format parsing and flash failure details + v2.4.8 reviewed diagnostics-only service logging and error preservation; wire commands, timing, retries and firmware patching unchanged",
-    "sha256": "69ac889bef02d1b9e4781e0c3a01880614359d670c6395999b072d48b3e552ab"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed OEMInfo Avalonia null-text compatibility fix + candidate modal prompt ownership and Linux tty reopen after instructed cable replug + candidate5 read-only query error reporting + candidate6 offline extractor navigation and cancellation on window close + candidate6 r3 navigation uses stable page Tags alongside icons (no device handlers changed) + portable AppImage read-only udev notice on Opened/Activated; device handlers unchanged + v2.4.3 reviewed Kirin9000 operation gates, experimental rescue image mapping/preflight, OEM version format parsing and flash failure details + v2.4.8 reviewed diagnostics-only service logging and error preservation; wire commands, timing, retries and firmware patching unchanged + PR #2 reviewed timeout progress-dialog close",
+    "sha256": "fbe1d3b44ef0fc57d569af0aeb8225752fdca8f07bb46633f390ae18a5db27e8"
   },
   "UI/ProcessDialogUapp.axaml.cs": {
-    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Avalonia collection-binding initialization and completion-message fixes + candidate6 r2 additive offline extraction configuration/progress/finalization; legacy flashing methods unchanged",
-    "sha256": "03596eab8eb72be4c482023ad47c74daa17cb9a68ba21f8ac7a26e1a0399ffbb"
+    "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b + reviewed Avalonia collection-binding initialization and completion-message fixes + candidate6 r2 additive offline extraction configuration/progress/finalization; legacy flashing methods unchanged + PR #2 reviewed container-based ScrollToPartition accuracy",
+    "sha256": "fd8064b1a6f3d1e48fb1318e33d40aaf4593523e11fd00c9dce5e1696c3e9998"
   },
   "UI/ProgressDialog.axaml.cs": {
     "reference": "8b8a2b46cd6b1cf455cb277ac55a42fc942eeb9b",

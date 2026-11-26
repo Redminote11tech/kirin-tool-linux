@@ -17,6 +17,8 @@ Check(ChipCapabilities.Allows("hisi9000","reboot-usb-update"),"experimental resc
 foreach(var operation in new[]{"unlock-fastboot","write-sn","frp-remove","unlock-bootloader","enable-downgrade","sw-testpoint-enter","sw-testpoint-exit","dump-partitions","flash-xml","full-ota","convert-oem","reboot"})
  Check(!ChipCapabilities.Allows("hisi9000",operation),operation+" blocked");
 Check(ChipCapabilities.Allows("hisi980","write-sn")&&ChipCapabilities.Allows("hisi990","unlock-fastboot"),"existing chip policy retained");
+foreach(var operation in new[]{"read-info","read-sn","read-psid","reboot-usb-update","full-ota","convert-oem","dump-partitions"})
+ Check(ChipCapabilities.Allows("none",operation),"default unselected CPU ('none') allows "+operation);
 Check(RescuePartitionPlan.ForChip("hisi9000").Select(x=>x.Image).SequenceEqual(new[]{"ERECOVERY","ERECOVERY_RAMDISK","ERECOVERY_VENDOR"}),"Mate40 firmware image names");
 Check(RescuePartitionPlan.ForChip("hisi9000")[0].Target=="rescue_recovery","explicit experimental destination");
 Check(RescuePartitionPlan.ForChip("hisi980")[0]==new RescueImageTarget("ERECOVERY_KERNEL","rescue_recovery_kernel"),"older rescue mapping retained");

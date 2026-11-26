@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Text;
+using Kirin_Tool.Services.USBUpdate;
 using Kirin_Tool.Services.USBUpdate.Transport;
 void Check(bool ok,string message){if(!ok)throw new Exception(message);Console.WriteLine("PASS "+message);}
 void Wait(Func<bool> ready){if(!SpinWait.SpinUntil(ready,2000))throw new Exception("Test wait expired");}
@@ -18,6 +20,28 @@ using(var f=new Fake())using(var t=new BufferedUsbTransport(f)){
 using(var f=new Fake()){
  var t=new BufferedUsbTransport(f);var read=Task.Run(()=>{try{t.ReadByte();return false;}catch(ObjectDisposedException){return true;}});
  t.Dispose();Check(read.Wait(2000)&&read.Result,"close releases pending read");
+}
+// Regression: real Huawei UPDATE.APP headers include per-4KB CRC16 tables and routinely exceed 4096 bytes
+// (e.g. ERECOVERY_RAMDISK ~16482 bytes, SUPER ~1.95 MB). Extraction must accept realistic >4KB headers.
+{
+ string dir=Path.Combine(Path.GetTempPath(),"kirin-large-hdr-"+Guid.NewGuid().ToString("N"));
+ Directory.CreateDirectory(dir);
+ try {
+  string app=Path.Combine(dir,"UPDATE.APP"), outDir=Path.Combine(dir,"out");
+  int headerLen=16482; byte[] payload=Encoding.ASCII.GetBytes("realistic-large-header-payload");
+  using(var w=new BinaryWriter(File.Create(app))) {
+   w.Write(new byte[12]);
+   w.Write(new byte[]{0x55,0xaa,0x5a,0xa5});
+   w.Write(headerLen); w.Write(0); w.Write(Encoding.ASCII.GetBytes("HWTEST00")); w.Write(0);
+   w.Write((uint)payload.Length); w.Write(new byte[32]);
+   var name=new byte[32]; Encoding.ASCII.GetBytes("ERECOVERY_RAMDISK").CopyTo(name,0); w.Write(name);
+   w.Write(new byte[headerLen-92]); w.Write(payload);
+   while(w.BaseStream.Position%4!=0) w.Write((byte)0);
+  }
+  var extracted=new USBUpdateApp(_=>{},outDir).ExtractAllPartitions(app,extractUnlockCode:true);
+  Check(extracted.Contains("ERECOVERY_RAMDISK 1")&&File.ReadAllBytes(Path.Combine(outDir,"ERECOVERY_RAMDISK.img")).SequenceEqual(payload),
+   "UPDATE.APP extractor accepts realistic >4KB partition headers");
+ } finally { try{Directory.Delete(dir,true);}catch{} }
 }
 sealed class Fake : IBulkDevice {
  public BlockingCollection<(int status,byte[] bytes)> Input=new();
